@@ -1,0 +1,415 @@
+/* Tung Sahur HUD — restrained, Elden Ring inspired: thin framed bars, serif headings, quiet gold. */
+
+.hud-root {
+    flex-grow: 1;
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    color: rgb(237, 230, 214);
+    font-size: 18px;
+}
+
+/* ---------------------------------------------------------------- status bars */
+.status {
+    position: absolute;
+    left: 64px;
+    top: 52px;
+}
+
+.bar {
+    margin-bottom: 7px;
+    padding: 2px;
+    background-color: rgba(10, 11, 14, 0.78);
+    border-width: 1px;
+    border-color: rgba(216, 180, 106, 0.55);
+    border-radius: 1px;
+}
+
+.bar__inner {
+    flex-grow: 1;
+    background-color: rgba(30, 30, 34, 0.9);
+    overflow: hidden;
+}
+
+.bar__chip, .bar__fill, .bar__shine {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+}
+
+.bar__chip { background-color: rgb(232, 194, 122); width: 100%; }
+.bar__fill { width: 100%; }
+.bar__shine {
+    right: 0;
+    height: 40%;
+    background-color: rgba(255, 255, 255, 0.10);
+}
+
+.bar--hp .bar__fill { background-color: rgb(179, 40, 45); }
+.bar--fp .bar__fill { background-color: rgb(58, 111, 216); }
+.bar--st .bar__fill { background-color: rgb(62, 158, 90); }
+.bar--st .bar__chip { background-color: rgb(150, 200, 140); }
+.bar--fp .bar__chip { background-color: rgb(150, 180, 240); }
+
+/* ---------------------------------------------------------------- equipment cross */
+.equip {
+    position: absolute;
+    left: 70px;
+    bottom: 70px;
+    width: 196px;
+    height: 196px;
+}
+
+.equip__slot {
+    position: absolute;
+    width: 72px;
+    height: 72px;
+    background-color: rgba(10, 11, 14, 0.62);
+    border-width: 1px;
+    border-color: rgba(216, 180, 106, 0.35);
+    rotate: 45deg;
+    align-items: center;
+    justify-content: center;
+}
+
+.equip__slot--up    { left: 62px;  top: 6px; }
+.equip__slot--left  { left: 6px;   top: 62px; }
+.equip__slot--right { left: 118px; top: 62px; }
+.equip__slot--down  { left: 62px;  top: 118px; }
+.equip__slot--active {
+    border-color: rgba(244, 223, 166, 0.85);
+    background-color: rgba(30, 24, 16, 0.75);
+}
+
+.equip__icon {
+    width: 86px;
+    height: 86px;
+    rotate: -45deg;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.equip__empty {
+    rotate: -45deg;
+    color: rgba(237, 230, 214, 0.35);
+}
+
+.equip__name {
+    position: absolute;
+    left: 268px;
+    bottom: 128px;
+    font-size: 19px;
+    color: rgb(244, 223, 166);
+    -unity-text-outline-width: 0.6px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.8);
+    letter-spacing: 2px;
+}
+
+/* ---------------------------------------------------------------- lock-on reticle */
+.reticle {
+    position: absolute;
+    width: 0;
+    height: 0;
+}
+
+.reticle__dot {
+    position: absolute;
+    left: -5px; top: -5px;
+    width: 10px; height: 10px;
+    border-radius: 5px;
+    background-color: rgb(255, 250, 236);
+}
+
+.reticle__ring {
+    position: absolute;
+    left: -16px; top: -16px;
+    width: 32px; height: 32px;
+    border-radius: 16px;
+    border-width: 2px;
+    border-color: rgba(255, 250, 236, 0.55);
+}
+
+/* ---------------------------------------------------------------- enemy bars */
+.enemy-layer {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+}
+
+.ebar {
+    position: absolute;
+    width: 160px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.ebar__frame {
+    width: 160px;
+    height: 8px;
+    background-color: rgba(10, 10, 12, 0.85);
+    border-width: 1px;
+    border-color: rgba(0, 0, 0, 0.9);
+    overflow: hidden;
+}
+
+.ebar__chip, .ebar__fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+}
+
+.ebar__chip { background-color: rgb(232, 194, 122); }
+.ebar__fill { background-color: rgb(166, 32, 36); }
+
+.ebar__dmg {
+    position: absolute;
+    left: 168px;
+    top: -10px;
+    font-size: 22px;
+    -unity-font-style: bold;
+    color: rgb(246, 231, 193);
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.85);
+    transform-origin: left center;
+}
+
+.ebar__tag {
+    position: absolute;
+    left: 0;
+    top: -30px;
+    font-size: 16px;
+    letter-spacing: 3px;
+    color: rgb(255, 181, 71);
+    -unity-text-outline-width: 0.8px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
+    opacity: 0;
+}
+
+/* ---------------------------------------------------------------- control hints */
+.hints {
+    position: absolute;
+    right: 56px;
+    bottom: 56px;
+    padding: 16px 18px 12px 18px;
+    background-color: rgba(8, 9, 12, 0.55);
+    border-left-width: 2px;
+    border-color: rgba(216, 180, 106, 0.6);
+    transition-property: opacity, translate;
+    transition-duration: 0.35s;
+    transition-timing-function: ease-out-cubic;
+}
+
+.hints--collapsed .hints__list .hint { display: none; }
+.hints--collapsed .hints__list .hint--toggle { display: flex; }
+.hints--collapsed .hints__title { display: none; }
+.hints--collapsed { background-color: rgba(8, 9, 12, 0.35); padding: 8px 12px 6px 12px; }
+
+.hints__title {
+    font-size: 17px;
+    letter-spacing: 4px;
+    color: rgb(244, 223, 166);
+    margin-bottom: 8px;
+}
+
+.hint {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.hint__label { font-size: 15px; color: rgb(237, 230, 214); }
+.hint__label--dim { color: rgb(154, 146, 127); }
+
+.glyph {
+    min-width: 34px;
+    padding: 1px 8px 2px 8px;
+    margin-right: 10px;
+    font-size: 13px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: rgb(20, 18, 14);
+    background-color: rgb(226, 214, 188);
+    border-radius: 9px;
+}
+
+.glyph--small { font-size: 11px; min-width: 28px; }
+
+/* ---------------------------------------------------------------- felled banner */
+.banner {
+    position: absolute;
+    left: 0; right: 0;
+    top: 38%;
+    height: 120px;
+    align-items: center;
+    justify-content: center;
+}
+
+.banner__band {
+    position: absolute;
+    left: 0; right: 0; top: 18px; bottom: 18px;
+    background-color: rgba(0, 0, 0, 0.55);
+}
+
+.banner__text {
+    font-size: 58px;
+    color: rgb(232, 200, 120);
+    letter-spacing: 12px;
+    -unity-text-outline-width: 0.5px;
+    -unity-text-outline-color: rgba(60, 40, 10, 0.9);
+    text-shadow: 0 0 18px rgba(255, 190, 90, 0.75);
+}
+
+/* ---------------------------------------------------------------- title */
+.title {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background-color: rgba(4, 6, 10, 0.72);
+    align-items: center;
+    justify-content: center;
+}
+
+.title__vignette-unused {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    border-width: 220px;
+    border-color: rgba(0, 0, 0, 0.35);
+}
+
+.title__col { align-items: center; }
+
+.title__kicker {
+    font-size: 20px;
+    letter-spacing: 8px;
+    color: rgb(154, 146, 127);
+    margin-bottom: 10px;
+}
+
+.title__main {
+    font-size: 92px;
+    letter-spacing: 14px;
+    color: rgb(237, 230, 214);
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.9);
+}
+
+.title__sub {
+    font-size: 140px;
+    letter-spacing: 40px;
+    margin-top: -4px;
+    color: rgb(232, 200, 120);
+    text-shadow: 0 0 34px rgba(255, 181, 71, 0.55);
+}
+
+.title__rule {
+    width: 520px;
+    height: 1px;
+    margin: 18px 0 26px 0;
+    background-color: rgba(216, 180, 106, 0.6);
+}
+
+.title__prompt {
+    font-size: 20px;
+    letter-spacing: 6px;
+    color: rgb(237, 230, 214);
+}
+
+/* ---------------------------------------------------------------- pause */
+.pause {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background-color: rgba(4, 6, 10, 0.72);
+    align-items: center;
+    justify-content: center;
+}
+
+.pause__frame {
+    width: 1180px;
+    height: 640px;
+    padding: 36px 48px 24px 48px;
+    background-color: rgba(12, 13, 17, 0.97);
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-color: rgba(216, 180, 106, 0.55);
+}
+
+.pause__head {
+    font-size: 30px;
+    letter-spacing: 10px;
+    color: rgb(244, 223, 166);
+    margin-bottom: 26px;
+}
+
+.pause__body {
+    flex-grow: 1;
+    flex-direction: row;
+}
+
+.pause__menu {
+    width: 300px;
+    border-right-width: 1px;
+    border-color: rgba(216, 180, 106, 0.25);
+    padding-right: 20px;
+}
+
+.pause__item {
+    font-size: 24px;
+    padding: 10px 16px;
+    margin-bottom: 4px;
+    color: rgb(154, 146, 127);
+    border-left-width: 3px;
+    border-color: rgba(0, 0, 0, 0);
+    transition-property: color, background-color, translate;
+    transition-duration: 0.15s;
+}
+
+.pause__item--active {
+    color: rgb(244, 223, 166);
+    background-color: rgba(216, 180, 106, 0.10);
+    border-color: rgb(216, 180, 106);
+    translate: 6px 0;
+}
+
+.pause__panel {
+    flex-grow: 1;
+    padding-left: 40px;
+}
+
+.pause__foot {
+    flex-direction: row;
+    justify-content: flex-end;
+    border-top-width: 1px;
+    border-color: rgba(216, 180, 106, 0.2);
+    padding-top: 12px;
+}
+
+.pause__footnote { font-size: 15px; color: rgb(154, 146, 127); letter-spacing: 2px; }
+
+.panel__flavor { font-size: 28px; color: rgb(244, 223, 166); margin-bottom: 18px; white-space: normal; }
+.panel__text { font-size: 19px; color: rgb(237, 230, 214); white-space: normal; margin-bottom: 12px; }
+.panel__text--dim { color: rgb(154, 146, 127); }
+
+.controls-grid { }
+.controls-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom-width: 1px;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+.controls-row--head .controls-cell { color: rgb(244, 223, 166); font-size: 15px; letter-spacing: 2px; }
+.controls-cell { width: 220px; flex-direction: row; font-size: 16px; }
+.controls-cell--label { width: 340px; color: rgb(237, 230, 214); }
+
+.setting {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    margin-bottom: 4px;
+    border-left-width: 3px;
+    border-color: rgba(0, 0, 0, 0);
+}
+
+.setting--active {
+    background-color: rgba(216, 180, 106, 0.10);
+    border-color: rgb(216, 180, 106);
+}
+
+.setting__name { font-size: 20px; }
+.setting__value-box { flex-direction: row; align-items: center; }
+.setting__value { width: 90px; -unity-text-align: middle-center; font-size: 20px; color: rgb(244, 223, 166); }
+.setting__arrow { font-size: 22px; color: rgb(154, 146, 127); }
