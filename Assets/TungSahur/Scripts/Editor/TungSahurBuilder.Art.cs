@@ -114,11 +114,20 @@ namespace TungSahur.EditorTools
             var trail = TextureForge.BuildTrail();
             var ring = TextureForge.BuildRing();
 
-            Lit("M_TungWood", Color.white, woodA, woodN, 0.85f, 0.6f);
-            Lit("M_TungEye", Color.white, eye, null, 0.5f);
+            // Character textures are baked in Blender (sculpted face: albedo x AO + tangent normals).
+            // Fall back to the procedural tileables if the bake has not been run.
+            var bodyA = TextureForge.ImportBaked("T_TungBody_Albedo", false);
+            var bodyN = TextureForge.ImportBaked("T_TungBody_Normal", true);
+            var bakedEye = TextureForge.ImportBaked("T_TungEye_Sculpt", false, 1024);
+            var bakedClubA = TextureForge.ImportBaked("T_TungClub_Albedo", false, 1024);
+            var bakedClubN = TextureForge.ImportBaked("T_TungClub_Normal", true, 1024);
+            if (bodyA != null) Lit("M_TungWood", Color.white, bodyA, bodyN, 0.52f, 1f, null, false);
+            else Lit("M_TungWood", Color.white, woodA, woodN, 0.85f, 0.6f);
+            Lit("M_TungEye", Color.white, bakedEye != null ? bakedEye : eye, null, 0.86f, 1f, null, false);
             Lit("M_TungDarkWood", Palette.Brow * 1.6f, woodA, woodN, 0.6f, 0.4f, new Vector2(2, 2));
             Lit("M_TungMouth", Palette.Mouth, null, null, 0.2f);
-            Lit("M_ClubWood", Color.white, clubA, clubN, 0.9f, 0.8f);
+            if (bakedClubA != null) Lit("M_ClubWood", Color.white, bakedClubA, bakedClubN, 0.5f, 1f, null, false);
+            else Lit("M_ClubWood", Color.white, clubA, clubN, 0.9f, 0.8f);
             Lit("M_Ground", new Color(0.92f, 0.92f, 0.95f), groundA, groundN, 0.9f, 1.0f, new Vector2(10, 10));
             Lit("M_Planks", Color.white, plankA, plankN, 0.8f, 0.8f);
             Lit("M_Stone", Color.white, stoneA, stoneN, 0.8f, 1f);

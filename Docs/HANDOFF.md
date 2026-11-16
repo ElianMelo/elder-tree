@@ -1,5 +1,13 @@
 # Handoff — Tung Tung Tung Sahur soulslike slice
 
+## 0. Character v2 (reference-matched model)
+
+- `Tools/Blender/build_tung_sahur.py` now sculpts the face as a height field on a dense lathe (carved brows, socketed wide-open eyes with lids, bulbous nose, apple cheeks, smirking grin, nasolabial folds), chunkier log (r 0.27), thicker legs, big feet, gripping right fist, plain-wood bat.
+- Textures are **baked** (`--bake <Assets/TungSahur/Art/Textures>`): `T_TungBody_Albedo/Normal` (4K, albedo x local AO, seam-free cylindrical face UVs), `T_TungClub_*`, and a generated `T_TungEye_Sculpt` (dark-brown iris, black pupil). `BuildArt()` uses them when present, else falls back to the procedural tileables.
+- Look-dev in live Blender via MCP: run the builder with `TS_EXPORT=False`, then `Tools/Blender/preview_tung_sahur.py` (pose, warm lamp lights, `CamBody/CamFace/CamFeet/CamHand`).
+- Rebuild: `blender -b --factory-startup --python Tools/Blender/build_tung_sahur.py -- Tools/Blender/export --bake Assets/TungSahur/Art/Textures`, copy the two FBX into `Assets/TungSahur/Art/Models`, then `TungSahurBuilder.BuildAll()`.
+- Comparison: `Docs/Screenshots/10_reference_vs_model.png`.
+
 ## 1. What was built
 
 | Request | Status | Notes |

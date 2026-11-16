@@ -108,6 +108,25 @@ namespace TungSahur.EditorTools
             return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         }
 
+        /// <summary>Configures a texture baked outside Unity (Tools/Blender/build_tung_sahur.py --bake).
+        /// Returns null when the file is missing so callers can fall back to procedural textures.</summary>
+        public static Texture2D ImportBaked(string name, bool isNormal, int maxSize = 4096)
+        {
+            string path = $"{TexDir}/{name}.png";
+            if (!File.Exists(path)) return null;
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+            imp.textureType = isNormal ? TextureImporterType.NormalMap : TextureImporterType.Default;
+            imp.sRGBTexture = !isNormal;
+            imp.anisoLevel = 8;
+            imp.mipmapEnabled = true;
+            imp.wrapMode = TextureWrapMode.Clamp;
+            imp.maxTextureSize = maxSize;
+            imp.textureCompression = TextureImporterCompression.CompressedHQ;
+            imp.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
         /// <summary>Builds a tangent-space normal map from a tileable height function.</summary>
         public static Texture2D SaveNormalFromHeight(string name, int w, int h, Func<int, int, float> height, float strength)
         {
