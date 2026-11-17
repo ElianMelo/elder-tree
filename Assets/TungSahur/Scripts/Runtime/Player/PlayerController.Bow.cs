@@ -10,7 +10,10 @@ namespace TungSahur.Player
 
     /// <summary>
     /// Bow: hold LT / RMB to raise and draw, RT / LMB (or RB) to loose. Infinite arrows.
-    /// The body turns side-on (stance) and strafes at walking pace; the arrow is solved
+    /// Body motion is the Human Mega Animations Pack archer set: Load (scrubbed by the draw), Hold
+    /// (blended Down/Level/Up by aim pitch) and Release, with the pack's walk clips on a legs-only
+    /// layer for strafing. Those clips keep the root facing the target and turn the hips side-on
+    /// themselves, so the root only needs a small yaw to line the arrow up; the arrow is solved
     /// ballistically onto the point under the crosshair so what you aim at is what you hit, while
     /// a partial draw still flies slower and arcs visibly. Firing early (before the minimum draw)
     /// is buffered and looses as soon as the string is far enough back.
@@ -22,8 +25,12 @@ namespace TungSahur.Player
         public ArrowProjectile arrowPrefab;
         public float aimMoveSpeed = 2.2f;
         public float aimTurnSpeed = 1200f;
-        [Tooltip("Body yaw relative to the aim (side-on archer stance).")]
-        public float stanceYaw = 85f;
+        [Tooltip("Root yaw relative to the aim. The pack's archer clips point the arrow ~6 deg left of the root.")]
+        public float stanceYaw = 6f;
+        [Tooltip("Hips yaw inside the pack's BowShot clips (measured): the legs layer steps in this frame.")]
+        public float archerHipsYaw = 85f;
+        [Tooltip("Normalized time of BowShot01 - Load at which the string reaches full draw.")]
+        public float loadFullDrawTime = 0.5f;
         public float bowRaiseTime = 0.2f;
         public float drawTime = 0.62f;
         [Range(0f, 1f)] public float minDrawToFire = 0.3f;
@@ -55,8 +62,16 @@ namespace TungSahur.Player
         public event System.Action<ArrowProjectile> ArrowFired;
         public event System.Action FullDrawReached;
 
+        static readonly int HAimPitch = Animator.StringToHash("AimPitch");
+        static readonly int HBowDrawTime = Animator.StringToHash("BowDrawTime");
+        static readonly int HBowMoveX = Animator.StringToHash("BowMoveX");
+        static readonly int HBowMoveZ = Animator.StringToHash("BowMoveZ");
+        const int BowLegsLayer = 2;
+
         BowPhase bowPhase;
         float drawLinear;
+        float bowLegsWeight;
+        bool holdPlaying;
         bool fireQueued;
         static readonly RaycastHit[] aimHits = new RaycastHit[16];
 
@@ -74,8 +89,10 @@ namespace TungSahur.Player
             fireQueued = false;
             input.ClearFire();
             input.ClearAttackBuffers();
-            animator.CrossFadeInFixedTime("Locomotion", 0.15f);
+            animator.SetFloat(HBowDrawTime, 0f);
             animator.SetFloat(HActionSpeed, 1f);
+            animator.CrossFadeInFixedTime("BowDraw", 0.18f);
+            holdPlaying = false;
             AudioManager.Play(Sfx.BowNock, transform.position + Vector3.up * 1.2f, 0.6f, 0.9f);
             UpdateAimPoint();
             return true;
@@ -86,7 +103,39 @@ namespace TungSahur.Player
             BowDraw = 0f;
             drawLinear = 0f;
             fireQueued = false;
-            if (State == PlayerState.Aim) SetState(PlayerState.Locomotion);
+            holdPlaying = false;
+            if (State == PlayerState.Aim) ReturnToLocomotion(0.25f);
+        }
+
+        /// <summary>Archer animation: draw scrub, pitch blend and the legs layer (runs every frame).</summary>
+        void UpdateBowAnimator(float dt)
+        {
+            bool aiming = State == PlayerState.Aim;
+            bowLegsWeight = Mathf.MoveTowards(bowLegsWeight, aiming ? 1f : 0f, dt / (aiming ? 0.15f : 0.2f));
+            animator.SetLayerWeight(BowLegsLayer, bowLegsWeight);
+            if (!aiming) return;
+
+            Vector3 from = transform.position + Vector3.up * 1.38f;
+            Vector3 d = AimPoint - from;
+            float pitch = Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
+            animator.SetFloat(HAimPitch, Mathf.Clamp(pitch, -50f, 40f), 0.06f, dt);
+
+            // draw: the Load clip reaches full draw at loadFullDrawTime; scrub it with the gameplay draw
+            float drawTime = bowPhase == BowPhase.Draw ? BowDraw * loadFullDrawTime : 0f;
+            animator.SetFloat(HBowDrawTime, drawTime);
+            if (bowPhase == BowPhase.Draw && FullDraw && !holdPlaying)
+            {
+                animator.CrossFadeInFixedTime("BowHold", 0.12f);
+                holdPlaying = true;
+            }
+
+            // legs: move direction in the side-on hips frame, walk ring 0..1
+            Vector3 v = motor.PlanarVelocity;
+            float speed = v.magnitude;
+            Vector3 local = Quaternion.Euler(0f, -archerHipsYaw, 0f) * transform.InverseTransformDirection(v);
+            Vector2 dir2 = speed > 0.05f ? new Vector2(local.x, local.z).normalized * Mathf.Clamp01(SpeedToRing(speed)) : Vector2.zero;
+            animator.SetFloat(HBowMoveX, dir2.x, 0.1f, dt);
+            animator.SetFloat(HBowMoveZ, dir2.y, 0.1f, dt);
         }
 
         void UpdateAim(float dt)
@@ -182,6 +231,8 @@ namespace TungSahur.Player
         {
             bowPhase = p;
             BowPhaseProgress = 0f;
+            // after the release snap, settle back into the Load pose while the hand fetches an arrow
+            if (p == BowPhase.Renock) animator.CrossFadeInFixedTime("BowDraw", renockTime * 0.7f);
             if (p == BowPhase.Draw)
             {
                 drawLinear = 0f;
@@ -240,6 +291,9 @@ namespace TungSahur.Player
             BowDraw = 0f;
             drawLinear = 0f;
             EnterBowPhase(BowPhase.Release);
+            animator.SetFloat(HActionSpeed, 1f);
+            animator.CrossFadeInFixedTime("BowRelease", 0.04f);
+            holdPlaying = false;
         }
 
         /// <summary>Low-arc launch velocity that lands on <paramref name="target"/> (falls back to 45°).</summary>

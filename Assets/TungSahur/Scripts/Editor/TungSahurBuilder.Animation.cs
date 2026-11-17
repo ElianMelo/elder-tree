@@ -14,8 +14,10 @@ namespace TungSahur.EditorTools
         public const string ControllerPath = AnimDir + "/TungSahur.controller";
         public const string MovesetPath = Root + "/Data/TungMoveset.asset";
 
+        // Human Mega Animations Pack (Kevin Iglesias) is the single source of truth for player motion:
+        // locomotion, air, melee, guard, hit/knockdown/death and the archer set all come from it, so
+        // every clip shares one skeleton, one style and one timing language. Do not mix in other packs.
         const string KI = "Assets/Kevin Iglesias/Human Animations/Animations/Male";
-        const string EX = "Assets/ExplosiveLLC/Warrior Pack Bundle 2 FREE/2 Handed Warrior Mecanim Animation Pack/Animations";
 
         static AnimationClip Clip(string path, string name = null)
         {
@@ -27,30 +29,18 @@ namespace TungSahur.EditorTools
 
         static AnimationClip K(string rel) => Clip($"{KI}/{rel}.fbx");
 
-        /// <summary>Copies a clip into the project so its loop flag can change without touching vendor import settings.</summary>
-        static AnimationClip CopyClip(AnimationClip src, string newName, bool loop)
-        {
-            Directory.CreateDirectory(AnimDir + "/Clips");
-            string path = $"{AnimDir}/Clips/{newName}.anim";
-            var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
-            if (existing != null) AssetDatabase.DeleteAsset(path);
-            var copy = Object.Instantiate(src);
-            copy.name = newName;
-            var settings = AnimationUtility.GetAnimationClipSettings(copy);
-            settings.loopTime = loop;
-            settings.loopBlendOrientation = true;
-            settings.loopBlendPositionY = true;
-            settings.loopBlendPositionXZ = true;
-            settings.keepOriginalOrientation = true;
-            settings.keepOriginalPositionY = true;
-            AnimationUtility.SetAnimationClipSettings(copy, settings);
-            AssetDatabase.CreateAsset(copy, path);
-            return copy;
-        }
+        static AvatarMask UpperBodyMask() => Mask("M_UpperBody", p =>
+            p == AvatarMaskBodyPart.Body || p == AvatarMaskBodyPart.Head || p == AvatarMaskBodyPart.LeftArm ||
+            p == AvatarMaskBodyPart.RightArm || p == AvatarMaskBodyPart.LeftFingers || p == AvatarMaskBodyPart.RightFingers);
 
-        static AvatarMask UpperBodyMask()
+        /// <summary>Legs only (no hips): the walk clips move the feet while the archer clip owns the torso.</summary>
+        static AvatarMask LegsMask() => Mask("M_Legs", p =>
+            p == AvatarMaskBodyPart.LeftLeg || p == AvatarMaskBodyPart.RightLeg ||
+            p == AvatarMaskBodyPart.LeftFootIK || p == AvatarMaskBodyPart.RightFootIK);
+
+        static AvatarMask Mask(string name, System.Func<AvatarMaskBodyPart, bool> on)
         {
-            string path = AnimDir + "/M_UpperBody.mask";
+            string path = $"{AnimDir}/{name}.mask";
             var mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(path);
             if (mask == null)
             {
@@ -58,14 +48,24 @@ namespace TungSahur.EditorTools
                 AssetDatabase.CreateAsset(mask, path);
             }
             for (int i = 0; i < (int)AvatarMaskBodyPart.LastBodyPart; i++)
-            {
-                var p = (AvatarMaskBodyPart)i;
-                bool on = p == AvatarMaskBodyPart.Body || p == AvatarMaskBodyPart.Head || p == AvatarMaskBodyPart.LeftArm ||
-                          p == AvatarMaskBodyPart.RightArm || p == AvatarMaskBodyPart.LeftFingers || p == AvatarMaskBodyPart.RightFingers;
-                mask.SetHumanoidBodyPartActive(p, on);
-            }
+                mask.SetHumanoidBodyPartActive((AvatarMaskBodyPart)i, on((AvatarMaskBodyPart)i));
             EditorUtility.SetDirty(mask);
             return mask;
+        }
+
+        static readonly (string n, Vector2 d)[] Dirs =
+        {
+            ("Forward", new Vector2(0, 1)), ("ForwardRight", new Vector2(0.7071f, 0.7071f)), ("Right", new Vector2(1, 0)),
+            ("BackwardRight", new Vector2(0.7071f, -0.7071f)), ("Backward", new Vector2(0, -1)),
+            ("BackwardLeft", new Vector2(-0.7071f, -0.7071f)), ("Left", new Vector2(-1, 0)), ("ForwardLeft", new Vector2(-0.7071f, 0.7071f))
+        };
+
+        static BlendTree NewTree(AnimatorController ac, string name, BlendTreeType type, string px, string py = null)
+        {
+            var t = new BlendTree { name = name, blendType = type, blendParameter = px, useAutomaticThresholds = false };
+            if (py != null) t.blendParameterY = py;
+            AssetDatabase.AddObjectToAsset(t, ac);
+            return t;
         }
 
         [MenuItem("Tung Sahur/3. Build Animator + Moveset")]
@@ -77,7 +77,7 @@ namespace TungSahur.EditorTools
                 AssetDatabase.DeleteAsset(ControllerPath);
             var ac = AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
 
-            foreach (var p in new[] { "MoveX", "MoveZ", "LocoSpeed", "ActionSpeed", "VerticalSpeed" })
+            foreach (var p in new[] { "MoveX", "MoveZ", "LocoSpeed", "ActionSpeed", "VerticalSpeed", "AimPitch", "BowDrawTime", "BowMoveX", "BowMoveZ" })
                 ac.AddParameter(p, AnimatorControllerParameterType.Float);
             ac.AddParameter("Grounded", AnimatorControllerParameterType.Bool);
             foreach (var p in ac.parameters)
@@ -94,24 +94,10 @@ namespace TungSahur.EditorTools
 
             // ---------------- Locomotion blend tree (in-place clips, speed driven from code)
             var loco = sm.AddState("Locomotion", new Vector3(300, 0));
-            var tree = new BlendTree
-            {
-                name = "LocomotionTree",
-                blendType = BlendTreeType.FreeformDirectional2D,
-                blendParameter = "MoveX",
-                blendParameterY = "MoveZ",
-                useAutomaticThresholds = false
-            };
-            AssetDatabase.AddObjectToAsset(tree, ac);
+            var tree = NewTree(ac, "LocomotionTree", BlendTreeType.FreeformDirectional2D, "MoveX", "MoveZ");
             tree.AddChild(K("Combat/1H/HumanM@CombatIdle1H01"), Vector2.zero);
-            var dirs = new (string n, Vector2 d)[]
-            {
-                ("Forward", new Vector2(0, 1)), ("ForwardRight", new Vector2(0.7071f, 0.7071f)), ("Right", new Vector2(1, 0)),
-                ("BackwardRight", new Vector2(0.7071f, -0.7071f)), ("Backward", new Vector2(0, -1)),
-                ("BackwardLeft", new Vector2(-0.7071f, -0.7071f)), ("Left", new Vector2(-1, 0)), ("ForwardLeft", new Vector2(-0.7071f, 0.7071f))
-            };
-            foreach (var (n, d) in dirs) tree.AddChild(K($"Movement/Walk/HumanM@Walk01_{n}"), d * 1f);
-            foreach (var (n, d) in dirs) tree.AddChild(K($"Movement/Run/HumanM@Run01_{n}"), d * 2f);
+            foreach (var (n, d) in Dirs) tree.AddChild(K($"Movement/Walk/HumanM@Walk01_{n}"), d * 1f);
+            foreach (var (n, d) in Dirs) tree.AddChild(K($"Movement/Run/HumanM@Run01_{n}"), d * 2f);
             tree.AddChild(K("Movement/Sprint/HumanM@Sprint01_Forward"), new Vector2(0, 3f));
             tree.AddChild(K("Movement/Sprint/HumanM@Sprint01_ForwardLeft"), new Vector2(-2.12f, 2.12f));
             tree.AddChild(K("Movement/Sprint/HumanM@Sprint01_ForwardRight"), new Vector2(2.12f, 2.12f));
@@ -122,12 +108,9 @@ namespace TungSahur.EditorTools
             sm.defaultState = loco;
 
             // ---------------- Air
-            var jumpClip = Clip($"{EX}/2Handed@Jump.FBX", "Jump");
-            var fallClip = CopyClip(Clip($"{EX}/2Handed@Fall.FBX", "Fall"), "Tung_FallLoop", true);
-            var landClip = Clip($"{EX}/2Handed@Jump.FBX", "Land");
-            Add(sm, "JumpStart", jumpClip, new Vector3(600, -200));
-            Add(sm, "Fall", fallClip, new Vector3(600, -140));
-            Add(sm, "Land", landClip, new Vector3(600, -80));
+            Add(sm, "JumpStart", K("Movement/Jump/HumanM@Jump01 - Begin"), new Vector3(600, -200));
+            Add(sm, "Fall", K("Movement/Jump/HumanM@Fall01"), new Vector3(600, -140));      // loops in the pack
+            Add(sm, "Land", K("Movement/Jump/HumanM@Jump01 - Land"), new Vector3(600, -80));
 
             // ---------------- Actions (all entered from code with CrossFade)
             float y = 0;
@@ -145,6 +128,12 @@ namespace TungSahur.EditorTools
             Act("HitHeavy", K("Combat/HumanM@CombatDamage02"));
             Act("Stagger", K("Combat/HumanM@Stun01"));
             Act("Death", K("Combat/HumanM@CombatDeath01"));
+            // Slam hits: knocked off your roots -> on the ground -> stand up (code times the stand-up)
+            var kdFall = Act("KnockdownFall", K("Combat/HumanM@Knockdown01 - Fall"));
+            var kdGround = Act("KnockdownGround", K("Combat/HumanM@Knockdown01 - Ground"));
+            Act("KnockdownStandUp", K("Combat/HumanM@Knockdown01 - StandUp"));
+            var kdT = kdFall.AddTransition(kdGround);
+            kdT.hasExitTime = true; kdT.exitTime = 0.95f; kdT.duration = 0.08f;
             Act("Light1", K("Combat/1H/HumanM@Attack1H02_R"));
             Act("Light2", K("Combat/1H/HumanM@Attack1H04_R"));
             Act("Light3", K("Combat/1H/HumanM@Attack1H05_R"));
@@ -155,6 +144,21 @@ namespace TungSahur.EditorTools
             Act("JumpAttack", K("Combat/2H/HumanM@Attack2H02"));
             Act("DodgeAttack", K("Combat/1H/HumanM@Attack1H01_R"));
             Act("Skill", K("Combat/2H/HumanM@Attack2H04"));
+
+            // ---------------- Archer (full body, entered from code). The pack keeps the root facing the
+            // target and turns hips/chest ~85 deg inside the clip, so the stance comes from the animation.
+            var draw = Act("BowDraw", K("Combat/Bow/HumanM@BowShot01 - Load"));
+            draw.timeParameter = "BowDrawTime";          // scrubbed by the gameplay draw amount
+            draw.timeParameterActive = true;
+            var hold = sm.AddState("BowHold", new Vector3(900, 0));
+            var pitchTree = NewTree(ac, "BowHoldPitch", BlendTreeType.Simple1D, "AimPitch");
+            // thresholds = arrow pitch (deg) each clip actually aims at, measured on the rig
+            pitchTree.AddChild(K("Combat/Bow/HumanM@BowShot01_Down - Hold"), -50f);
+            pitchTree.AddChild(K("Combat/Bow/HumanM@BowShot01 - Hold"), -5f);
+            pitchTree.AddChild(K("Combat/Bow/HumanM@BowShot01_Up - Hold"), 40f);
+            hold.motion = pitchTree;
+            hold.writeDefaultValues = true;
+            Act("BowRelease", K("Combat/Bow/HumanM@BowShot01 - Release"));
 
             // ---------------- Guard layer (upper body)
             var guardLayer = new AnimatorControllerLayer
@@ -174,6 +178,29 @@ namespace TungSahur.EditorTools
             gLoop.motion = K("Combat/1H/HumanM@Parry1H01_R - Loop");
             var gHit = gsm.AddState("GuardHit", new Vector3(300, 160));
             gHit.motion = K("Combat/1H/HumanM@Parry1H01_R - Hit");
+
+            // ---------------- Bow legs layer: pack walk clips on the legs while the archer clip owns the
+            // torso. BowMoveX/Z are the move direction in the archer's (hips) frame, so stepping toward
+            // the target plays a side step, like a real side-on stance.
+            var legsLayer = new AnimatorControllerLayer
+            {
+                name = "BowLegs",
+                defaultWeight = 0f,
+                avatarMask = LegsMask(),
+                blendingMode = AnimatorLayerBlendingMode.Override,
+                stateMachine = new AnimatorStateMachine { name = "BowLegs", hideFlags = HideFlags.HideInHierarchy }
+            };
+            AssetDatabase.AddObjectToAsset(legsLayer.stateMachine, ac);
+            ac.AddLayer(legsLayer);
+            var lsm = ac.layers[2].stateMachine;
+            var walk = lsm.AddState("BowWalk", new Vector3(300, 0));
+            var walkTree = NewTree(ac, "BowWalkTree", BlendTreeType.FreeformDirectional2D, "BowMoveX", "BowMoveZ");
+            walkTree.AddChild(K("Combat/Bow/HumanM@BowShot01 - Hold"), Vector2.zero);
+            foreach (var (n, d) in Dirs) walkTree.AddChild(K($"Movement/Walk/HumanM@Walk01_{n}"), d);
+            walk.motion = walkTree;
+            walk.speedParameter = "LocoSpeed";
+            walk.speedParameterActive = true;
+            lsm.defaultState = walk;
 
             // IK pass on the base layer: the bow places both hands on the aim line (BowRig.OnAnimatorIK)
             var layers = ac.layers;

@@ -44,34 +44,71 @@ if "--size" in _argv:
 CARD_TEX = 256
 SCENE_NAME = "ElderTree"
 
-# Same skeleton as build_tung_sahur.py (do not move: sockets/grips in Unity depend on it)
-SHOULDER_X, SHOULDER_Z = 0.295, 1.25
-ELBOW_X, WRIST_X, HAND_END_X = 0.535, 0.775, 0.875
-HIP_X, HIP_Z, KNEE_Z, ANKLE_Z = 0.12, 0.88, 0.47, 0.09
+# Skeleton retargeted onto the Human Mega Animations Pack rig (Kevin Iglesias HumanM_Model):
+# the pack is the source of truth for all motion, so joint heights, segment ratios, the
+# Hips-Spine-Chest-Neck-Head chain (no UpperChest) and the 5-finger hands follow HumanM
+# scaled by 0.95. Only the shoulders sit wider (0.30 vs 0.19) so the arms clear the trunk.
+# Character-space sockets in Unity (club grip, bow, quiver) depend on these numbers.
+HIPS_Z, SPINE_Z, CHEST_Z, NECK_Z, HEAD_Z, HEAD_END_Z = 0.93, 1.01, 1.20, 1.455, 1.525, 1.95
+SHOULDER_IN, SHOULDER_X, SHOULDER_Z = 0.07, 0.30, 1.38
+ELBOW_X, WRIST_X = 0.545, 0.755
+KNUCKLE_X = WRIST_X + 0.075                     # hand bone tail = finger roots (HumanM: 0.14 * 0.95 incl. palm)
+HAND_END_X = KNUCKLE_X
+HIP_X, HIP_Z, KNEE_Z, ANKLE_Z = 0.12, 0.88, 0.49, 0.12
+TOE_Y, TOE_Z, TOE_END_Y = -0.14, 0.03, -0.24
+# fingers (index..little): sideways offset (-Y = forward/thumb side) and the three phalanx lengths
+FINGERS = [("Index", -0.040, (0.046, 0.036, 0.030)), ("Middle", -0.013, (0.050, 0.039, 0.032)),
+           ("Ring", 0.014, (0.047, 0.037, 0.030)), ("Little", 0.040, (0.040, 0.033, 0.027))]
+# thumb: root offset from the wrist and per-phalanx deltas (HumanM thumb: forward, out, down)
+THUMB_ROOT = (0.035, -0.036, -0.014)
+THUMB_SEGS = [(0.040, -0.028, -0.018), (0.032, -0.019, -0.014), (0.027, -0.014, -0.011)]
+PHALANX = ("Proximal", "Intermediate", "Distal")
 BONES = {
-    "Hips":          ((0, 0.0, 0.90), (0, 0.0, 1.02), None),
-    "Spine":         ((0, 0.0, 1.02), (0, 0.0, 1.12), "Hips"),
-    "Chest":         ((0, 0.0, 1.12), (0, 0.0, 1.22), "Spine"),
-    "UpperChest":    ((0, 0.0, 1.22), (0, 0.0, 1.40), "Chest"),
-    "Neck":          ((0, 0.0, 1.40), (0, 0.0, 1.52), "UpperChest"),
-    "Head":          ((0, 0.0, 1.52), (0, 0.0, 1.95), "Neck"),
-    "LeftShoulder":  ((0.07, 0.0, SHOULDER_Z), (SHOULDER_X, 0.0, SHOULDER_Z), "UpperChest"),
-    "LeftUpperArm":  ((SHOULDER_X, 0.0, SHOULDER_Z), (ELBOW_X, 0.0, SHOULDER_Z), "LeftShoulder"),
-    "LeftLowerArm":  ((ELBOW_X, 0.0, SHOULDER_Z), (WRIST_X, 0.0, SHOULDER_Z), "LeftUpperArm"),
-    "LeftHand":      ((WRIST_X, 0.0, SHOULDER_Z), (HAND_END_X, 0.0, SHOULDER_Z), "LeftLowerArm"),
-    "RightShoulder": ((-0.07, 0.0, SHOULDER_Z), (-SHOULDER_X, 0.0, SHOULDER_Z), "UpperChest"),
-    "RightUpperArm": ((-SHOULDER_X, 0.0, SHOULDER_Z), (-ELBOW_X, 0.0, SHOULDER_Z), "RightShoulder"),
-    "RightLowerArm": ((-ELBOW_X, 0.0, SHOULDER_Z), (-WRIST_X, 0.0, SHOULDER_Z), "RightUpperArm"),
-    "RightHand":     ((-WRIST_X, 0.0, SHOULDER_Z), (-HAND_END_X, 0.0, SHOULDER_Z), "RightLowerArm"),
-    "LeftUpperLeg":  ((HIP_X, 0.0, HIP_Z), (HIP_X, 0.0, KNEE_Z), "Hips"),
-    "LeftLowerLeg":  ((HIP_X, 0.0, KNEE_Z), (HIP_X, 0.0, ANKLE_Z), "LeftUpperLeg"),
-    "LeftFoot":      ((HIP_X, 0.0, ANKLE_Z), (HIP_X, -0.18, 0.028), "LeftLowerLeg"),
-    "LeftToes":      ((HIP_X, -0.18, 0.028), (HIP_X, -0.28, 0.028), "LeftFoot"),
-    "RightUpperLeg": ((-HIP_X, 0.0, HIP_Z), (-HIP_X, 0.0, KNEE_Z), "Hips"),
-    "RightLowerLeg": ((-HIP_X, 0.0, KNEE_Z), (-HIP_X, 0.0, ANKLE_Z), "RightUpperLeg"),
-    "RightFoot":     ((-HIP_X, 0.0, ANKLE_Z), (-HIP_X, -0.18, 0.028), "RightLowerLeg"),
-    "RightToes":     ((-HIP_X, -0.18, 0.028), (-HIP_X, -0.28, 0.028), "RightFoot"),
+    "Hips":          ((0, 0.0, HIPS_Z), (0, 0.0, SPINE_Z), None),
+    "Spine":         ((0, 0.0, SPINE_Z), (0, 0.0, CHEST_Z), "Hips"),
+    "Chest":         ((0, 0.0, CHEST_Z), (0, 0.0, NECK_Z), "Spine"),
+    "Neck":          ((0, 0.0, NECK_Z), (0, 0.0, HEAD_Z), "Chest"),
+    "Head":          ((0, 0.0, HEAD_Z), (0, 0.0, HEAD_END_Z), "Neck"),
 }
+
+
+def finger_chains(s):
+    """{finger: [(bone, head, tail), x3]} in Blender space for side s (+1 left, -1 right)."""
+    L = "Left" if s > 0 else "Right"
+    out = {}
+    for name, y, lens in FINGERS:
+        x, z, chain = KNUCKLE_X, SHOULDER_Z, []
+        for k, ln in enumerate(lens):
+            h = (x * s, y, z)
+            x += ln
+            z -= 0.002 * (k + 1)          # HumanM fingers droop slightly at rest
+            chain.append((L + name + PHALANX[k], h, (x * s, y, z)))
+        out[name] = chain
+    p = Vector((WRIST_X + THUMB_ROOT[0], THUMB_ROOT[1], SHOULDER_Z + THUMB_ROOT[2]))
+    chain = []
+    for k, d in enumerate(THUMB_SEGS):
+        q = p + Vector(d)
+        chain.append((L + "Thumb" + PHALANX[k], (p.x * s, p.y, p.z), (q.x * s, q.y, q.z)))
+        p = q
+    out["Thumb"] = chain
+    return out
+
+
+for _s in (1, -1):
+    _L = "Left" if _s > 0 else "Right"
+    BONES[_L + "Shoulder"] = ((SHOULDER_IN * _s, 0.0, SHOULDER_Z), (SHOULDER_X * _s, 0.0, SHOULDER_Z), "Chest")
+    BONES[_L + "UpperArm"] = ((SHOULDER_X * _s, 0.0, SHOULDER_Z), (ELBOW_X * _s, 0.0, SHOULDER_Z), _L + "Shoulder")
+    BONES[_L + "LowerArm"] = ((ELBOW_X * _s, 0.0, SHOULDER_Z), (WRIST_X * _s, 0.0, SHOULDER_Z), _L + "UpperArm")
+    BONES[_L + "Hand"] = ((WRIST_X * _s, 0.0, SHOULDER_Z), (KNUCKLE_X * _s, 0.0, SHOULDER_Z), _L + "LowerArm")
+    for _chain in finger_chains(_s).values():
+        _parent = _L + "Hand"
+        for _b, _h, _t in _chain:
+            BONES[_b] = (_h, _t, _parent)
+            _parent = _b
+    BONES[_L + "UpperLeg"] = ((HIP_X * _s, 0.0, HIP_Z), (HIP_X * _s, 0.0, KNEE_Z), "Hips")
+    BONES[_L + "LowerLeg"] = ((HIP_X * _s, 0.0, KNEE_Z), (HIP_X * _s, 0.0, ANKLE_Z), _L + "UpperLeg")
+    BONES[_L + "Foot"] = ((HIP_X * _s, 0.0, ANKLE_Z), (HIP_X * _s, TOE_Y, TOE_Z), _L + "LowerLeg")
+    BONES[_L + "Toes"] = ((HIP_X * _s, TOE_Y, TOE_Z), (HIP_X * _s, TOE_END_Y, TOE_Z), _L + "Foot")
 
 MAT_BARK, MAT_MOSS, MAT_EYE = 0, 1, 2
 MAT_NAMES = ["M_ElderBark", "M_ElderMoss", "M_ElderEye"]
@@ -222,7 +259,7 @@ def tube(points, radii, sides, wfn, ref=Vector((0, 0, 1)), jag=0.12, seed=0, cap
 # ----------------------------------------------------------------------------
 # Weights
 # ----------------------------------------------------------------------------
-TORSO_BONES = [("Hips", 0.92), ("Spine", 1.07), ("Chest", 1.17), ("UpperChest", 1.30), ("Neck", 1.46), ("Head", 1.58)]
+TORSO_BONES = [("Hips", 0.95), ("Spine", 1.06), ("Chest", 1.24), ("Neck", 1.50), ("Head", 1.60)]
 
 
 def torso_weights(co):
@@ -274,9 +311,9 @@ RINGS = [(0.70, 0.190, 0.000),
          (0.80, 0.215, 0.000),
          (0.93, 0.228, 0.000),
          (1.06, 0.250, -0.005),
-         (1.19, 0.310, -0.015),
-         (1.31, 0.338, -0.030),
-         (1.43, 0.300, -0.050),
+         (1.20, 0.300, -0.015),
+         (1.32, 0.335, -0.030),
+         (1.44, 0.318, -0.050),
          (1.53, 0.255, -0.070),
          (1.63, 0.245, -0.082),
          (EYE_Z, 0.240, -0.088),
@@ -415,9 +452,9 @@ def build_crown():
         branch(base, d, L, r, seed=20 + n * 7)
     # two broken spurs on the shoulders (silhouette breakers)
     for s in (1, -1):
-        base = Vector((0.24 * s, 0.05, 1.36))
+        base = Vector((0.24 * s, 0.05, SHOULDER_Z + 0.10))
         tube([base, base + Vector((0.06 * s, 0.06, 0.14)), base + Vector((0.07 * s, 0.13, 0.26))],
-             [0.035, 0.022, 0.006], 3, const("UpperChest"), jag=0.15, seed=60 + s, cap_start=False, moss=0.2)
+             [0.035, 0.022, 0.006], 3, const("Chest"), jag=0.15, seed=60 + s, cap_start=False, moss=0.2)
 
 
 # ----------------------------------------------------------------------------
@@ -425,9 +462,10 @@ def build_crown():
 # ----------------------------------------------------------------------------
 def build_burls():
     for s in (1, -1):
-        c = Vector((0.27 * s, -0.005, 1.33))
+        c = Vector((0.27 * s, -0.005, SHOULDER_Z + 0.04))
+        shoulder = "LeftShoulder" if s > 0 else "RightShoulder"
         tube([c - Vector((0.07 * s, 0, 0.02)), c, c + Vector((0.06 * s, 0, 0.05))],
-             [(0.12, 0.13), (0.13, 0.14), (0.06, 0.07)], 6, const("UpperChest"), ref=Vector((0, -1, 0)), jag=0.18,
+             [(0.12, 0.13), (0.13, 0.14), (0.06, 0.07)], 6, (lambda co, sh=shoulder: {"Chest": 0.45, sh: 0.55}), ref=Vector((0, -1, 0)), jag=0.18,
              seed=70 + s, moss=0.35)
     # shelf fungus stacked on the left flank (pale, the only light value on the body)
     for n, (z, r) in enumerate([(1.10, 0.075), (1.17, 0.06), (1.02, 0.05)]):
@@ -463,46 +501,36 @@ def build_root_skirt():
 # ----------------------------------------------------------------------------
 def build_arm(s):
     L = "Left" if s > 0 else "Right"
-    chain = [(L + "Shoulder", (0.07 * s, 0, SHOULDER_Z), (SHOULDER_X * s, 0, SHOULDER_Z)),
+    chain = [(L + "Shoulder", (SHOULDER_IN * s, 0, SHOULDER_Z), (SHOULDER_X * s, 0, SHOULDER_Z)),
              (L + "UpperArm", (SHOULDER_X * s, 0, SHOULDER_Z), (ELBOW_X * s, 0, SHOULDER_Z)),
              (L + "LowerArm", (ELBOW_X * s, 0, SHOULDER_Z), (WRIST_X * s, 0, SHOULDER_Z)),
-             (L + "Hand", (WRIST_X * s, 0, SHOULDER_Z), (HAND_END_X * s, 0, SHOULDER_Z))]
+             (L + "Hand", (WRIST_X * s, 0, SHOULDER_Z), (KNUCKLE_X * s, 0, SHOULDER_Z))]
     wfn = chain_weights(chain, blend=0.05)
     Z = SHOULDER_Z
-    xs = [0.17, 0.30, 0.42, ELBOW_X, 0.65, WRIST_X - 0.01]
+    mid_up, mid_lo = (SHOULDER_X + ELBOW_X) * 0.5, (ELBOW_X + WRIST_X) * 0.5
+    xs = [0.17, SHOULDER_X, mid_up, ELBOW_X, mid_lo, WRIST_X - 0.01]
     rr = [(0.12, 0.125), (0.105, 0.11), (0.085, 0.09), (0.095, 0.10), (0.078, 0.082), (0.064, 0.07)]
-    pts = [(x * s, 0.0 if x != ELBOW_X else 0.012, Z + (0.01 if x == 0.42 else 0.0)) for x in xs]
+    pts = [(x * s, 0.0 if x != ELBOW_X else 0.012, Z + (0.01 if x == mid_up else 0.0)) for x in xs]
     tube(pts, rr, 6, wfn, jag=0.16, seed=90 + s, cap_start=False, cap_end=False, moss=0.25, twist=0.35 * s)
     # knot spur on the forearm
-    b = Vector((0.60 * s, 0.02, Z + 0.04))
+    b = Vector(((mid_lo + 0.01) * s, 0.02, Z + 0.04))
     tube([b, b + Vector((0.03 * s, 0.05, 0.08)), b + Vector((0.07 * s, 0.07, 0.13))], [0.022, 0.014, 0.004], 3,
          const(L + "LowerArm"), jag=0.1, seed=95 + s, cap_start=False)
     hand = const(L + "Hand")
-    grip = s < 0
-    # palm knot
-    tube([((WRIST_X - 0.03) * s, 0, Z), ((WRIST_X + 0.03) * s, 0, Z + 0.012), ((WRIST_X + 0.06) * s, 0, Z + 0.016)],
-         [(0.06, 0.068), (0.042, 0.07), (0.034, 0.062)], 5, hand, jag=0.12, seed=97 + s)
-    gx = WRIST_X + 0.066
-    fy = [-0.042, -0.014, 0.014, 0.040]
-    if grip:
-        rc, ends = 0.040, [-160, -170, -160, -140]
-    else:
-        rc, ends = 0.09, [-35, -45, -40, -30]   # open claw: long twigs curling down at the tips
-    for k in range(4):
-        a0, nseg = 72.0, 4
-        path = []
-        for i in range(nseg + 1):
-            a = math.radians(a0 + (ends[k] - a0) * i / nseg)
-            ext = 0.0 if grip else 0.05 * i / nseg
-            path.append((gx * s + (rc * math.cos(a) + ext) * s, fy[k] * (1 + (0.25 if not grip else -0.1) * i / nseg),
-                         Z + rc * math.sin(a) * (1.0 if grip else 0.6)))
-        tube(path, [0.021 * (1 - 0.6 * i / nseg) for i in range(nseg + 1)], 3, hand, ref=Vector((0, 1, 0)), jag=0.15,
-             seed=100 + k + 10 * s)
-    th = ([((WRIST_X + 0.010) * s, -0.035, Z + 0.008), ((WRIST_X + 0.040) * s, -0.062, Z - 0.004),
-           ((WRIST_X + 0.064) * s, -0.064, Z - 0.030), ((WRIST_X + 0.080) * s, -0.050, Z - 0.044)] if grip else
-          [((WRIST_X + 0.010) * s, -0.035, Z + 0.008), ((WRIST_X + 0.045) * s, -0.075, Z + 0.0),
-           ((WRIST_X + 0.080) * s, -0.090, Z - 0.02), ((WRIST_X + 0.105) * s, -0.085, Z - 0.045)])
-    tube(th, [0.02, 0.016, 0.012, 0.006], 3, hand, jag=0.12, seed=110 + s)
+    # palm knot (wrist -> knuckles)
+    tube([((WRIST_X - 0.03) * s, 0, Z), ((WRIST_X + 0.03) * s, 0, Z + 0.006), ((KNUCKLE_X + 0.004) * s, 0, Z + 0.002)],
+         [(0.06, 0.068), (0.045, 0.07), (0.026, 0.062)], 5, hand, jag=0.12, seed=97 + s)
+    # twig fingers: straight at rest along their bones (the pack's clips curl them into grips),
+    # each skinned to its three phalanges, with a short claw tip past the distal joint
+    for n, (finger, bones) in enumerate(finger_chains(s).items()):
+        hand_seg = (L + "Hand", (WRIST_X * s, 0, Z), bones[0][1])
+        fw = chain_weights([hand_seg] + bones, blend=0.012)
+        h0, t2 = Vector(bones[0][1]), Vector(bones[-1][2])
+        tip = t2 + (t2 - Vector(bones[-1][1])).normalized() * (0.026 if finger != "Thumb" else 0.018)             + Vector((0, 0, -0.008))
+        path = [h0 - (Vector(bones[0][2]) - h0).normalized() * 0.012] + [Vector(b[1]) for b in bones] + [t2, tip]
+        r0 = 0.021 if finger != "Thumb" else 0.019
+        radii = [r0, r0, r0 * 0.85, r0 * 0.7, r0 * 0.55, r0 * 0.22]
+        tube(path, radii, 3, fw, ref=Vector((0, 0, 1)), jag=0.15, seed=100 + n + 10 * s, cap_start=False)
 
 
 # ----------------------------------------------------------------------------
@@ -510,7 +538,7 @@ def build_arm(s):
 # ----------------------------------------------------------------------------
 def build_leg(s):
     L = "Left" if s > 0 else "Right"
-    chain = [("Hips", (HIP_X * s, 0, 1.0), (HIP_X * s, 0, HIP_Z)),
+    chain = [("Hips", (HIP_X * s, 0, HIPS_Z + 0.07), (HIP_X * s, 0, HIP_Z)),
              (L + "UpperLeg", (HIP_X * s, 0, HIP_Z), (HIP_X * s, 0, KNEE_Z)),
              (L + "LowerLeg", (HIP_X * s, 0, KNEE_Z), (HIP_X * s, 0, ANKLE_Z))]
     wfn = chain_weights(chain, blend=0.06)
@@ -522,8 +550,8 @@ def build_leg(s):
     foot, toes, low = L + "Foot", L + "Toes", L + "LowerLeg"
 
     def root_w(co):
-        w = mix({low: 1.0}, {foot: 1.0}, smoothstep(0.14, 0.06, co.z))
-        return mix(w, {toes: 1.0}, smoothstep(-0.12, -0.2, co.y))
+        w = mix({low: 1.0}, {foot: 1.0}, smoothstep(ANKLE_Z + 0.04, ANKLE_Z - 0.04, co.z))
+        return mix(w, {toes: 1.0}, smoothstep(TOE_Y + 0.03, TOE_Y - 0.05, co.y))
     fx = HIP_X * s * 1.15
     # root toes: (direction angle from forward (deg, + = outward), reach, radius)
     for n, (ang, reach, r) in enumerate([(-12, 0.30, 0.058), (22, 0.29, 0.054), (70, 0.20, 0.045), (165, 0.18, 0.05),

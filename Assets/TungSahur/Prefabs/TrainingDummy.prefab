@@ -447,3 +447,4 @@ MonoBehaviour:
   lockPoint: {fileID: 6767900071754844531}
   lockRadius: 0.5
   displayName: Training Dummy
+  rangeScale: 1

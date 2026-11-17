@@ -17,6 +17,9 @@ namespace TungSahur.Player
         [Range(0f, 1f)] public float guardAbsorption = 0.72f;
         public float guardStaminaPerPoise = 0.9f;
         public float flinchLight = 0.42f, flinchHeavy = 0.72f, knockdownTime = 1.25f;
+        [Tooltip("Knockdown01 - StandUp playback speed and how long until control returns once it starts.")]
+        public float standUpSpeed = 1.3f, standUpTime = 0.78f;
+        bool knockedDown, standingUp;
         [Tooltip("After a hit lands, further hits are ignored this long (no multi-hit stunlocks from one blow).")]
         public float hurtGrace = 0.4f;
 
@@ -89,6 +92,7 @@ namespace TungSahur.Player
             rollAngle = 0f;
             SetState(PlayerState.Hit);
             FaceInstant(-dir);
+            knockedDown = standingUp = false;
             switch (info.weight)
             {
                 case ImpactWeight.Light:
@@ -103,10 +107,12 @@ namespace TungSahur.Player
                     animator.SetFloat(HActionSpeed, 1.1f);
                     motor.SetPlanarVelocityImmediate(dir * 6f);
                     break;
-                default: // Slam: launched
-                    hitDuration = knockdownTime; hitSharpness = 2.2f;
-                    animator.CrossFadeInFixedTime("HitHeavy", 0.04f);
-                    animator.SetFloat(HActionSpeed, 0.75f);
+                default: // Slam: launched off your roots (pack Knockdown01: Fall -> Ground -> StandUp)
+                    hitDuration = knockdownTime + standUpTime; hitSharpness = 2.2f;
+                    knockedDown = true;
+                    standingUp = false;
+                    animator.CrossFadeInFixedTime("KnockdownFall", 0.04f);
+                    animator.SetFloat(HActionSpeed, 1f);
                     motor.SetPlanarVelocityImmediate(dir * 9f);
                     motor.Jump(0.7f);
                     break;
@@ -117,9 +123,17 @@ namespace TungSahur.Player
         void UpdateHitReaction(float dt)
         {
             motor.SetDesiredPlanarVelocity(Vector3.zero, motor.Grounded ? hitSharpness : 0.6f, dt);
-            if (stateTime > hitDuration && motor.Grounded)
+            if (knockedDown && !standingUp && stateTime > knockdownTime && motor.Grounded)
             {
-                if (motor.LandedThisFrame || stateTime < hitDuration + 0.02f) FXManager.Spawn(FXType.LandDust, transform.position, Quaternion.identity, 0.6f);
+                standingUp = true;
+                animator.CrossFadeInFixedTime("KnockdownStandUp", 0.15f);
+                animator.SetFloat(HActionSpeed, standUpSpeed);
+                hitDuration = stateTime + standUpTime;
+            }
+            if (stateTime > hitDuration && motor.Grounded && (!knockedDown || standingUp))
+            {
+                if (!knockedDown && (motor.LandedThisFrame || stateTime < hitDuration + 0.02f)) FXManager.Spawn(FXType.LandDust, transform.position, Quaternion.identity, 0.6f);
+                knockedDown = standingUp = false;
                 ReturnToLocomotion(0.2f);
             }
         }
@@ -150,6 +164,7 @@ namespace TungSahur.Player
             stats.RestoreAll();
             Invulnerable = false;
             rollAngle = 0f;
+            knockedDown = standingUp = false;
             SetState(PlayerState.Locomotion);
             animator.Play("Locomotion", 0, 0f);
             animator.SetFloat(HActionSpeed, 1f);

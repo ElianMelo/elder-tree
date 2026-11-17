@@ -30,11 +30,13 @@ namespace TungSahur.Player
 
         [Header("Aim line (character space, metres)")]
         [Tooltip("The arrow line passes through this point: height / forward / right of the feet, in the body's (stance-turned) frame.")]
-        public Vector3 anchor = new Vector3(0f, 1.15f, 0.34f);
+        // Matches where BowShot01 - Hold puts the hands on the Elder Tree (root faces the target,
+        // arrow line ~0.2 m right of the root at shoulder height), so IK only trims the pack pose.
+        public Vector3 anchor = new Vector3(0.21f, 1.38f, 0.0f);
         [Tooltip("Distance from the anchor to the arrow rest (how far the bow arm reaches).")]
-        public float bowReach = 0.36f;
+        public float bowReach = 0.56f;
         [Tooltip("Arrow rest → nock distance at full draw.")]
-        public float fullDrawLength = 0.58f;
+        public float fullDrawLength = 0.68f;
         [Tooltip("Bow canted (top tilted right) for the archer's view.")]
         public float cant = 14f;
 
@@ -43,8 +45,8 @@ namespace TungSahur.Player
         public Vector3 bowHandOffset = new Vector3(0.0f, -0.01f, -0.02f);
         [Tooltip("Right-hand bone position relative to the nock.")]
         public Vector3 drawHandOffset = new Vector3(0.015f, -0.035f, -0.03f);
-        public Vector3 leftElbowHint = new Vector3(-0.25f, -0.35f, 0.05f);
-        public Vector3 rightElbowHint = new Vector3(0.2f, 0.05f, -0.35f);
+        public Vector3 leftElbowHint = new Vector3(-0.06f, -0.14f, 0.30f);
+        public Vector3 rightElbowHint = new Vector3(0.16f, 0.06f, -0.42f);
 
         [Header("Timing")]
         public float raiseBlend = 0.16f;

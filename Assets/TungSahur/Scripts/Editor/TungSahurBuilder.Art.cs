@@ -242,35 +242,26 @@ namespace TungSahur.EditorTools
                 if (m != null) imp.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), n), m);
             }
 
-            // Explicit humanoid mapping (bone names authored in Blender match HumanTrait names).
             var human = imp.humanDescription;
+            // Explicit humanoid mapping. Blender bone names are the HumanTrait names without spaces
+            // ("Left Index Proximal" -> "LeftIndexProximal"). The skeleton mirrors the Human Mega
+            // Animations Pack rig (no UpperChest, 5-finger hands) and keeps Unity's default muscle
+            // limits, same as the pack's own avatar, so every clip plays back at full intent.
             var map = HumanTrait.BoneName
-                .Select(hn => new HumanBone { humanName = hn, boneName = hn, limit = new HumanLimit { useDefaultValues = true } })
+                .Select(hn => new HumanBone { humanName = hn, boneName = hn.Replace(" ", ""), limit = new HumanLimit { useDefaultValues = true } })
                 .Where(hb => BoneExistsInModel(hb.boneName))
                 .ToArray();
-            // A log does not bend like a human spine: shrink torso/neck ranges so retargeted
-            // clips keep their intent (twist for swings) without turning the body into rubber.
-            for (int i = 0; i < map.Length; i++)
-            {
-                Vector3? range = map[i].humanName switch
-                {
-                    // x = twist, y = left-right, z = front-back (degrees, symmetric)
-                    "Spine" => new Vector3(22, 6, 9),
-                    "Chest" => new Vector3(16, 4, 6),
-                    "UpperChest" => new Vector3(10, 3, 4),
-                    "Neck" => new Vector3(10, 4, 5),
-                    "Head" => new Vector3(14, 6, 8),
-                    _ => null
-                };
-                if (range is Vector3 r)
-                    map[i].limit = new HumanLimit { useDefaultValues = false, min = -r, max = r, center = Vector3.zero };
-            }
             human.human = map;
             human.upperArmTwist = 0.5f; human.lowerArmTwist = 0.5f;
             human.upperLegTwist = 0.5f; human.lowerLegTwist = 0.5f;
             human.armStretch = 0.05f; human.legStretch = 0.05f;
             human.feetSpacing = 0f;
             human.hasTranslationDoF = false;
+            // rest pose from the current file (a stale skeleton from an older rig invalidates the avatar)
+            var rest = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
+            human.skeleton = rest.GetComponentsInChildren<Transform>(true)
+                .Select(t => new SkeletonBone { name = t.name, position = t.localPosition, rotation = t.localRotation, scale = t.localScale })
+                .ToArray();
             imp.humanDescription = human;
             imp.SaveAndReimport();
 

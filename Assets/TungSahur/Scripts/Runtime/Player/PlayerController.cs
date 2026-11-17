@@ -140,6 +140,7 @@ namespace TungSahur.Player
             motor.Tick(dt);
             if (motor.Grounded) lastGroundedTime = Time.time;
             UpdateGuardLayer(dt);
+            UpdateBowAnimator(dt);
             UpdateLean(dt);
             stats.Guarding = IsGuarding;
             CameraDirector cd = CameraDirector.Instance;

@@ -123,6 +123,79 @@ namespace TungSahur.EditorTools
             return path;
         }
 
+        public const string ReferenceModelPath = "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx";
+
+        /// <summary>
+        /// Retarget check: the pack's own HumanM model (top row) and the Elder Tree (bottom row)
+        /// playing the same clip at the same frames, so pose differences are easy to spot.
+        /// </summary>
+        public static string RenderCompareSheet(string file, string clipPath, int frames = 6, float yaw = 210f, float camDist = 4.8f)
+        {
+            Directory.CreateDirectory(OutDir);
+            var ours = SpawnCharacter(out _);
+            var refModel = AssetDatabase.LoadAssetAtPath<GameObject>(ReferenceModelPath);
+            var theirs = (GameObject)Object.Instantiate(refModel);
+            theirs.hideFlags = HideFlags.DontSave;
+            var clip = LoadClip(clipPath);
+            const int W = 260, H = 380;
+            var (cam, light, rt, floor) = Rig(W, H);
+            var sheet = new Texture2D(W * frames, H * 2, TextureFormat.RGB24, false);
+            var dir = Quaternion.Euler(0, yaw, 0) * Vector3.forward;
+            cam.transform.position = new Vector3(0, 1.3f, 0) - dir * camDist;
+            cam.transform.LookAt(new Vector3(0, 1.0f, 0));
+            for (int row = 0; row < 2; row++)
+            {
+                var go = row == 0 ? theirs : ours;
+                var other = row == 0 ? ours : theirs;
+                other.SetActive(false);
+                go.SetActive(true);
+                for (int i = 0; i < frames; i++)
+                {
+                    float t = clip.length * i / Mathf.Max(1, frames - 1);
+                    clip.SampleAnimation(go, t);
+                    go.transform.position = Vector3.zero;
+                    var tex = Grab(cam, rt);
+                    sheet.SetPixels(i * W, (1 - row) * H, W, H, tex.GetPixels());
+                    Object.DestroyImmediate(tex);
+                }
+            }
+            string path = Path.Combine(OutDir, file);
+            File.WriteAllBytes(path, sheet.EncodeToPNG());
+            Object.DestroyImmediate(theirs);
+            Cleanup(ours, cam, light, rt, floor);
+            Object.DestroyImmediate(sheet);
+            return path;
+        }
+
+        /// <summary>Close-ups of one bone (e.g. a hand gripping the club) at a clip time, from 4 sides.</summary>
+        public static string RenderBoneCloseup(string file, string clipPath, float normalizedTime, HumanBodyBones bone, float dist = 0.8f)
+        {
+            Directory.CreateDirectory(OutDir);
+            var go = SpawnCharacter(out var anim);
+            var clip = LoadClip(clipPath);
+            clip.SampleAnimation(go, clip.length * normalizedTime);
+            go.transform.position = Vector3.zero;
+            var target = anim.GetBoneTransform(bone).position;
+            var (cam, light, rt, floor) = Rig(360, 360);
+            var sheet = new Texture2D(360 * 4, 360, TextureFormat.RGB24, false);
+            float[] yaws = { 180, 90, 0, 270 };
+            for (int i = 0; i < 4; i++)
+            {
+                var dir = Quaternion.Euler(15, yaws[i], 0) * Vector3.forward;
+                cam.transform.position = target - dir * dist;
+                cam.transform.LookAt(target);
+                cam.nearClipPlane = 0.02f;
+                var tex = Grab(cam, rt);
+                sheet.SetPixels(i * 360, 0, 360, 360, tex.GetPixels());
+                Object.DestroyImmediate(tex);
+            }
+            string path = Path.Combine(OutDir, file);
+            File.WriteAllBytes(path, sheet.EncodeToPNG());
+            Cleanup(go, cam, light, rt, floor);
+            Object.DestroyImmediate(sheet);
+            return path;
+        }
+
         /// <summary>Samples the club tip trajectory, returns speed profile and the high-speed window.</summary>
         public static string AnalyzeSwing(string clipPath, int samples = 90)
         {

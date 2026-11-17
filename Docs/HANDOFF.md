@@ -1,5 +1,39 @@
 # Handoff — Tung Tung Tung Sahur soulslike slice
 
+## 0000. Animation: Human Mega Animations Pack is the source of truth
+
+All player motion now comes from **Kevin Iglesias / Human Mega Animations Pack** (`Assets/Kevin Iglesias/Human Animations/Animations/Male`). Don't mix in other packs: the ExplosiveLLC jump/fall/land were the last outside clips and are gone.
+
+**Rig retargeted onto the pack's HumanM skeleton** (`Tools/Blender/build_elder_tree.py`, 2,264 tris, 51 bones):
+- Joint heights and segment ratios follow `HumanM_Model` × 0.95: hips 0.93, spine 1.01, chest 1.20, neck 1.455, head 1.525, shoulders raised from 1.25 to **1.38** (they used to sit inside the trunk, so pack poses with raised arms buried them). Shoulders stay wider than HumanM (0.30 vs 0.19) so the arms clear the trunk.
+- Same chain as the pack: **no UpperChest** (shoulders parent to Chest).
+- **5-finger hands, 30 finger bones**, laid out like HumanM's hand. The twig fingers are modelled straight; the pack's clips curl them (fist on the club, closed bow hand). The old pre-curled right fist is gone.
+- Unity import (`ConfigureCharacterImport`): fingers are mapped (Blender bone = HumanTrait name without spaces), **default muscle limits** like the pack's own avatar (the old damped spine/neck ranges muted the torso twist), and the skeleton description is rebuilt from the file each time (a stale one invalidates the avatar).
+- Check tool: `PreviewRenderer.RenderCompareSheet(file, clip)` draws the pack's HumanM (top) and the Elder Tree (bottom) on the same frames; `RenderBoneCloseup` zooms on one bone. Shot: `Docs/Screenshots/17_pack_retarget_compare.png`.
+
+**Clip map** (`TungSahurBuilder.Animation.cs`):
+
+| State | Pack clip |
+|---|---|
+| Locomotion | CombatIdle1H01 + Walk01 / Run01 (8 directions) + Sprint01 |
+| JumpStart / Fall / Land | Jump01 - Begin / Fall01 / Jump01 - Land |
+| Light 1-4, DodgeAttack | Attack1H02/04/05/03/01_R |
+| Heavy 1-2, RunAttack, JumpAttack, Skill | Attack2H02/01/03/02/04 |
+| Dodge, Backstep | Dodge01 (the pack has no backstep) |
+| HitLight / HitHeavy / Stagger / Death | CombatDamage01 / 02 / Stun01 / CombatDeath01 |
+| **KnockdownFall → Ground → StandUp** (new: Slam hits) | Knockdown01 - Fall / Ground / StandUp |
+| Guard layer | Parry1H01_R - Loop / Hit |
+| **BowDraw** (new) | BowShot01 - Load, scrubbed by the gameplay draw (`BowDrawTime`) |
+| **BowHold** (new) | BowShot01_Down / level / _Up - Hold, blended by aim pitch (-50 / -5 / +40 deg, measured) |
+| **BowRelease** (new) | BowShot01 - Release |
+| **BowLegs layer** (new, legs-only mask) | Walk01 (8 directions) around a BowShot01 - Hold centre, steered in the hips frame |
+
+**Bow now plays the pack's archer clips.** These clips keep the root facing the target and turn the hips about 85° inside the animation, so `stanceYaw` dropped from 85° to 6° (the clips aim 6° left of the root). The BowRig IK anchor (0.21, 1.38, 0) and reach/draw (0.56 / 0.68) sit where BowShot01 - Hold puts the hands, so IK only trims the pack pose onto the aim line. Shot: `Docs/Screenshots/18_pack_archer_stance.png`.
+
+Verified: animator and prefabs rebuilt, attack hit windows still contain each swing's peak (`AnalyzeSwing`), and play mode was checked with the autopilot (idle, run, light, heavy, bow draw / full / strafe / release / renock, jump, slam knockdown). Console: 0 errors, 0 warnings.
+
+**Not used yet, good next picks from the pack:** Turn01 (turn in place), UnsheatheBack/SheatheBack (bow ↔ club swap; the 0.2 s raise is too short for them today), BowDamage/BowDeath (hits currently drop the bow first), CombatDeath02-06 variants, Idle breaks out of combat.
+
 ## 000. Boss: Bombardiro Crocodilo
 
 **Start it:** pause menu → **Summon Bombardiro**. The training dummies leave the field, and the boss flies in low over the arena, roars, and climbs into its orbit. **Reset Training** ends the fight.
@@ -40,8 +74,8 @@ Verified in play mode with the autopilot: every move, hits landing on the player
 ## 00. Character v3: Elder Tree (PSX dark fantasy)
 
 - **Art direction** now lives in `Docs/ART_DIRECTION.md` (from the 91 images in `Assets/References`, the 4 treant images and PS1 research). Check every new model against it.
-- `Tools/Blender/build_elder_tree.py` builds the player as a low-poly treant: **2,222 tris**. 12-sided fluted trunk with a carved face (angry V brow, deep ember-lit sockets, long drooping nose), moss-strand beard cards, 8-branch antler crown with sparse dead-leaf cards, shoulder burls and spurs, root skirt over the thighs, gnarled 6-sided arms with twig fingers (right fist wraps the club axis), and root-toe feet.
-- **Same 22-bone Humanoid skeleton** as the old log, so every retargeted clip, the club grip, quiver and bow sockets work unchanged. Avatar imports valid/humanoid.
+- `Tools/Blender/build_elder_tree.py` builds the player as a low-poly treant: **2,222 tris**. 12-sided fluted trunk with a carved face (angry V brow, deep ember-lit sockets, long drooping nose), moss-strand beard cards, 8-branch antler crown with sparse dead-leaf cards, shoulder burls and spurs, root skirt over the thighs, gnarled 6-sided arms with twig fingers (now finger-rigged, see §0000), and root-toe feet.
+- Skeleton: superseded by the pack retarget (§0000). It used to be the old log's 22-bone humanoid.
 - **Textures**: `T_ElderBark.png` (256², point filtered, no mips, uncompressed) is painted per texel: bark fibres, fissures, plates, cross cracks, knots, lichen, moss on up-facing surfaces, ground grime, ember glow around the eyes. All of it is multiplied by baked AO and a soft top light, then quantised to 15-bit with a 4×4 Bayer dither. `T_ElderMoss.png` (256², alpha cutout) holds the moss strands, leaves and hanging roots.
 - **Materials** (`BuildElderMaterials()`): `M_ElderBark` (smoothness 0.04, no specular or reflections), `M_ElderMoss` (alpha clip, double sided), `M_ElderEye` (dim amber emission).
 - `TungSahurBuilder.ModelPath` → `ElderTree.fbx`. The old log is kept at `TungModelPath`.
