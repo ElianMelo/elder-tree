@@ -70,6 +70,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "Aim",
+                    "type": "Button",
+                    "id": "2cd081cc-86bf-455c-b5d7-5f786d91fd22",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Dodge",
                     "type": "Button",
                     "id": "9ff3f897-16ca-4b1e-b3dd-7e7aaf3fa886",
@@ -342,7 +351,7 @@
                 {
                     "name": "",
                     "id": "97e91ff1-095e-4b31-a898-d2b498c09db7",
-                    "path": "<Mouse>/rightButton",
+                    "path": "<Keyboard>/leftAlt",
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
@@ -364,11 +373,33 @@
                 {
                     "name": "",
                     "id": "799f95a9-f5e6-4a45-9f88-6b5877aaf870",
-                    "path": "<Gamepad>/leftTrigger",
+                    "path": "<Gamepad>/buttonNorth",
                     "interactions": "",
                     "processors": "",
                     "groups": "Gamepad",
                     "action": "Skill",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "45fd8454-fc15-4e64-abdb-e6ad46abedd4",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Aim",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "577a62b9-966b-4edb-a696-311c81b3ea39",
+                    "path": "<Gamepad>/leftTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Gamepad",
+                    "action": "Aim",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -500,17 +531,6 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
-                    "action": "Interact",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "ff7d6728-3028-4dd0-9fed-353288501656",
-                    "path": "<Gamepad>/buttonNorth",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Gamepad",
                     "action": "Interact",
                     "isComposite": false,
                     "isPartOfComposite": false

@@ -37,24 +37,49 @@ namespace TungSahur.CameraSystem
         [Tooltip("Over-the-shoulder offset so the hero never blocks the target.")]
         public float lockYawOffset = 11f;
 
+        [Header("Bow aim")]
+        [Tooltip("Orbit radius while aiming (zoomed in over the shoulder).")]
+        public float aimRadius = 2.05f;
+        public float aimFov = 42f;
+        [Tooltip("FOV at full draw: the view tightens as the string comes back.")]
+        public float aimFullDrawFov = 34f;
+        [Tooltip("Shoulder offset while aiming: x = right, y = up (metres, camera-relative).")]
+        public Vector2 aimShoulder = new Vector2(0.62f, 0.16f);
+        [Tooltip("Look sensitivity multiplier while aiming (finer control).")]
+        public float aimLookScale = 0.55f;
+        public float aimInTime = 0.16f, aimOutTime = 0.22f;
+        public float aimMinPitch = -55f, aimMaxPitch = 70f;
+
         public static CameraDirector Instance { get; private set; }
         public float Yaw => orbit != null ? orbit.HorizontalAxis.Value : 0f;
         public bool SprintFov { get; set; }
+        /// <summary>Set by the player while the bow is raised.</summary>
+        public bool Aiming { get; set; }
+        /// <summary>0..1 draw amount; tightens the aim zoom.</summary>
+        public float AimZoom { get; set; }
+        /// <summary>Look-speed multiplier (aim friction on targets with a pad).</summary>
+        public float AimFriction { get; set; } = 1f;
+        /// <summary>Smoothed 0..1 blend between the exploration and aim framings.</summary>
+        public float AimWeight { get; private set; }
 
         float yawVel, pitchVel, recenterUntil, recenterYaw;
         float fovKick, fovKickVel, currentFov;
-        Vector3 aimVel;
+        Vector3 aimVel, pivotBase;
+        float baseRadius, aimLinear, aimSnapUntil;
+        bool wasAiming;
 
         void Awake()
         {
             Instance = this;
             currentFov = baseFov;
+            if (orbit) baseRadius = orbit.Radius;
         }
 
         void OnDestroy() { if (Instance == this) Instance = null; }
 
         void Start()
         {
+            if (player) pivotBase = player.position + Vector3.up * pivotHeight;
             if (followPivot && player) followPivot.position = player.position + Vector3.up * pivotHeight;
             if (aimPoint && player) aimPoint.position = player.position + Vector3.up * pivotHeight;
             if (orbit && player) orbit.HorizontalAxis.Value = player.eulerAngles.y;
@@ -85,20 +110,54 @@ namespace TungSahur.CameraSystem
             var input = PlayerInputReader.Instance;
             bool paused = TimeDirector.Instance != null && TimeDirector.Instance.Paused;
 
+            // ---- aim blend (eased both ways so the zoom reads as a deliberate "raise")
+            float sdt = Time.deltaTime;
+            aimLinear = Mathf.MoveTowards(aimLinear, Aiming ? 1f : 0f, sdt / Mathf.Max(0.01f, Aiming ? aimInTime : aimOutTime));
+            AimWeight = Aiming ? Ease.OutCubic(aimLinear) : Ease.InOutCubic(aimLinear);
+            float aw = AimWeight;
+
             // ---- pivot follow (smoothed, softer vertically so jumps don't jerk the frame)
             Vector3 target = player.position + Vector3.up * pivotHeight;
-            Vector3 p = followPivot.position;
-            float sdt = Time.deltaTime;
+            Vector3 p = pivotBase;
             p.x = Mathf.Lerp(p.x, target.x, Ease.Damp(pivotSharpnessXZ, sdt));
             p.z = Mathf.Lerp(p.z, target.z, Ease.Damp(pivotSharpnessXZ, sdt));
-            p.y = Mathf.Lerp(p.y, target.y, Ease.Damp(pivotSharpnessY, sdt));
-            followPivot.position = p;
+            p.y = Mathf.Lerp(p.y, target.y, Ease.Damp(Mathf.Lerp(pivotSharpnessY, pivotSharpnessXZ, aw), sdt));
+            pivotBase = p;
 
             var locked = lockOn != null ? lockOn.Current : null;
             float yaw = orbit.HorizontalAxis.Value;
             float pitch = orbit.VerticalAxis.Value;
 
-            if (locked != null)
+            // over-the-shoulder offset, applied after smoothing so it turns rigidly with the view
+            Vector3 camRight = Quaternion.Euler(0f, yaw, 0f) * Vector3.right;
+            followPivot.position = pivotBase + (camRight * aimShoulder.x + Vector3.up * aimShoulder.y) * aw;
+
+            // raising the bow while locked on swings the view onto the target, then hands control back
+            if (Aiming && !wasAiming && locked != null) aimSnapUntil = Time.unscaledTime + 0.22f;
+            wasAiming = Aiming;
+
+            if (Aiming || aw > 0.5f)
+            {
+                if (Time.unscaledTime < aimSnapUntil && locked != null)
+                {
+                    Vector3 to = locked.LockPosition - followPivot.position;
+                    float flat = Mathf.Max(0.5f, new Vector2(to.x, to.z).magnitude);
+                    float dy = Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
+                    float dp = -Mathf.Atan2(to.y, flat) * Mathf.Rad2Deg;
+                    yaw = Mathf.SmoothDampAngle(yaw, dy, ref yawVel, 0.06f, Mathf.Infinity, dt);
+                    pitch = Mathf.SmoothDamp(pitch, dp, ref pitchVel, 0.06f, Mathf.Infinity, dt);
+                }
+                else if (!paused && input != null && input.GameplayEnabled)
+                {
+                    var d = input.LookDelta(dt) * Mathf.Lerp(1f, aimLookScale, aw) * AimFriction;
+                    yaw += d.x;
+                    pitch -= d.y;
+                }
+                pitch = Mathf.Clamp(pitch, aimMinPitch, aimMaxPitch);
+                aimPoint.position = followPivot.position;
+                aimVel = Vector3.zero;
+            }
+            else if (locked != null)
             {
                 Vector3 to = locked.LockPosition - followPivot.position;
                 Vector3 flat = new Vector3(to.x, 0, to.z);
@@ -131,12 +190,15 @@ namespace TungSahur.CameraSystem
             }
 
             orbit.HorizontalAxis.Value = Mathf.Repeat(yaw + 180f, 360f) - 180f;
-            orbit.VerticalAxis.Value = Mathf.Clamp(pitch, minPitch, maxPitch);
+            orbit.VerticalAxis.Value = Mathf.Clamp(pitch, Mathf.Lerp(minPitch, aimMinPitch, aw), Mathf.Lerp(maxPitch, aimMaxPitch, aw));
+            if (baseRadius > 0f) orbit.Radius = Mathf.Lerp(baseRadius, aimRadius, aw);
 
-            // ---- FOV (sprint widening + punch kicks that spring back)
+            // ---- FOV (sprint widening, aim zoom tightening with the draw, punch kicks that spring back)
             fovKick = Mathf.SmoothDamp(fovKick, 0f, ref fovKickVel, 0.12f, Mathf.Infinity, dt);
-            float targetFov = baseFov + (SprintFov ? sprintFovAdd : 0f);
-            currentFov = Mathf.Lerp(currentFov, targetFov, Ease.Damp(4f, dt));
+            float exploreFov = baseFov + (SprintFov ? sprintFovAdd : 0f);
+            float drawFov = Mathf.Lerp(aimFov, aimFullDrawFov, Ease.InOutCubic(Mathf.Clamp01(AimZoom)));
+            float targetFov = Mathf.Lerp(exploreFov, drawFov, aw);
+            currentFov = Mathf.Lerp(currentFov, targetFov, Ease.Damp(Aiming ? 9f : 4f, dt));
             var lens = vcam.Lens;
             lens.FieldOfView = currentFov + fovKick;
             vcam.Lens = lens;

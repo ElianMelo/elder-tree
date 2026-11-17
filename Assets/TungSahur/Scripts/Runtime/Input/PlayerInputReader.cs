@@ -31,10 +31,10 @@ namespace TungSahur.InputHandling
         public event System.Action<InputDeviceKind> DeviceChanged;
 
         InputActionMap gameplay, ui;
-        InputAction move, look, lightAct, heavy, modifier, guard, skill, dodge, jump, lockOn, switchTarget, walk, pause, help, interact, useItem;
+        InputAction move, look, lightAct, heavy, modifier, guard, skill, aim, dodge, jump, lockOn, switchTarget, walk, pause, help, interact, useItem;
         InputAction navigate, submit, cancel, tabLeft, tabRight;
 
-        float lightAt = -99, heavyAt = -99, skillAt = -99, dodgeAt = -99, jumpAt = -99;
+        float lightAt = -99, heavyAt = -99, skillAt = -99, dodgeAt = -99, jumpAt = -99, fireAt = -99;
         float dodgePressedTime = -99;
         bool dodgeHeldSprint;
         bool heavyFromModifier;
@@ -55,18 +55,25 @@ namespace TungSahur.InputHandling
             gameplay = actions.FindActionMap("Gameplay", true);
             ui = actions.FindActionMap("UI", true);
             move = gameplay["Move"]; look = gameplay["Look"]; lightAct = gameplay["Light"]; heavy = gameplay["Heavy"];
-            modifier = gameplay["Modifier"]; guard = gameplay["Guard"]; skill = gameplay["Skill"]; dodge = gameplay["Dodge"];
+            modifier = gameplay["Modifier"]; guard = gameplay["Guard"]; skill = gameplay["Skill"]; aim = gameplay["Aim"]; dodge = gameplay["Dodge"];
             jump = gameplay["Jump"]; lockOn = gameplay["LockOn"]; switchTarget = gameplay["SwitchTarget"]; walk = gameplay["Walk"];
             pause = gameplay["Pause"]; help = gameplay["Help"]; interact = gameplay["Interact"]; useItem = gameplay["UseItem"];
             navigate = ui["Navigate"]; submit = ui["Submit"]; cancel = ui["Cancel"]; tabLeft = ui["TabLeft"]; tabRight = ui["TabRight"];
 
+            // while the bow is up, the attack buttons (RT / LMB, and RB) loose an arrow instead
             lightAct.performed += _ =>
             {
-                if (modifier.IsPressed()) { heavyAt = Time.unscaledTime; heavyFromModifier = true; }
+                if (AimHeld) fireAt = Time.unscaledTime;
+                else if (modifier.IsPressed()) { heavyAt = Time.unscaledTime; heavyFromModifier = true; }
                 else lightAt = Time.unscaledTime;
             };
-            heavy.performed += _ => { heavyAt = Time.unscaledTime; heavyFromModifier = false; };
-            guard.performed += _ => { if (modifier.IsPressed()) skillAt = Time.unscaledTime; };
+            heavy.performed += _ =>
+            {
+                if (AimHeld) fireAt = Time.unscaledTime;
+                else { heavyAt = Time.unscaledTime; heavyFromModifier = false; }
+            };
+            // Shift + RMB keeps the keyboard skill chord (plain RMB aims)
+            aim.performed += ctx => { if (ctx.control.device is Mouse && modifier.IsPressed()) skillAt = Time.unscaledTime; };
             skill.performed += _ => skillAt = Time.unscaledTime;
             dodge.started += _ => { dodgePressedTime = Time.unscaledTime; dodgeHeldSprint = false; };
             dodge.canceled += _ =>
@@ -193,6 +200,19 @@ namespace TungSahur.InputHandling
         public bool GuardHeld => guard.IsPressed() && !modifier.IsPressed();
         public bool HeavyHeld => heavyFromModifier ? lightAct.IsPressed() : heavy.IsPressed();
 
+        /// <summary>Bow drawn: LT / RMB held (Shift + RMB is the skill chord, not aim).</summary>
+        public bool AimHeld
+        {
+            get
+            {
+                if (aim == null || !aim.enabled || !aim.IsPressed()) return false;
+                return !(aim.activeControl != null && aim.activeControl.device is Mouse && modifier.IsPressed());
+            }
+        }
+
+        /// <summary>Fire button (RT / LMB / RB) currently held.</summary>
+        public bool FireHeld => lightAct.IsPressed() || heavy.IsPressed();
+
         bool Consume(ref float t, float window)
         {
             if (Time.unscaledTime - t <= window) { t = -99; return true; }
@@ -211,8 +231,11 @@ namespace TungSahur.InputHandling
         public bool HasBufferedSkill => Peek(skillAt, bufferWindow);
         public bool HasBufferedDodge => Peek(dodgeAt, bufferWindow * 0.75f);
         public bool HasBufferedJump => Peek(jumpAt, bufferWindow * 0.6f);
+        public bool ConsumeFire() => Consume(ref fireAt, bufferWindow);
+        public bool HasBufferedFire => Peek(fireAt, bufferWindow);
+        public void ClearFire() => fireAt = -99;
         public void ClearAttackBuffers() { lightAt = heavyAt = skillAt = -99; }
-        public void ClearAll() { lightAt = heavyAt = skillAt = dodgeAt = jumpAt = -99; lockOnPressed = false; pendingSwitch = 0; }
+        public void ClearAll() { lightAt = heavyAt = skillAt = dodgeAt = jumpAt = fireAt = -99; lockOnPressed = false; pendingSwitch = 0; }
 
         public bool ConsumeLockOn() { bool v = lockOnPressed; lockOnPressed = false; return v; }
         public bool ConsumePause() { bool v = pausePressed; pausePressed = false; return v; }

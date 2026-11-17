@@ -86,3 +86,19 @@ Exact frame data varies by source and patch (the wikis disagree on light vs medi
 8. **Performance pass**: baked lighting for the static yard, GPU-instanced trees, LODs.
 9. **Save/settings persistence** is already in PlayerPrefs; next: key rebinding UI via the Input System rebinding API.
 10. Commit with **Git LFS** for `.fbx/.png/.wav/.blend` before the repo grows.
+
+## 7. Bow & arrow (in progress)
+
+**Done**
+- `Tools/Blender/build_bow.py` (run live via MCP or headless) builds a recurve bow (rattan grip, horn tips, `Draw` shape key, string-anchor empties `StringTop/Bottom[Drawn]` + `ArrowRest`), a bamboo arrow (iron broadhead, red/cream fletching) and a quiver. FBX files are exported and copied to `Assets/TungSahur/Art/Models/TungSahur_{Bow,Arrow,Quiver}.fbx` (not yet imported/configured in Unity).
+- Input: new `Aim` action (LT / RMB). **Guard moved to Left Alt on keyboard**, **Skill moved to Y on pad** (Shift+RMB still skill). While aiming, RT/LMB/RB buffer a *fire* (`ConsumeFire`) instead of attacks.
+- `CameraDirector`: aim framing driven by `Aiming`, `AimZoom` (draw 0..1), `AimFriction`: shoulder offset, orbit radius 4.6→2.05, FOV 42→34 at full draw, finer look sensitivity, snap onto the lock-on target when raising the bow.
+
+**Remaining**
+1. `PlayerController.Bow.cs`: `PlayerState.Aim` (walk speed, face camera yaw, dodge cancels), draw (≈0.55 s), fire (min draw 0.3, buffered), auto re-nock, infinite ammo; camera ray → ballistic launch solve so the crosshair is exact.
+2. `BowRig.cs`: bow/club socket swap (bow on back ↔ left hand), `Draw` blendshape, LineRenderer string following the right hand, nocked arrow, humanoid IK for both hands along the aim line (bow layer IK pass).
+3. `ArrowProjectile.cs`: stepped raycast flight, hurtbox damage via `IDamageable.ReceiveHit`, sticks into targets, trail, pooled.
+4. Animator: upper-body "Bow" layer with `DoubleL/FBX Unity/Bow/Attack A/Bow_Attack_A_1_All.fbx` (humanoid), time-parameter driven.
+5. HUD: crosshair (spread closes with draw, full-draw pulse, hit marker), bow icon + ∞ in the left equip slot, updated hints.
+6. Builder: import settings + materials (`M_BowWood`, `M_BowHorn`, `M_ArrowShaft`, `M_FletchRed`, `M_FletchCream`, `M_Quiver`), prefab wiring, SFX (draw creak, twang, thunk) in `SfxForge`.
+7. Unity didn't answer the Pipeline CLI this session (commands timed out); bring the editor to focus before testing.
