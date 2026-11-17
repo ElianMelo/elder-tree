@@ -69,6 +69,7 @@ namespace TungSahur.EditorTools
             Directory.CreateDirectory(PrefabDir);
             Directory.CreateDirectory(PrefabDir + "/FX");
             BuildFXPrefabs();
+            BuildBowAssets();
             BuildPlayerPrefab();
             BuildDummyPrefab();
             AssetDatabase.SaveAssets();
@@ -141,6 +142,7 @@ namespace TungSahur.EditorTools
             pc.weapon = hitbox; pc.lockOn = lockOn; pc.clubTip = clubTip; pc.clubRenderer = clubRenderer; pc.trail = trail;
             pc.hurtboxMask = 1 << LayerHurtbox; pc.groundMask = 1;
             pc.dodgeClipLength = StateClipLength("Dodge");
+            AttachBow(root, animator, pc, club.transform);
 
             var steps = root.AddComponent<FootstepFX>();
             steps.animator = animator; steps.motor = motor; steps.controller = pc;

@@ -413,3 +413,56 @@
 .setting__value-box { flex-direction: row; align-items: center; }
 .setting__value { width: 90px; -unity-text-align: middle-center; font-size: 20px; color: rgb(244, 223, 166); }
 .setting__arrow { font-size: 22px; color: rgb(154, 146, 127); }
+
+/* ---------------------------------------------------------------- bow crosshair */
+.crosshair {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0;
+    height: 0;
+}
+
+.crosshair__dot {
+    position: absolute;
+    left: -3.5px; top: -3.5px;
+    width: 7px; height: 7px;
+    border-radius: 3.5px;
+    background-color: rgb(255, 250, 236);
+    border-width: 1px;
+    border-color: rgba(0, 0, 0, 0.55);
+}
+
+.crosshair__tick {
+    position: absolute;
+    background-color: rgb(255, 250, 236);
+    border-width: 1px;
+    border-color: rgba(0, 0, 0, 0.45);
+}
+
+.crosshair__tick--v { left: -2px; top: -8px; width: 4px; height: 16px; border-radius: 1px; }
+.crosshair__tick--h { left: -8px; top: -2px; width: 16px; height: 4px; border-radius: 1px; }
+
+.crosshair__hit {
+    position: absolute;
+    left: 0; top: 0;
+    width: 0; height: 0;
+}
+
+.crosshair__hit-arm {
+    position: absolute;
+    left: -1.5px; top: -24px;
+    width: 3px; height: 10px;
+    transform-origin: 1.5px 24px;
+    background-color: rgb(255, 247, 230);
+}
+
+.equip__ammo {
+    position: absolute;
+    left: 14px;
+    top: 118px;
+    font-size: 22px;
+    color: rgb(244, 223, 166);
+    -unity-text-outline-width: 0.6px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.8);
+}

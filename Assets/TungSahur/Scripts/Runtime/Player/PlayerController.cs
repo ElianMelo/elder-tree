@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace TungSahur.Player
 {
-    public enum PlayerState { Locomotion, Air, Landing, Attack, Dodge, Hit, Dead }
+    public enum PlayerState { Locomotion, Air, Landing, Attack, Dodge, Hit, Dead, Aim }
 
     /// <summary>
     /// Souls-like player brain. Locomotion (free + lock-on strafing), sprint, jump, roll/backstep with
@@ -133,6 +133,7 @@ namespace TungSahur.Player
                 case PlayerState.Attack: UpdateAttack(dt); break;
                 case PlayerState.Dodge: UpdateDodge(dt); break;
                 case PlayerState.Hit: UpdateHit(dt); break;
+                case PlayerState.Aim: UpdateAim(dt); break;
             }
 
             motor.Tick(dt);
@@ -141,7 +142,13 @@ namespace TungSahur.Player
             UpdateLean(dt);
             stats.Guarding = IsGuarding;
             CameraDirector cd = CameraDirector.Instance;
-            if (cd != null) cd.SprintFov = IsSprinting;
+            if (cd != null)
+            {
+                cd.SprintFov = IsSprinting;
+                cd.Aiming = State == PlayerState.Aim;
+                cd.AimZoom = State == PlayerState.Aim ? BowDraw : 0f;
+                if (State != PlayerState.Aim) cd.AimFriction = 1f;
+            }
             animator.SetBool(HGrounded, motor.Grounded);
         }
 
@@ -227,6 +234,7 @@ namespace TungSahur.Player
         {
             if (!input.GameplayEnabled) return false;
             if (input.HasBufferedDodge && TryDodge()) return true;
+            if (input.AimHeld && motor.Grounded && TryEnterAim()) return true;
             if (input.HasBufferedSkill && moveset.skill != null)
             {
                 input.ConsumeSkill();

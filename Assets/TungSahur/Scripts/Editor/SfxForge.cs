@@ -371,6 +371,88 @@ namespace TungSahur.EditorTools
         }
 
         /// <summary>Night ambience loop: crickets (AM chirps), distant wind, faint frogs. Seamless 16s.</summary>
+        // ------------------------------------------------------------------ bow
+        /// <summary>Wood creak + string stretch while the bow is drawn.</summary>
+        public static AudioClip[] BowDraw()
+        {
+            var a = new AudioClip[2];
+            for (int v = 0; v < 2; v++)
+            {
+                var b = Buf(0.75f);
+                var r = new Rng(300 + v);
+                // creak: clicks getting denser and tighter as the limbs load
+                float t = 0.02f;
+                int k = 0;
+                while (t < 0.62f)
+                {
+                    float prog = t / 0.62f;
+                    NoiseBurst(b, t, 0.006f, 0.35f + 0.25f * prog, 1600f + 1400f * prog, 1200f, 0.3f, 310 + v * 50 + k, mode: "band");
+                    t += Mathf.Lerp(0.055f, 0.014f, prog) * (0.8f + 0.4f * Mathf.Abs(r.Next()));
+                    k++;
+                }
+                Modal(b, 0.02f, new[] { (128f + v * 9f, 0.25f, 0.35f), (301f, 0.08f, 0.2f) });
+                Whoosh(b, 0.7f, 0.35f, 350f, 900f, 0.8f, 320 + v, 0.9f);   // string stretch
+                a[v] = Write($"sfx_bow_draw_{v}", Normalize(b, 0.55f));
+            }
+            return a;
+        }
+
+        /// <summary>String twang + limb thump + the arrow leaving.</summary>
+        public static AudioClip[] BowRelease()
+        {
+            var a = new AudioClip[2];
+            for (int v = 0; v < 2; v++)
+            {
+                var b = Buf(0.6f);
+                float f = v == 0 ? 104f : 96f;
+                Modal(b, 0f, new[] { (f, 1f, 0.11f), (f * 2.01f, 0.55f, 0.07f), (f * 3.02f, 0.3f, 0.045f), (f * 5.1f, 0.18f, 0.025f) },
+                    pitchDrop: 0.35f, dropTime: 0.012f);
+                NoiseBurst(b, 0f, 0.05f, 0.7f, 700f, 160f, 0.6f, 340 + v);                         // limb thump
+                NoiseBurst(b, 0f, 0.008f, 0.6f, 5200f, 3000f, 0.4f, 350 + v, mode: "band");        // finger slip
+                var w = Buf(0.6f);
+                Whoosh(w, 0.32f, 0.6f, 1600f, 5200f, 0.12f, 360 + v, 0.45f);                     // arrow away
+                for (int i = 0; i < b.Length; i++) b[i] += w[i];
+                a[v] = Write($"sfx_bow_release_{v}", Normalize(b, 0.8f));
+            }
+            return a;
+        }
+
+        public static AudioClip[] BowNock()
+        {
+            var b = Buf(0.16f);
+            NoiseBurst(b, 0f, 0.007f, 0.8f, 4200f, 2600f, 0.35f, 370, mode: "band");
+            NoiseBurst(b, 0.045f, 0.006f, 0.6f, 3600f, 2400f, 0.35f, 371, mode: "band");
+            Modal(b, 0.045f, new[] { (1180f, 0.25f, 0.02f), (2400f, 0.12f, 0.012f) });
+            return new[] { Write("sfx_bow_nock", Normalize(b, 0.45f)) };
+        }
+
+        /// <summary>Arrowhead biting into wood / earth: a short, dry thunk.</summary>
+        public static AudioClip[] ArrowHit()
+        {
+            var a = new AudioClip[3];
+            for (int v = 0; v < 3; v++)
+            {
+                var b = Buf(0.4f);
+                Modal(b, 0f, new[] { (230f + v * 18f, 1f, 0.05f), (540f + v * 30f, 0.4f, 0.025f), (92f, 0.5f, 0.07f) }, pitchDrop: 0.3f, dropTime: 0.01f);
+                NoiseBurst(b, 0f, 0.04f, 0.6f, 2200f, 400f, 0.5f, 380 + v);
+                NoiseBurst(b, 0f, 0.006f, 0.7f, 6000f, 4000f, 0.4f, 390 + v, mode: "band");
+                // the shaft buzzing after it sticks
+                Sine(b, 0.01f, 0.3f, 62f + v * 5f, 0.18f, 0.004f, 0.09f, vibrato: 0.02f);
+                a[v] = Write($"sfx_arrow_hit_{v}", Normalize(b, 0.75f));
+            }
+            return a;
+        }
+
+        /// <summary>Subtle chime when the draw reaches full power.</summary>
+        public static AudioClip[] FullDraw()
+        {
+            var b = Buf(0.35f);
+            Sine(b, 0f, 0.35f, 1568f, 0.35f, 0.003f, 0.09f);
+            Sine(b, 0.03f, 0.32f, 2349f, 0.22f, 0.003f, 0.08f);
+            NoiseBurst(b, 0f, 0.01f, 0.2f, 5000f, 3000f, 0.4f, 395, mode: "band");
+            return new[] { Write("sfx_full_draw", Normalize(b, 0.4f)) };
+        }
+
         public static AudioClip Ambience()
         {
             const float L = 16f;

@@ -87,18 +87,23 @@ Exact frame data varies by source and patch (the wikis disagree on light vs medi
 9. **Save/settings persistence** is already in PlayerPrefs; next: key rebinding UI via the Input System rebinding API.
 10. Commit with **Git LFS** for `.fbx/.png/.wav/.blend` before the repo grows.
 
-## 7. Bow & arrow (in progress)
+## 7. Bow & arrow
 
-**Done**
-- `Tools/Blender/build_bow.py` (run live via MCP or headless) builds a recurve bow (rattan grip, horn tips, `Draw` shape key, string-anchor empties `StringTop/Bottom[Drawn]` + `ArrowRest`), a bamboo arrow (iron broadhead, red/cream fletching) and a quiver. FBX files are exported and copied to `Assets/TungSahur/Art/Models/TungSahur_{Bow,Arrow,Quiver}.fbx` (not yet imported/configured in Unity).
-- Input: new `Aim` action (LT / RMB). **Guard moved to Left Alt on keyboard**, **Skill moved to Y on pad** (Shift+RMB still skill). While aiming, RT/LMB/RB buffer a *fire* (`ConsumeFire`) instead of attacks.
-- `CameraDirector`: aim framing driven by `Aiming`, `AimZoom` (draw 0..1), `AimFriction`: shoulder offset, orbit radius 4.6→2.05, FOV 42→34 at full draw, finer look sensitivity, snap onto the lock-on target when raising the bow.
+**Controls:** hold **LT / RMB** to raise and draw, **RT / LMB** (or RB) to loose. Arrows are infinite. Firing before the minimum draw (30%) is buffered and looses as soon as the string is far enough back. A full draw chimes, turns the reticle gold, and hits harder (marked as *charged*). Remapped to make room: **Guard is Left Alt** on keyboard (still LB), **Skill is Y** on pad (still Shift+RMB).
 
-**Remaining**
-1. `PlayerController.Bow.cs`: `PlayerState.Aim` (walk speed, face camera yaw, dodge cancels), draw (≈0.55 s), fire (min draw 0.3, buffered), auto re-nock, infinite ammo; camera ray → ballistic launch solve so the crosshair is exact.
-2. `BowRig.cs`: bow/club socket swap (bow on back ↔ left hand), `Draw` blendshape, LineRenderer string following the right hand, nocked arrow, humanoid IK for both hands along the aim line (bow layer IK pass).
-3. `ArrowProjectile.cs`: stepped raycast flight, hurtbox damage via `IDamageable.ReceiveHit`, sticks into targets, trail, pooled.
-4. Animator: upper-body "Bow" layer with `DoubleL/FBX Unity/Bow/Attack A/Bow_Attack_A_1_All.fbx` (humanoid), time-parameter driven.
-5. HUD: crosshair (spread closes with draw, full-draw pulse, hit marker), bow icon + ∞ in the left equip slot, updated hints.
-6. Builder: import settings + materials (`M_BowWood`, `M_BowHorn`, `M_ArrowShaft`, `M_FletchRed`, `M_FletchCream`, `M_Quiver`), prefab wiring, SFX (draw creak, twang, thunk) in `SfxForge`.
-7. Unity didn't answer the Pipeline CLI this session (commands timed out); bring the editor to focus before testing.
+| Piece | Where |
+|---|---|
+| Models (recurve bow with `Draw` shape key and string/arrow-rest empties, bamboo arrow, quiver) and the HUD icon | `Tools/Blender/build_bow.py` (live via MCP or headless; `--icon` renders `UI/Icon_Bow.png`) |
+| Gameplay: Aim state, raise → draw → release → re-nock, buffered fire, stamina per shot, ballistic solve onto the crosshair point | `PlayerController.Bow.cs` (all tuning on the Player prefab) |
+| Presentation: side-on stance, humanoid IK puts both hands on the aim line, bow swings from the back slot to the fist (club goes to the back), blend-shape limbs measured from the string hand, 3-point string with release buzz, reach to the quiver | `BowRig.cs` (on the model, IK pass on base layer) |
+| Projectile: raycast-stepped flight, damage via hurtboxes but sticks only where it meets the visible body (ellipsoid test), rides along with the dummy, wobble, oldest-first recycling (40) | `Combat/ArrowProjectile.cs`, `Prefabs/Arrow.prefab` |
+| Camera: shoulder offset, zoom (radius + FOV, tighter at full draw), finer look, pad aim friction on targets, closed-loop snap onto the lock target when raising | `CameraDirector` (Bow aim section) |
+| HUD: crosshair whose ticks close with the draw, gold pulse at full draw, warm dot over targets, hit marker; bow slot + ∞ in the equipment cross; lock reticle fades while aiming | `UI/HUD.Bow.cs`, `TungHUD.uss` |
+| SFX: draw creak, release twang, nock click, arrow thunk, full-draw chime | `SfxForge` bow section |
+| Build | `TungSahurBuilder.Bow.cs` (`BuildBowAssets`, `AttachBow`), included in `BuildAll()` |
+
+Verified in play mode with the autopilot (raise, draw, full-draw hit, rapid fire, aim from a run, dodge out of aim, lower). Console: 0 errors.
+
+Also removed the ExplosiveLLC `Editor/SetupInputLayers.cs` popup ("Warrior Animation Mecaim…"), which reopened after every asset import.
+
+**Known limits / next ideas:** no dedicated upper-body bow clip (the pose is IK-driven; the DoubleL `Bow_Attack_*` clips don't suit Tung's log body); no arrow pickup or ammo types yet (infinite by design); the arena is small, so a far archery target would show the arc better.

@@ -67,6 +67,7 @@ namespace TungSahur.UI
             BuildStatus();
             BuildEquipment();
             BuildReticle();
+            BuildCrosshair();
             BuildEnemyBars();
             BuildHints();
             BuildBanner();
@@ -163,6 +164,7 @@ namespace TungSahur.UI
             if (clubIcon) { var img = El("equip__icon", right); img.style.backgroundImage = clubIcon; }
             var down = El("equip__slot equip__slot--down", cross);
             Lbl("—", "equip__empty", down);
+            BuildBowSlot(cross);
             var name = Lbl("Sahur Club", "equip__name", root);
             ApplySerif(name);
             equipName = name;
@@ -213,6 +215,7 @@ namespace TungSahur.UI
                 }
             }
 
+            TickBow(dt);
             TickEnemyBars(dt);
             TickHints();
             TickBanner(dt);
@@ -227,8 +230,10 @@ namespace TungSahur.UI
         {
             new Hint { pad = "RB", kbm = "LMB", label = "Light attack" },
             new Hint { pad = "RT", kbm = "Shift + LMB", label = "Heavy attack (hold to charge)" },
-            new Hint { pad = "LT", kbm = "Shift + RMB", label = "Skill: Tung Tung Slam" },
-            new Hint { pad = "LB", kbm = "RMB", label = "Guard" },
+            new Hint { pad = "LT", kbm = "RMB", label = "Bow: hold to aim & draw" },
+            new Hint { pad = "LT + RT", kbm = "RMB + LMB", label = "Loose arrow (full draw hits harder)" },
+            new Hint { pad = "Y", kbm = "Shift + RMB", label = "Skill: Tung Tung Slam" },
+            new Hint { pad = "LB", kbm = "Alt", label = "Guard" },
             new Hint { pad = "B", kbm = "Space", label = "Roll / backstep · hold: sprint" },
             new Hint { pad = "A", kbm = "F", label = "Jump" },
             new Hint { pad = "R3", kbm = "Q / MMB", label = "Lock on · reset camera" },

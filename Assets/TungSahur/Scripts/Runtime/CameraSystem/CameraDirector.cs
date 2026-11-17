@@ -39,12 +39,12 @@ namespace TungSahur.CameraSystem
 
         [Header("Bow aim")]
         [Tooltip("Orbit radius while aiming (zoomed in over the shoulder).")]
-        public float aimRadius = 2.05f;
+        public float aimRadius = 3.0f;
         public float aimFov = 42f;
         [Tooltip("FOV at full draw: the view tightens as the string comes back.")]
         public float aimFullDrawFov = 34f;
         [Tooltip("Shoulder offset while aiming: x = right, y = up (metres, camera-relative).")]
-        public Vector2 aimShoulder = new Vector2(0.62f, 0.16f);
+        public Vector2 aimShoulder = new Vector2(1.05f, 0.42f);
         [Tooltip("Look sensitivity multiplier while aiming (finer control).")]
         public float aimLookScale = 0.55f;
         public float aimInTime = 0.16f, aimOutTime = 0.22f;
@@ -72,7 +72,12 @@ namespace TungSahur.CameraSystem
         {
             Instance = this;
             currentFov = baseFov;
-            if (orbit) baseRadius = orbit.Radius;
+            if (orbit)
+            {
+                baseRadius = orbit.Radius;
+                // the director clamps per mode; the orbit itself must allow the steeper aim pitch
+                orbit.VerticalAxis.Range = new Vector2(Mathf.Min(minPitch, aimMinPitch), Mathf.Max(maxPitch, aimMaxPitch));
+            }
         }
 
         void OnDestroy() { if (Instance == this) Instance = null; }
@@ -133,19 +138,23 @@ namespace TungSahur.CameraSystem
             followPivot.position = pivotBase + (camRight * aimShoulder.x + Vector3.up * aimShoulder.y) * aw;
 
             // raising the bow while locked on swings the view onto the target, then hands control back
-            if (Aiming && !wasAiming && locked != null) aimSnapUntil = Time.unscaledTime + 0.22f;
+            if (Aiming && !wasAiming && locked != null) aimSnapUntil = Time.unscaledTime + 0.3f;
             wasAiming = Aiming;
 
             if (Aiming || aw > 0.5f)
             {
-                if (Time.unscaledTime < aimSnapUntil && locked != null)
+                if (Time.unscaledTime < aimSnapUntil && locked != null && Camera.main != null)
                 {
-                    Vector3 to = locked.LockPosition - followPivot.position;
-                    float flat = Mathf.Max(0.5f, new Vector2(to.x, to.z).magnitude);
-                    float dy = Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
-                    float dp = -Mathf.Atan2(to.y, flat) * Mathf.Rad2Deg;
-                    yaw = Mathf.SmoothDampAngle(yaw, dy, ref yawVel, 0.06f, Mathf.Infinity, dt);
-                    pitch = Mathf.SmoothDamp(pitch, dp, ref pitchVel, 0.06f, Mathf.Infinity, dt);
+                    // closed loop on the real view ray: whatever the composer framing, the screen-centre
+                    // crosshair ends up on the lock point
+                    var ct = Camera.main.transform;
+                    Vector3 to = locked.LockPosition - ct.position;
+                    Vector3 f = ct.forward;
+                    float yawErr = Mathf.DeltaAngle(Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg, Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg);
+                    float pitchErr = Mathf.Asin(Mathf.Clamp(to.normalized.y, -1f, 1f)) * Mathf.Rad2Deg - Mathf.Asin(Mathf.Clamp(f.y, -1f, 1f)) * Mathf.Rad2Deg;
+                    float k = Ease.Damp(22f, dt);
+                    yaw += yawErr * k;
+                    pitch -= pitchErr * k;
                 }
                 else if (!paused && input != null && input.GameplayEnabled)
                 {

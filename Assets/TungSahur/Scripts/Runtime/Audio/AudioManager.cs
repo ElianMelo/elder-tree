@@ -7,7 +7,8 @@ namespace TungSahur.Audio
     public enum Sfx
     {
         Knock, ImpactHeavy, Slam, WhooshLight, WhooshHeavy, Footstep, Dodge, Jump, Land, DummyHit,
-        LockOn, LockOff, ChargeUp, ChargeRelease, UIMove, UISelect, UIBack, Felled, Guard, Stagger, Title
+        LockOn, LockOff, ChargeUp, ChargeRelease, UIMove, UISelect, UIBack, Felled, Guard, Stagger, Title,
+        BowDraw, BowRelease, BowNock, ArrowHit, FullDraw
     }
 
     /// <summary>Pooled one-shot player with per-cue variation (random clip, pitch, volume).</summary>

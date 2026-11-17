@@ -1,9 +1,11 @@
 """
 Tung Sahur - bow, arrow and quiver (Blender 4.2+/5.x). Live (MCP) or headless:
 
-    blender -b --factory-startup --python Tools/Blender/build_bow.py -- <out_dir>
+    blender -b --factory-startup --python Tools/Blender/build_bow.py -- <out_dir> [--icon <png>]
 
-Live via MCP:  exec(compile(open(p).read(), p, 'exec'), {"__name__": "__main__", "__file__": p, "TS_EXPORT": True})
+Live via MCP:  exec(compile(open(p).read(), p, 'exec'), {"__name__": "__main__", "__file__": p, "TS_EXPORT": True,
+                                                       "TS_ICON": "Assets/TungSahur/UI/Icon_Bow.png"})
+Then copy the three FBX into Assets/TungSahur/Art/Models and run TungSahurBuilder.BuildAll() in Unity.
 
 Builds into a dedicated "TungBow" scene so the character scene is never touched.
 
@@ -572,6 +574,86 @@ def export(objs, path, types=frozenset({'MESH', 'EMPTY'})):
         o.location = loc
     print("exported", path)
 
+
+def render_icon(path, size=256, draw=0.6):
+    """HUD icon: the bow mid-draw with an arrow on the string, transparent background."""
+    icon = bpy.data.objects.new("IconRoot", None)
+    scene.collection.objects.link(icon)
+    ib = bow.copy()
+    ib.data = bow.data.copy()
+    ib.name = "IconBow"
+    scene.collection.objects.link(ib)
+    ib.parent = icon
+    ib.data.shape_keys.key_blocks["Draw"].value = draw
+    lerp = lambda a, b: a.lerp(b, draw)
+    top = lerp(Vector(sl["StringTop"]), Vector(sl["StringTopDrawn"]))
+    bot = lerp(Vector(sl["StringBottom"]), Vector(sl["StringBottomDrawn"]))
+    rest_y = bow_centerline(SHELF_Z / BOW_HALF, False).y
+    nock = Vector((-0.012, rest_y + 0.124 + (0.58 - 0.124) * draw, SHELF_Z + 0.008))
+    c = bpy.data.curves.new("IconString", 'CURVE')
+    c.dimensions = '3D'
+    c.bevel_depth = 0.004
+    spl = c.splines.new('POLY')
+    spl.points.add(2)
+    for i, p in enumerate((top, nock, bot)):
+        spl.points[i].co = (*p, 1)
+    so = bpy.data.objects.new("IconString", c)
+    so.data.materials.append(bpy.data.materials["M_BowString"])
+    scene.collection.objects.link(so)
+    so.parent = icon
+    ia = arrow.copy()
+    ia.name = "IconArrow"
+    scene.collection.objects.link(ia)
+    ia.parent = icon
+    ia.location = nock
+    ia.rotation_euler = (0, 0, 0)
+    # diagonal: tip up-right in the camera view (camera looks down -X, so screen right = -Y)
+    icon.rotation_euler = (math.radians(-40), 0, 0)
+    icon.location = (0, 0, 0)
+
+    cam_data = bpy.data.cameras.new("IconCam")
+    cam_data.type = 'ORTHO'
+    cam_data.ortho_scale = 1.32
+    cam = bpy.data.objects.new("IconCam", cam_data)
+    scene.collection.objects.link(cam)
+    cam.rotation_euler = (math.radians(90), 0, math.radians(90))
+    # frame the drawn bow + arrow tightly (camera looks down -X: screen axes are world Y / Z)
+    bpy.context.view_layer.update()
+    pts = [o.matrix_world @ Vector(c) for o in (ib, ia) for c in o.bound_box]
+    pts += [icon.matrix_world @ p for p in (top, nock, bot)]
+    ys = [p.y for p in pts]; zs = [p.z for p in pts]
+    cam.location = (3.0, (min(ys) + max(ys)) / 2, (min(zs) + max(zs)) / 2)
+    cam_data.ortho_scale = max(max(ys) - min(ys), max(zs) - min(zs)) * 1.06
+    keep = {icon, ib, so, ia, cam} | {o for o in scene.objects if o.type == 'LIGHT'}
+    hidden = []
+    for o in scene.objects:
+        if o not in keep and not o.hide_render:
+            o.hide_render = True
+            hidden.append(o)
+    r = scene.render
+    saved = (scene.camera, r.resolution_x, r.resolution_y, r.film_transparent, r.filepath, r.image_settings.file_format,
+             r.image_settings.color_mode, r.resolution_percentage)
+    scene.camera = cam
+    r.resolution_x = r.resolution_y = size
+    r.resolution_percentage = 100
+    r.film_transparent = True
+    r.image_settings.file_format = 'PNG'
+    r.image_settings.color_mode = 'RGBA'
+    r.filepath = path
+    with bpy.context.temp_override(scene=scene):
+        bpy.ops.render.render(write_still=True, scene=scene.name)
+    (scene.camera, r.resolution_x, r.resolution_y, r.film_transparent, r.filepath, r.image_settings.file_format,
+     r.image_settings.color_mode, r.resolution_percentage) = saved
+    for o in hidden:
+        o.hide_render = False
+    for o in (cam, ia, so, ib, icon):
+        bpy.data.objects.remove(o, do_unlink=True)
+    print("icon", path)
+
+
+ICON_PATH = globals().get("TS_ICON") or (_argv[_argv.index("--icon") + 1] if "--icon" in _argv else None)
+if ICON_PATH:
+    render_icon(ICON_PATH)
 
 if DO_EXPORT:
     empties = [c for c in bow.children if c.type == 'EMPTY']

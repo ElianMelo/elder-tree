@@ -31,6 +31,7 @@ namespace TungSahur.EditorTools
             log.AppendLine(BuildPrefabs());
             log.AppendLine(BuildAudio());
             log.AppendLine(RenderClubIcon());
+            log.AppendLine(ImportBowIcon());
             log.AppendLine(BuildScene());
             return log.ToString();
         }
@@ -67,6 +68,11 @@ namespace TungSahur.EditorTools
                 C(Sfx.Guard, SfxForge.GuardUp(), 0.5f),
                 C(Sfx.Stagger, SfxForge.Stagger(), 0.75f),
                 C(Sfx.Title, SfxForge.Title(), 0.9f, 1f, 1f, 0f, 1f),
+                C(Sfx.BowDraw, SfxForge.BowDraw(), 0.55f, 0.95f, 1.05f, 0.5f, 0.1f),
+                C(Sfx.BowRelease, SfxForge.BowRelease(), 0.85f, 0.95f, 1.05f, 0.45f),
+                C(Sfx.BowNock, SfxForge.BowNock(), 0.45f, 0.95f, 1.08f, 0.5f),
+                C(Sfx.ArrowHit, SfxForge.ArrowHit(), 0.85f, 0.92f, 1.08f, 0.8f),
+                C(Sfx.FullDraw, SfxForge.FullDraw(), 0.4f, 1f, 1f, 0f, 0.2f),
             };
             ambience = SfxForge.Ambience();
             return $"Audio built: {cues.Length} cues";
@@ -384,6 +390,7 @@ namespace TungSahur.EditorTools
             var hud = hudGo.AddComponent<HUD>();
             hud.styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(Root + "/UI/TungHUD.uss");
             hud.clubIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/UI/Icon_Club.png");
+            hud.bowIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/UI/Icon_Bow.png");
             var pc = playerGo.GetComponent<PlayerController>();
             hud.stats = pc.stats; hud.player = pc; hud.lockOn = pc.lockOn;
 

@@ -175,6 +175,11 @@ namespace TungSahur.EditorTools
             var gHit = gsm.AddState("GuardHit", new Vector3(300, 160));
             gHit.motion = K("Combat/1H/HumanM@Parry1H01_R - Hit");
 
+            // IK pass on the base layer: the bow places both hands on the aim line (BowRig.OnAnimatorIK)
+            var layers = ac.layers;
+            layers[0].iKPass = true;
+            ac.layers = layers;
+
             EditorUtility.SetDirty(ac);
             BuildMoveset();
             AssetDatabase.SaveAssets();

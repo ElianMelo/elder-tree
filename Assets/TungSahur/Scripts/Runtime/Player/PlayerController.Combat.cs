@@ -190,6 +190,12 @@ namespace TungSahur.Player
                 if (input.ConsumeJump()) queued = Queued.Jump;
             }
 
+            // raising the bow cancels the recovery like a dodge would
+            if (input.AimHeld && attackT >= a.cancelOpen && motor.Grounded && queued != Queued.Dodge)
+            {
+                EndSwing();
+                if (TryEnterAim()) return;
+            }
             if ((queued == Queued.Dodge) && attackT >= a.cancelOpen)
             {
                 queued = Queued.None;
