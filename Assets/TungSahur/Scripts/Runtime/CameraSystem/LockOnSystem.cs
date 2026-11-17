@@ -25,6 +25,9 @@ namespace TungSahur.CameraSystem
 
         Camera Cam => cam != null ? cam : (cam = Camera.main);
 
+        /// <summary>Dev / scripted: lock straight onto a target.</summary>
+        public void ForceLock(Targetable t) => Set(t);
+
         public bool Toggle()
         {
             if (Current != null)
@@ -102,6 +105,7 @@ namespace TungSahur.CameraSystem
         {
             Vector3 from = eye.position;
             Vector3 to = t.LockPosition;
+            range *= t.rangeScale;
             if ((to - from).sqrMagnitude > range * range) return false;
             return HasLOS(from, to, t);
         }
@@ -127,7 +131,7 @@ namespace TungSahur.CameraSystem
                 return;
             }
             float dist = Vector3.Distance(eye.position, Current.LockPosition);
-            if (dist > breakRange) { Set(null); AudioManager.Play2D(Sfx.LockOff, 0.5f); return; }
+            if (dist > breakRange * Current.rangeScale) { Set(null); AudioManager.Play2D(Sfx.LockOff, 0.5f); return; }
             if (!HasLOS(eye.position, Current.LockPosition, Current))
             {
                 losLostTime += Time.deltaTime;

@@ -11,7 +11,7 @@ namespace TungSahur.Enemies
     /// flashes, squashes, tracks poise (breaking it causes a big stagger) and topples when felled,
     /// then stands back up at full health.
     /// </summary>
-    public class TrainingDummy : MonoBehaviour, IDamageable
+    public class TrainingDummy : MonoBehaviour, IDamageable, IStaggerable
     {
         public string displayName = "Training Dummy";
         public Transform pivot;              // the sprung upper body

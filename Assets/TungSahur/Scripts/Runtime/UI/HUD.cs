@@ -71,6 +71,7 @@ namespace TungSahur.UI
             BuildEnemyBars();
             BuildHints();
             BuildBanner();
+            BuildBossUI();
             BuildPause();
             BuildTitle();
 
@@ -219,6 +220,7 @@ namespace TungSahur.UI
             TickEnemyBars(dt);
             TickHints();
             TickBanner(dt);
+            TickBossBar(dt);
             TickPause();
             TickTitle(dt);
         }

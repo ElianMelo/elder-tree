@@ -194,7 +194,7 @@ namespace TungSahur.UI
         public System.Action QuitRequested;
         public System.Action<bool> PauseChanged;
 
-        static readonly string[] MenuNames = { "Resume", "Controls", "Settings", "Reset Training", "Quit" };
+        static readonly string[] MenuNames = { "Resume", "Controls", "Settings", "Summon Bombardiro", "Reset Training", "Quit" };
 
         void BuildPause()
         {
@@ -284,10 +284,20 @@ namespace TungSahur.UI
                     AddSetting("Show control hints", () => hintsExpanded ? "On" : "Off", _ => SetHints(!hintsExpanded));
                     break;
                 case 3:
-                    Lbl("Stand every dummy back up at full health and restore your HP, FP and stamina.", "panel__text", pausePanel);
+                {
+                    var t = Lbl("A drone of four engines rolls in over the treeline.", "panel__flavor", pausePanel);
+                    ApplySerif(t);
+                    Lbl("Bombardiro Crocodilo circles overhead raining bombs: watch the red rings on the ground and get out before they fill. " +
+                        "Shoot its walking bombs before they reach you. When it lands and charges, dodge sideways; then it sits " +
+                        "on the field for a few seconds. That's your chance to club it. Arrows break its stance in the air.", "panel__text", pausePanel);
+                    Lbl("Press Select to summon.", "panel__text panel__text--dim", pausePanel);
+                    break;
+                }
+                case 4:
+                    Lbl("Stand every dummy back up at full health, send any boss away and restore your HP, FP and stamina.", "panel__text", pausePanel);
                     Lbl("Press Select to reset.", "panel__text panel__text--dim", pausePanel);
                     break;
-                case 4:
+                case 5:
                     Lbl("Return to the desktop?", "panel__text", pausePanel);
                     Lbl("Press Select to quit.", "panel__text panel__text--dim", pausePanel);
                     break;
@@ -329,8 +339,9 @@ namespace TungSahur.UI
                     {
                         case 0: SetPause(false); return;
                         case 2: if (settingRows.Count > 0) { panelIndex = 0; settingIndex = 0; RefreshMenu(); } break;
-                        case 3: ResetTrainingRequested?.Invoke(); SetPause(false); return;
-                        case 4: QuitRequested?.Invoke(); return;
+                        case 3: SetPause(false); SummonBossRequested?.Invoke(); return;
+                        case 4: ResetTrainingRequested?.Invoke(); SetPause(false); return;
+                        case 5: QuitRequested?.Invoke(); return;
                     }
                 }
                 if (input.CancelPressed) { SetPause(false); return; }

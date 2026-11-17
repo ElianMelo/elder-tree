@@ -509,5 +509,205 @@ namespace TungSahur.EditorTools
             for (int i = 0; i < trimmed.Length; i++) trimmed[i] *= 0.6f / m;
             return Write("amb_night_loop", trimmed, loop: true);
         }
+    
+        // ------------------------------------------------------------------ Bombardiro boss
+        /// <summary>Harmonic stack with per-sample frequency (for growls and engines).</summary>
+        static void Harmonics(float[] b, float start, float dur, Func<float, float> freq, float[] amps, Func<float, float> env)
+        {
+            int s0 = (int)(start * SR), n = (int)(dur * SR);
+            var ph = new double[amps.Length];
+            for (int i = 0; i < n && s0 + i < b.Length; i++)
+            {
+                float t = i / (float)SR;
+                float f = freq(t), e = env(t / dur);
+                float v = 0f;
+                for (int h = 0; h < amps.Length; h++)
+                {
+                    ph[h] += 2 * Math.PI * f * (h + 1) / SR;
+                    v += (float)Math.Sin(ph[h]) * amps[h];
+                }
+                b[s0 + i] += v * e;
+            }
+        }
+
+        public static AudioClip[] Explosion()
+        {
+            var clips = new AudioClip[3];
+            for (int v = 0; v < 3; v++)
+            {
+                var b = Buf(2.6f);
+                Modal(b, 0f, new[] { (38f + v * 4, 1f, 0.55f), (61f, 0.6f, 0.3f), (97f, 0.35f, 0.15f) }, pitchDrop: 1.8f, dropTime: 0.05f);
+                NoiseBurst(b, 0f, 2.4f, 0.9f, 3200f, 70f, 0.7f, 700 + v, curve: 2.4f);          // fireball roar
+                NoiseBurst(b, 0f, 0.05f, 0.9f, 8000f, 3000f, 0.4f, 710 + v, mode: "band");      // crack
+                var r = new Rng(720 + v);
+                for (int k = 0; k < 14; k++)                                                      // debris crackle
+                    NoiseBurst(b, 0.15f + k * 0.09f + Mathf.Abs(r.Next()) * 0.08f, 0.025f, 0.22f * (1f - k / 16f), 4200f, 2200f, 0.5f, 730 + k + v * 20, mode: "band");
+                clips[v] = Write($"sfx_explosion_{v}", Normalize(b));
+            }
+            return clips;
+        }
+
+        public static AudioClip[] BombPop()
+        {
+            var b = Buf(0.9f);
+            Modal(b, 0f, new[] { (82f, 1f, 0.18f), (130f, 0.5f, 0.08f) }, pitchDrop: 1.2f, dropTime: 0.03f);
+            NoiseBurst(b, 0f, 0.6f, 0.7f, 2600f, 200f, 0.6f, 760, curve: 2.2f);
+            NoiseBurst(b, 0f, 0.03f, 0.6f, 6000f, 2500f, 0.4f, 761, mode: "band");
+            return new[] { Write("sfx_bomb_pop", Normalize(b)) };
+        }
+
+        public static AudioClip[] BombWhistle()
+        {
+            var b = Buf(1.35f);
+            Harmonics(b, 0f, 1.35f, t => Mathf.Lerp(1750f, 640f, Mathf.Pow(t / 1.35f, 0.8f)) * (1f + 0.006f * Mathf.Sin(t * 38f)),
+                new[] { 1f, 0.18f, 0.06f }, k => Mathf.Pow(k, 0.6f) * (k > 0.93f ? (1f - k) / 0.07f : 1f));
+            Whoosh(b, 1.35f, 0.25f, 2500f, 900f, 0.85f, 770);
+            return new[] { Write("sfx_bomb_whistle", Normalize(b, 0.7f)) };
+        }
+
+        public static AudioClip[] BombBeep()
+        {
+            var b = Buf(0.22f);
+            Harmonics(b, 0f, 0.16f, _ => 1320f, new[] { 1f, 0f, 0.33f, 0f, 0.2f }, k => k < 0.85f ? 1f : (1f - k) / 0.15f);
+            return new[] { Write("sfx_bomb_beep", Normalize(b, 0.6f)) };
+        }
+
+        public static AudioClip[] CrocRoar()
+        {
+            var clips = new AudioClip[2];
+            for (int v = 0; v < 2; v++)
+            {
+                const float L = 1.9f;
+                var b = Buf(L);
+                float f0 = 58f + v * 7f;
+                // growl: a buzzy harmonic stack with gravel (fast AM) and a rising then falling pitch
+                Harmonics(b, 0f, L, t => f0 * (1f + 0.25f * Mathf.Sin(Mathf.PI * t / L)) * (1f + 0.02f * Mathf.Sin(t * 170f)),
+                    new[] { 1f, 0.8f, 0.65f, 0.5f, 0.42f, 0.3f, 0.22f, 0.15f, 0.1f },
+                    k => Mathf.Pow(Mathf.Sin(Mathf.PI * Mathf.Pow(k, 0.7f)), 1.4f) * (0.65f + 0.35f * Mathf.Sin(k * L * 2 * Mathf.PI * 27f)));
+                // throat noise through a formant
+                var r = new Rng(780 + v);
+                var f = new SVF();
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float k = i / (float)b.Length;
+                    f.Process(r.Next(), 420f + 300f * Mathf.Sin(Mathf.PI * k), 0.35f, out _, out float bp);
+                    b[i] += bp * 0.9f * Mathf.Sin(Mathf.PI * Mathf.Pow(k, 0.6f));
+                }
+                clips[v] = Write($"sfx_croc_roar_{v}", Normalize(b));
+            }
+            return clips;
+        }
+
+        public static AudioClip[] JawSnap()
+        {
+            var b = Buf(0.45f);
+            Modal(b, 0f, new[] { (820f, 1f, 0.05f), (1460f, 0.6f, 0.03f), (2900f, 0.4f, 0.015f), (240f, 0.6f, 0.08f) });
+            NoiseBurst(b, 0f, 0.015f, 1f, 7000f, 3000f, 0.4f, 790, mode: "band");
+            NoiseBurst(b, 0f, 0.12f, 0.4f, 900f, 200f, 0.7f, 791);
+            return new[] { Write("sfx_jaw_snap", Normalize(b)) };
+        }
+
+        public static AudioClip[] MetalHit()
+        {
+            var clips = new AudioClip[3];
+            for (int v = 0; v < 3; v++)
+            {
+                var b = Buf(0.9f);
+                float f = 380f + v * 45f;
+                // riveted sheet: inharmonic, slightly detuned pairs beat against each other
+                Modal(b, 0f, new[] { (f, 0.8f, 0.22f), (f * 1.013f, 0.5f, 0.2f), (f * 2.76f, 0.45f, 0.1f), (f * 5.4f, 0.3f, 0.05f), (f * 8.9f, 0.2f, 0.025f), (f * 0.5f, 0.5f, 0.12f) });
+                NoiseBurst(b, 0f, 0.02f, 0.9f, 9000f, 4000f, 0.4f, 800 + v, mode: "band");
+                NoiseBurst(b, 0f, 0.1f, 0.35f, 1200f, 300f, 0.7f, 810 + v);
+                clips[v] = Write($"sfx_metal_hit_{v}", Normalize(b));
+            }
+            return clips;
+        }
+
+        public static AudioClip[] PlayerHurt()
+        {
+            var clips = new AudioClip[2];
+            for (int v = 0; v < 2; v++)
+            {
+                var b = Buf(0.9f);
+                // bark cracks, then the old tree groans
+                Modal(b, 0f, new[] { (150f + v * 15, 1f, 0.12f), (348f, 0.5f, 0.06f), (590f, 0.3f, 0.03f) }, pitchDrop: 0.3f, dropTime: 0.02f);
+                NoiseBurst(b, 0f, 0.04f, 0.8f, 5000f, 1500f, 0.4f, 820 + v, mode: "band");
+                float g = 95f + v * 10;
+                Harmonics(b, 0.05f, 0.75f, t => g * (1f - 0.25f * t) * (1f + 0.04f * Mathf.Sin(t * 90f)),
+                    new[] { 0.5f, 0.45f, 0.35f, 0.25f, 0.15f }, k => Mathf.Sin(Mathf.PI * Mathf.Pow(k, 0.5f)) * 0.6f);
+                clips[v] = Write($"sfx_player_hurt_{v}", Normalize(b));
+            }
+            return clips;
+        }
+
+        public static AudioClip[] Skid()
+        {
+            var b = Buf(1.4f);
+            NoiseBurst(b, 0f, 1.3f, 0.8f, 1600f, 500f, 0.5f, 830, attack: 0.05f, mode: "band", curve: 1.4f);
+            NoiseBurst(b, 0f, 1.3f, 0.6f, 400f, 90f, 0.7f, 831, attack: 0.03f, curve: 1.6f);
+            for (int k = 0; k < 12; k++)
+                NoiseBurst(b, 0.05f + k * 0.1f, 0.03f, 0.2f, 3000f, 1800f, 0.6f, 840 + k, mode: "band");
+            return new[] { Write("sfx_skid", Normalize(b)) };
+        }
+
+        public static AudioClip[] YouDied()
+        {
+            const float L = 4.5f;
+            var b = Buf(L);
+            foreach (var (f, a) in new[] { (55f, 1f), (82.4f, 0.6f), (110f, 0.5f), (116.5f, 0.35f), (164.8f, 0.25f) })
+                Harmonics(b, 0f, L, _ => f, new[] { a, a * 0.3f, a * 0.1f }, k => Mathf.Min(1f, k * 6f) * Mathf.Pow(1f - k, 1.5f));
+            NoiseBurst(b, 0f, 2f, 0.25f, 300f, 60f, 0.8f, 850, attack: 0.3f);
+            return new[] { Write("sfx_you_died", Normalize(b, 0.8f)) };
+        }
+
+        public static AudioClip[] GreatEnemyFelled()
+        {
+            const float L = 4f;
+            var b = Buf(L);
+            foreach (var (f, a, d) in new[] { (110f, 0.8f, 0f), (220f, 0.6f, 0.04f), (277.2f, 0.45f, 0.08f), (329.6f, 0.45f, 0.12f), (440f, 0.35f, 0.16f) })
+                Harmonics(b, d, L - d, _ => f, new[] { a, a * 0.5f, a * 0.3f, a * 0.15f }, k => Mathf.Min(1f, k * 3f) * Mathf.Pow(1f - k, 1.2f));
+            return new[] { Write("sfx_great_enemy_felled", Normalize(b, 0.8f)) };
+        }
+
+        /// <summary>Four radial engines: firing pulses through a low-pass, propeller hum, slow beating. Seamless 4 s loop.</summary>
+        public static AudioClip EngineLoop()
+        {
+            const float L = 4f;
+            var b = Buf(L);
+            int n = b.Length;
+            float[] fire = { 36f, 36.5f, 35.75f, 37.25f };        // whole cycles per loop: seamless
+            for (int e = 0; e < 4; e++)
+            {
+                var f = new SVF();
+                double ph = e * 0.7;
+                for (int i = 0; i < n; i++)
+                {
+                    ph += fire[e] / SR;
+                    float frac = (float)(ph - Math.Floor(ph));
+                    float pulse = Mathf.Exp(-frac * 9f) - 0.15f;        // cylinder bang
+                    float lp = f.Process(pulse, 320f, 0.6f, out _, out _);
+                    b[i] += lp * 0.5f;
+                }
+            }
+            // propeller blade-pass hum
+            Harmonics(b, 0f, L, _ => 108f, new[] { 0.25f, 0.12f, 0.05f }, _ => 1f);
+            Harmonics(b, 0f, L, _ => 109.5f, new[] { 0.2f, 0.08f }, _ => 1f);
+            // wind / air noise, made seamless with a crossfade
+            var r = new Rng(860);
+            var nf = new SVF();
+            var air = new float[n];
+            for (int i = 0; i < n; i++) air[i] = nf.Process(r.Next(), 900f, 0.5f, out _, out _) * 0.35f;
+            int x = SR / 4;
+            for (int i = 0; i < n; i++)
+            {
+                float v = air[i];
+                if (i < x) v = air[i] * (i / (float)x) + air[n - x + i] * (1f - i / (float)x);
+                b[i] += v;
+            }
+            float m = 1e-6f;
+            foreach (var v in b) m = Mathf.Max(m, Mathf.Abs(v));
+            for (int i = 0; i < n; i++) b[i] *= 0.75f / m;
+            return Write("sfx_engine_loop", b, loop: true);
+        }
     }
 }

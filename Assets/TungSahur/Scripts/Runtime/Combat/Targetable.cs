@@ -12,6 +12,8 @@ namespace TungSahur.Combat
         public Transform lockPoint;
         public float lockRadius = 0.5f;
         public string displayName = "Target";
+        [Tooltip("Multiplies the lock-on acquire / break range (big flying bosses).")]
+        public float rangeScale = 1f;
 
         public Vector3 LockPosition => lockPoint ? lockPoint.position : transform.position + Vector3.up;
         public IDamageable Damageable { get; private set; }

@@ -29,6 +29,7 @@ namespace TungSahur.EditorTools
             log.AppendLine(SetupProject());
             log.AppendLine(BuildAnimator());
             log.AppendLine(BuildPrefabs());
+            log.AppendLine(BuildBoss());
             log.AppendLine(BuildAudio());
             log.AppendLine(RenderClubIcon());
             log.AppendLine(ImportBowIcon());
@@ -73,6 +74,17 @@ namespace TungSahur.EditorTools
                 C(Sfx.BowNock, SfxForge.BowNock(), 0.45f, 0.95f, 1.08f, 0.5f),
                 C(Sfx.ArrowHit, SfxForge.ArrowHit(), 0.85f, 0.92f, 1.08f, 0.8f),
                 C(Sfx.FullDraw, SfxForge.FullDraw(), 0.4f, 1f, 1f, 0f, 0.2f),
+                C(Sfx.Explosion, SfxForge.Explosion(), 1f, 0.9f, 1.08f, 0.55f, 0.04f),
+                C(Sfx.BombPop, SfxForge.BombPop(), 0.8f, 0.92f, 1.08f, 0.7f),
+                C(Sfx.BombWhistle, SfxForge.BombWhistle(), 0.5f, 0.95f, 1.08f, 0.6f, 0.12f),
+                C(Sfx.BombBeep, SfxForge.BombBeep(), 0.7f, 1f, 1f, 0.6f, 0.05f),
+                C(Sfx.CrocRoar, SfxForge.CrocRoar(), 1f, 0.95f, 1.05f, 0.35f, 0.3f),
+                C(Sfx.JawSnap, SfxForge.JawSnap(), 0.95f, 0.95f, 1.05f, 0.6f),
+                C(Sfx.MetalHit, SfxForge.MetalHit(), 0.85f, 0.92f, 1.08f, 0.6f),
+                C(Sfx.PlayerHurt, SfxForge.PlayerHurt(), 0.9f, 0.95f, 1.05f, 0.2f, 0.08f),
+                C(Sfx.Skid, SfxForge.Skid(), 0.85f, 0.95f, 1.05f, 0.6f, 0.2f),
+                C(Sfx.YouDied, SfxForge.YouDied(), 0.9f, 1f, 1f, 0f, 1f),
+                C(Sfx.GreatEnemyFelled, SfxForge.GreatEnemyFelled(), 0.9f, 1f, 1f, 0f, 1f),
             };
             ambience = SfxForge.Ambience();
             return $"Audio built: {cues.Length} cues";
@@ -390,7 +402,8 @@ namespace TungSahur.EditorTools
             {
                 E(FXType.HitSpark, "FX_HitSpark", 4), E(FXType.WoodChips, "FX_WoodChips", 4), E(FXType.StrawBurst, "FX_StrawBurst", 4),
                 E(FXType.Dust, "FX_Dust", 2), E(FXType.DustSmall, "FX_DustSmall", 8), E(FXType.SlamRing, "FX_SlamRing", 2),
-                E(FXType.SlamDebris, "FX_SlamDebris", 2), E(FXType.LandDust, "FX_LandDust", 2), E(FXType.ChargeFlash, "FX_ChargeFlash", 2)
+                E(FXType.SlamDebris, "FX_SlamDebris", 2), E(FXType.LandDust, "FX_LandDust", 2), E(FXType.ChargeFlash, "FX_ChargeFlash", 2),
+                E(FXType.Explosion, "FX_Explosion", 6), E(FXType.BombPop, "FX_BombPop", 3), E(FXType.Smoke, "FX_Smoke", 2)
             };
             var audioGo = new GameObject("Audio");
             audioGo.transform.SetParent(sysRoot);
@@ -413,6 +426,7 @@ namespace TungSahur.EditorTools
 
             var boot = sys.AddComponent<GameBootstrap>();
             boot.player = pc; boot.hud = hud; boot.spawnPoint = spawn;
+            PlaceBoss(actorRoot, sys, pc, hud, spawn);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             // set as the only build scene + open by default

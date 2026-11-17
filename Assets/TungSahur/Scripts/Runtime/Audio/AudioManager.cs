@@ -8,7 +8,8 @@ namespace TungSahur.Audio
     {
         Knock, ImpactHeavy, Slam, WhooshLight, WhooshHeavy, Footstep, Dodge, Jump, Land, DummyHit,
         LockOn, LockOff, ChargeUp, ChargeRelease, UIMove, UISelect, UIBack, Felled, Guard, Stagger, Title,
-        BowDraw, BowRelease, BowNock, ArrowHit, FullDraw
+        BowDraw, BowRelease, BowNock, ArrowHit, FullDraw,
+        Explosion, BombWhistle, BombBeep, CrocRoar, JawSnap, MetalHit, PlayerHurt, Skid, YouDied, GreatEnemyFelled, BombPop
     }
 
     /// <summary>Pooled one-shot player with per-cue variation (random clip, pitch, volume).</summary>

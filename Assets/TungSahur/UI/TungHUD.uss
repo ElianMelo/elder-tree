@@ -466,3 +466,86 @@
     -unity-text-outline-width: 0.6px;
     -unity-text-outline-color: rgba(0, 0, 0, 0.8);
 }
+
+/* ---------------------------------------------------------------- boss bar (bottom centre) */
+.bossbar {
+    position: absolute;
+    left: 50%;
+    bottom: 92px;
+    width: 980px;
+    translate: -490px 0;
+}
+
+.bossbar__name {
+    font-size: 24px;
+    letter-spacing: 2px;
+    color: rgb(237, 230, 214);
+    margin-bottom: 4px;
+    -unity-text-outline-width: 0.6px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
+}
+
+.bossbar__frame {
+    height: 13px;
+    background-color: rgba(10, 8, 10, 0.88);
+    border-width: 1px;
+    border-color: rgba(216, 180, 106, 0.55);
+    overflow: hidden;
+}
+
+.bossbar__chip, .bossbar__fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+}
+
+.bossbar__chip { background-color: rgb(232, 194, 122); }
+.bossbar__fill { background-color: rgb(150, 26, 30); }
+.bossbar__shine {
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.bossbar__dmg {
+    position: absolute;
+    right: 0;
+    top: 2px;
+    font-size: 22px;
+    -unity-font-style: bold;
+    color: rgb(246, 231, 193);
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.85);
+    transform-origin: right center;
+}
+
+/* ---------------------------------------------------------------- YOU DIED + screen fade */
+.death {
+    position: absolute;
+    left: 0; right: 0;
+    top: 40%;
+    height: 150px;
+    align-items: center;
+    justify-content: center;
+}
+
+.death__band {
+    position: absolute;
+    left: 0; right: 0; top: 24px; bottom: 24px;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.death__text {
+    font-size: 92px;
+    letter-spacing: 6px;
+    color: rgb(150, 18, 22);
+    -unity-text-outline-width: 0.5px;
+    -unity-text-outline-color: rgba(40, 0, 0, 0.9);
+    text-shadow: 0 0 22px rgba(160, 10, 10, 0.6);
+}
+
+.screenfade {
+    position: absolute;
+    left: 0; right: 0; top: 0; bottom: 0;
+    background-color: rgb(0, 0, 0);
+}

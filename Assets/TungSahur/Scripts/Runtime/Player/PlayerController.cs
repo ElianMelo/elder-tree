@@ -110,7 +110,7 @@ namespace TungSahur.Player
             if (cam == null) cam = Camera.main;
             ReadMovementInput();
 
-            if (input.GameplayEnabled)
+            if (input.GameplayEnabled && !IsDead)
             {
                 if (input.ConsumeLockOn())
                 {
@@ -132,7 +132,8 @@ namespace TungSahur.Player
                 case PlayerState.Landing: UpdateLanding(dt); break;
                 case PlayerState.Attack: UpdateAttack(dt); break;
                 case PlayerState.Dodge: UpdateDodge(dt); break;
-                case PlayerState.Hit: UpdateHit(dt); break;
+                case PlayerState.Hit: UpdateHitReaction(dt); break;
+                case PlayerState.Dead: UpdateDead(dt); break;
                 case PlayerState.Aim: UpdateAim(dt); break;
             }
 
@@ -400,13 +401,6 @@ namespace TungSahur.Player
             IsGuarding = canGuard;
             guardWeight = Mathf.MoveTowards(guardWeight, IsGuarding ? 1f : 0f, dt * 6f);
             animator.SetLayerWeight(1, guardWeight);
-        }
-
-        // ------------------------------------------------------------------ hit (reserved for enemy attacks)
-        void UpdateHit(float dt)
-        {
-            motor.SetDesiredPlanarVelocity(Vector3.zero, 10f, dt);
-            if (stateTime > 0.55f) ReturnToLocomotion(0.2f);
         }
 
         void ReturnToLocomotion(float fade)

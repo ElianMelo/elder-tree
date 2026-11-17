@@ -66,6 +66,9 @@ namespace TungSahur.CameraSystem
         float fovKick, fovKickVel, currentFov;
         Vector3 aimVel, pivotBase;
         float baseRadius, aimLinear, aimSnapUntil;
+        [Tooltip("Bow aim while locked on: how far (degrees) look input can lead the target.")]
+        public float maxAimLead = 14f;
+        Vector2 aimLead;
         bool wasAiming;
 
         void Awake()
@@ -138,21 +141,28 @@ namespace TungSahur.CameraSystem
             followPivot.position = pivotBase + (camRight * aimShoulder.x + Vector3.up * aimShoulder.y) * aw;
 
             // raising the bow while locked on swings the view onto the target, then hands control back
-            if (Aiming && !wasAiming && locked != null) aimSnapUntil = Time.unscaledTime + 0.3f;
+            if (Aiming && !wasAiming && locked != null) { aimSnapUntil = Time.unscaledTime + 0.3f; aimLead = Vector2.zero; }
             wasAiming = Aiming;
 
             if (Aiming || aw > 0.5f)
             {
-                if (Time.unscaledTime < aimSnapUntil && locked != null && Camera.main != null)
+                if (Aiming && locked != null && Camera.main != null)
                 {
                     // closed loop on the real view ray: whatever the composer framing, the screen-centre
-                    // crosshair ends up on the lock point
+                    // crosshair ends up on the lock point. After the initial snap the aim stays stuck to a
+                    // locked target (moving and flying enemies), and look input becomes a lead offset.
+                    bool snapping = Time.unscaledTime < aimSnapUntil;
+                    if (!snapping && !paused && input != null && input.GameplayEnabled)
+                    {
+                        var d = input.LookDelta(dt) * aimLookScale;
+                        aimLead = Vector2.ClampMagnitude(aimLead + new Vector2(d.x, -d.y), maxAimLead);
+                    }
                     var ct = Camera.main.transform;
                     Vector3 to = locked.LockPosition - ct.position;
                     Vector3 f = ct.forward;
-                    float yawErr = Mathf.DeltaAngle(Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg, Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg);
-                    float pitchErr = Mathf.Asin(Mathf.Clamp(to.normalized.y, -1f, 1f)) * Mathf.Rad2Deg - Mathf.Asin(Mathf.Clamp(f.y, -1f, 1f)) * Mathf.Rad2Deg;
-                    float k = Ease.Damp(22f, dt);
+                    float yawErr = Mathf.DeltaAngle(Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg, Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg) + aimLead.x;
+                    float pitchErr = Mathf.Asin(Mathf.Clamp(to.normalized.y, -1f, 1f)) * Mathf.Rad2Deg + aimLead.y - Mathf.Asin(Mathf.Clamp(f.y, -1f, 1f)) * Mathf.Rad2Deg;
+                    float k = Ease.Damp(snapping ? 22f : 14f, dt);
                     yaw += yawErr * k;
                     pitch -= pitchErr * k;
                 }

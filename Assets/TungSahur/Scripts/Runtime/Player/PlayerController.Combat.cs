@@ -251,7 +251,7 @@ namespace TungSahur.Player
         {
             if (attack == null) return;
             bool charged = chargeTime > 0.05f;
-            bool critical = target is Enemies.TrainingDummy td && td.IsStaggered;
+            bool critical = target is IStaggerable st && st.IsStaggered;
             Vector3 dir = target.Root.position - transform.position;
             dir.y = 0;
             dir = dir.sqrMagnitude > 1e-4f ? dir.normalized : transform.forward;

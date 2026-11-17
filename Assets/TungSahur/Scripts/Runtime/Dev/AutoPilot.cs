@@ -108,6 +108,21 @@ namespace TungSahur.Dev
                         yield return null;
                         break;
                     case "log": Log.Add(Report()); break;
+                    case "boss": Enemies.BossEncounter.Instance?.StartFight(); break;
+                    case "bossmove": Enemies.BossEncounter.Instance?.boss?.ForceNextMove(p[1]); break;
+                    case "bosshp":
+                    {
+                        var b = Enemies.BossEncounter.Instance?.boss;
+                        if (b != null) b.ReceiveHit(new Combat.DamageInfo { damage = F(1, 100), poiseDamage = F(2, 0), point = b.transform.position + Vector3.up * 2, direction = Vector3.forward });
+                        break;
+                    }
+                    case "lockboss":
+                    {
+                        var b = Enemies.BossEncounter.Instance?.boss;
+                        if (b != null && PlayerController.Instance != null) PlayerController.Instance.lockOn.ForceLock(b.GetComponent<Combat.Targetable>());
+                        break;
+                    }
+                    case "god": PlayerController.DevNoDamage = F(1, 1) > 0.5f; break;
                     case "hurt":
                     {
                         var t = PlayerController.Instance != null ? PlayerController.Instance.lockOn.Current : null;
@@ -133,6 +148,17 @@ namespace TungSahur.Dev
                 sb.Append($"stam={pc.stats.Stamina:F0} fp={pc.stats.Focus:F0} atk={(pc.CurrentAttack != null ? pc.CurrentAttack.id : "-")} ");
                 sb.Append($"lock={(pc.lockOn.Current != null ? pc.lockOn.Current.name : "-")} ");
             }
+            var boss = Enemies.BossEncounter.Instance != null ? Enemies.BossEncounter.Instance.boss : null;
+            if (boss != null && boss.gameObject.activeInHierarchy)
+                sb.Append($"[BOSS {boss.State} move={boss.CurrentMove} hp={boss.Health:F0} poise={boss.Poise:F0} p2={boss.PhaseTwo} pos={boss.transform.position.ToString("F1")}] ");
+            if (pc != null) sb.Append($"php={pc.stats.Health:F0} ");
+            if (Enemies.AerialBomb.Live.Count > 0 && pc != null)
+            {
+                float best = 999f;
+                foreach (var ab in Enemies.AerialBomb.Live) best = Mathf.Min(best, Vector3.Distance(ab.Target, pc.transform.position));
+                sb.Append($"bombs={Enemies.AerialBomb.Live.Count} nearest={best:F1} ");
+            }
+            sb.Append($"walkers={Enemies.LivingBomb.Active.Count} ");
             foreach (var d in Object.FindObjectsByType<TrainingDummy>(FindObjectsSortMode.InstanceID))
                 sb.Append($"[{d.name}: hp={d.Health:F0} alive={d.IsAlive}] ");
             return sb.ToString();

@@ -1,5 +1,40 @@
 # Handoff — Tung Tung Tung Sahur soulslike slice
 
+## 000. Boss: Bombardiro Crocodilo
+
+**Start it:** pause menu → **Summon Bombardiro**. The training dummies leave the field, and the boss flies in low over the arena, roars, and climbs into its orbit. **Reset Training** ends the fight.
+
+| Move | What it does | Counterplay |
+|---|---|---|
+| Carpet bombing | Plans a run across your position (best of 16 headings, then a Hermite curve onto the line) and lays 7 bombs (10 in phase 2). A red ring appears on each impact point first and fills as its bomb falls. | Leave the corridor sideways. |
+| Precision strike | 3 to 4 single bombs aimed where you are heading. | Keep moving or roll. |
+| Living bombs | Low pass that drops 3 to 4 walking croc-bombs. They chase you, plant their feet within 1.7 m, blink red twice (beep, beep), then blow. | Kill them first (45 HP): they only pop, and the pop damages the boss if it's near. Or roll out after the second blink. |
+| Ground charge | Lands across the arena from you, roars and turns to face you, then runs you over in a straight line (Slam, launches you). Twice in phase 2. | Sprint or roll sideways. The outer wings pass overhead. |
+| Grounded window | Sits on the field for 6.5 s and snaps its jaws at anything in front (bite with a 0.55 s telegraph). Flanks and tail are safe. | Melee window. |
+| Stance break | Arrows and clubs wear its poise down (150). Broken in the air, it crash-lands; broken on the ground, it slumps nose-first. Either way you get a 3.4 s critical window (×2.6). | Shoot it in the air, then club it. |
+| Phase 2 (≤50%) | Smoking outer engines, 18% faster, more bombs, double charge. | |
+
+Death: **YOU DIED**, fade, respawn at the spawn point; the boss is dismissed and the dummies return. Victory: crash, chain explosions, **GREAT ENEMY FELLED**; the wreck stays until the next summon or reset.
+
+**Player damage (new, the player could not be hurt before):** `PlayerController.Damage.cs`. Roll i-frames dodge everything; a guard facing the blow absorbs 72% for stamina (guard break when stamina runs out); flinch by impact weight (Slam knocks you off your roots); 0.4 s grace after a hit so one blow can't multi-hit. `TakeHit(DamageInfo)` is the API for any future enemy.
+
+**Bow vs flying targets:** while locked on and aiming, the crosshair now stays stuck to the target, and look input becomes a lead offset (±14°, `CameraDirector.maxAimLead`). Before this change it snapped only for 0.3 s when the bow was raised.
+
+| Piece | Where |
+|---|---|
+| Model (2,355 tris; croc-head bomber, separate jaw and 4 three-blade props), aerial bomb (192), living bomb (540) | `Tools/Blender/build_bombardiro.py`: run headless with `-- <abs out dir>`, then copy the 3 FBX to `Art/Models/Boss` |
+| AI: flight (banked steering, Hermite paths), moves, stance, phases | `Enemies/Bombardiro/BombardiroBoss.cs` (all tuning is on the prefab) |
+| Bombs, markers, walkers, blasts | `AerialBomb.cs`, `LivingBomb.cs`, `Blast.cs` |
+| Fight flow (summon, dummies, death and victory) | `BossEncounter.cs` (on GameSystems) |
+| HUD: bottom boss bar with chip and damage number, YOU DIED, screen fade, menu entry | `UI/HUD.Boss.cs`, `TungHUD.uss` |
+| Textures (riveted rusty aluminium, croc scutes, teeth, flesh, marker), materials, FX (explosion with light flash, bomb pop, smoke), prefabs | `Editor/TungSahurBuilder.Boss.cs` → `BuildBoss()` (part of `BuildAll()`) |
+| SFX: explosion, bomb whistle, beep, croc roar, jaw snap, metal hit, player hurt, skid, YOU DIED, GREAT ENEMY FELLED, a seamless four-engine drone loop | `SfxForge` (Bombardiro section) |
+| Autopilot commands | `boss`, `bossmove Carpet/Strike/Living/Charge`, `bosshp <dmg> [poise]`, `lockboss`, `god 0/1` |
+
+Verified in play mode with the autopilot: every move, hits landing on the player, melee and arrows damaging the boss, stance break → crash/stagger → criticals, phase 2, death with the banner, and player death → respawn. Console: 0 errors, 0 warnings. Shots: `Docs/Screenshots/16_bombardiro_fight.png`.
+
+**Known limits:** the arena props (lamps, crates, hut) don't block the boss; it taxis through them, and a living bomb can land on a lamp top. The plane has no skeleton (procedural jaw and props only). There is no boss music yet; the engine drone carries the mood. `TextureForge.BuildIron` (and a few older textures) use `Mathf.SmoothStep` as if it were a threshold, but it interpolates between its first two arguments. The boss textures use a proper smoothstep; the older ones were left alone.
+
 ## 00. Character v3: Elder Tree (PSX dark fantasy)
 
 - **Art direction** now lives in `Docs/ART_DIRECTION.md` (from the 91 images in `Assets/References`, the 4 treant images and PS1 research). Check every new model against it.

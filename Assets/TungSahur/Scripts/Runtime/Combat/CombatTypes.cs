@@ -16,6 +16,12 @@ namespace TungSahur.Combat
         public GameObject source;
     }
 
+    /// <summary>Enemies that can be stance-broken: hits landed while staggered are criticals.</summary>
+    public interface IStaggerable
+    {
+        bool IsStaggered { get; }
+    }
+
     public interface IDamageable
     {
         bool IsAlive { get; }
