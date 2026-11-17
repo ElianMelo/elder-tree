@@ -28,7 +28,9 @@ namespace TungSahur.UI
         public LockOnSystem lockOn;
 
         public static HUD Instance { get; private set; }
-        public bool MenuOpen => pauseRoot != null && pauseRoot.style.display == DisplayStyle.Flex;
+        /// <summary>Any menu that takes the cursor and pauses the game (pause or F1 debug).</summary>
+        public bool MenuOpen => PauseOpen || DebugMenuOpen;
+        public bool PauseOpen => pauseRoot != null && pauseRoot.style.display == DisplayStyle.Flex;
         public bool TitleShowing { get; private set; }
 
         VisualElement root;
@@ -73,6 +75,7 @@ namespace TungSahur.UI
             BuildBanner();
             BuildBossUI();
             BuildPause();
+            BuildDebugMenu();
             BuildTitle();
 
             if (input != null) input.DeviceChanged += _ => RefreshHints();
@@ -221,6 +224,7 @@ namespace TungSahur.UI
             TickHints();
             TickBanner(dt);
             TickBossBar(dt);
+            TickDebugMenu(dt);
             TickPause();
             TickTitle(dt);
         }

@@ -4,6 +4,8 @@
 
 **Start it:** pause menu → **Summon Bombardiro**. The training dummies leave the field, and the boss flies in low over the arena, roars, and climbs into its orbit. **Reset Training** ends the fight.
 
+**Debug: F1** opens a boss roster listing every boss in `BossEncounter.bosses` (the primary `boss` is added automatically). ↑/↓ + Enter or 1-9 spawns / despawns one, 0 despawns all; the game pauses while it's open. Several bosses can be up at once: the bar follows the next living one, and victory waits until all are down. To add a boss, put its `BombardiroBoss` in the list.
+
 | Move | What it does | Counterplay |
 |---|---|---|
 | Carpet bombing | Plans a run across your position (best of 16 headings, then a Hermite curve onto the line) and lays 7 bombs (10 in phase 2). A red ring appears on each impact point first and fills as its bomb falls. | Leave the corridor sideways. |
@@ -29,7 +31,7 @@ Death: **YOU DIED**, fade, respawn at the spawn point; the boss is dismissed and
 | HUD: bottom boss bar with chip and damage number, YOU DIED, screen fade, menu entry | `UI/HUD.Boss.cs`, `TungHUD.uss` |
 | Textures (riveted rusty aluminium, croc scutes, teeth, flesh, marker), materials, FX (explosion with light flash, bomb pop, smoke), prefabs | `Editor/TungSahurBuilder.Boss.cs` → `BuildBoss()` (part of `BuildAll()`) |
 | SFX: explosion, bomb whistle, beep, croc roar, jaw snap, metal hit, player hurt, skid, YOU DIED, GREAT ENEMY FELLED, a seamless four-engine drone loop | `SfxForge` (Bombardiro section) |
-| Autopilot commands | `boss`, `bossmove Carpet/Strike/Living/Charge`, `bosshp <dmg> [poise]`, `lockboss`, `god 0/1` |
+| Autopilot commands | `key F1` (tap any keyboard key), `boss`, `bossmove Carpet/Strike/Living/Charge`, `bosshp <dmg> [poise]`, `lockboss`, `god 0/1` |
 
 Verified in play mode with the autopilot: every move, hits landing on the player, melee and arrows damaging the boss, stance break → crash/stagger → criticals, phase 2, death with the banner, and player death → respawn. Console: 0 errors, 0 warnings. Shots: `Docs/Screenshots/16_bombardiro_fight.png`.
 

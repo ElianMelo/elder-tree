@@ -216,11 +216,11 @@ namespace TungSahur.UI
             Lbl("", "pause__footnote", foot).name = "footnote";
         }
 
-        public void TogglePause() => SetPause(!MenuOpen);
+        public void TogglePause() => SetPause(!PauseOpen);
 
         public void SetPause(bool open)
         {
-            if (TitleShowing) return;
+            if (TitleShowing || DebugMenuOpen) return;
             pauseRoot.style.display = open ? DisplayStyle.Flex : DisplayStyle.None;
             menuIndex = 0;
             panelIndex = -1;
@@ -320,7 +320,7 @@ namespace TungSahur.UI
         {
             if (input == null) return;
             if (!TitleShowing && input.ConsumePause()) { TogglePause(); return; }
-            if (!MenuOpen) return;
+            if (!PauseOpen) return;
 
             var nav = input.ConsumeNavigate();
             if (panelIndex < 0)

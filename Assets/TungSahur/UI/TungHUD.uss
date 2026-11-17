@@ -549,3 +549,81 @@
     left: 0; right: 0; top: 0; bottom: 0;
     background-color: rgb(0, 0, 0);
 }
+
+/* ---------------------------------------------------------------- F1 debug: boss roster */
+.dbg {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background-color: rgba(4, 6, 10, 0.55);
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 150px 0 0 56px;   /* clear of the status bars */
+}
+
+.dbg__frame {
+    width: 620px;
+    padding: 22px 28px 16px 28px;
+    background-color: rgb(12, 13, 17);   /* opaque: world-space enemy bars sit underneath */
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-color: rgba(216, 180, 106, 0.55);
+}
+
+.dbg__head {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-bottom: 12px;
+    margin-bottom: 10px;
+    border-bottom-width: 1px;
+    border-color: rgba(216, 180, 106, 0.2);
+}
+.dbg__title { font-size: 24px; letter-spacing: 8px; color: rgb(244, 223, 166); }
+.dbg__tag { font-size: 13px; letter-spacing: 3px; color: rgb(154, 146, 127); }
+
+.dbg__row {
+    flex-direction: row;
+    align-items: center;
+    padding: 9px 14px;
+    margin-bottom: 3px;
+    border-left-width: 3px;
+    border-color: rgba(0, 0, 0, 0);
+    transition-property: background-color, translate;
+    transition-duration: 0.12s;
+}
+.dbg__row--active {
+    background-color: rgba(216, 180, 106, 0.10);
+    border-color: rgb(216, 180, 106);
+    translate: 4px 0;
+}
+.dbg__row--all { margin-top: 8px; }
+
+.dbg__key {
+    width: 28px;
+    font-size: 14px;
+    color: rgb(154, 146, 127);
+    -unity-text-align: middle-left;
+}
+.dbg__col { flex-grow: 1; }
+.dbg__name { font-size: 20px; color: rgb(237, 230, 214); }
+.dbg__row--active .dbg__name { color: rgb(244, 223, 166); }
+.dbg__status { font-size: 14px; color: rgb(154, 146, 127); margin-top: 2px; }
+.dbg__row--on .dbg__status { color: rgb(196, 92, 84); }
+.dbg__action {
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: rgb(154, 146, 127);
+    -unity-text-align: middle-right;
+}
+.dbg__row--active .dbg__action { color: rgb(244, 223, 166); }
+.dbg__empty { font-size: 16px; color: rgb(154, 146, 127); padding: 9px 14px; white-space: normal; }
+
+.dbg__foot {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top-width: 1px;
+    border-color: rgba(216, 180, 106, 0.2);
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: rgb(154, 146, 127);
+}

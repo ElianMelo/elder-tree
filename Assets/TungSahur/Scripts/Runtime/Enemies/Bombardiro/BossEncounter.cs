@@ -12,11 +12,16 @@ namespace TungSahur.Enemies
     /// Runs the Bombardiro fight: summoned from the pause menu, it clears the training dummies off the
     /// field, shows the boss bar, and handles both endings. On death: YOU DIED, fade, back at the
     /// spawn, boss gone, dummies back. On victory: GREAT ENEMY FELLED, and the wreck smoulders until
-    /// the next summon or reset.
+    /// the next summon or reset. Several bosses can be configured in <see cref="bosses"/>; the F1
+    /// debug menu spawns and despawns any of them, and the fight lasts until every spawned one is
+    /// down or gone.
     /// </summary>
     public class BossEncounter : MonoBehaviour
     {
+        [Tooltip("Primary boss: the one the pause menu summons.")]
         public BombardiroBoss boss;
+        [Tooltip("Every boss the F1 debug menu can spawn / despawn. The primary is added automatically.")]
+        public List<BombardiroBoss> bosses = new();
         public PlayerController player;
         public HUD hud;
         public Transform spawnPoint;
@@ -27,16 +32,22 @@ namespace TungSahur.Enemies
         readonly List<TrainingDummy> dummies = new();
         Coroutine ending;
 
-        void Awake() => Instance = this;
+        void Awake()
+        {
+            Instance = this;
+            bosses.RemoveAll(b => b == null);
+            if (boss != null && !bosses.Contains(boss)) bosses.Insert(0, boss);
+            if (boss == null && bosses.Count > 0) boss = bosses[0];
+        }
         void OnDestroy() { if (Instance == this) Instance = null; }
 
         void Start()
         {
             dummies.AddRange(FindObjectsByType<TrainingDummy>(FindObjectsSortMode.None));
-            if (boss != null)
+            foreach (var b in bosses)
             {
-                boss.Felled += OnBossFelled;
-                boss.ResetBoss();
+                b.Felled += OnBossFelled;
+                b.ResetBoss();
             }
             if (player != null) player.Died += OnPlayerDied;
             if (hud != null)
@@ -46,15 +57,40 @@ namespace TungSahur.Enemies
             }
         }
 
-        public void StartFight()
+        public void StartFight() => Spawn(boss);
+
+        /// <summary>A boss is spawned while it is in the world: fighting, or felled and smouldering.</summary>
+        public static bool IsSpawned(BombardiroBoss b) => b != null && b.gameObject.activeSelf;
+
+        /// <summary>Bring a boss into the fight (restarts it if it was already there).</summary>
+        public void Spawn(BombardiroBoss b)
         {
-            if (boss == null) return;
-            if (ending != null) { StopCoroutine(ending); ending = null; }
+            if (b == null) return;
             if (player != null && player.IsDead) return;
+            if (ending != null) { StopCoroutine(ending); ending = null; }
             Active = true;
             SetDummies(false);
-            boss.BeginFight();
-            hud?.ShowBossBar(boss);
+            b.BeginFight();
+            hud?.ShowBossBar(b);
+        }
+
+        /// <summary>Send one boss away. The fight ends once no boss is left standing.</summary>
+        public void Despawn(BombardiroBoss b)
+        {
+            if (b == null) return;
+            if (IsSpawned(b)) FXManager.Spawn(FXType.Dust, b.transform.position, Quaternion.identity, 2f);
+            b.ResetBoss();
+            var next = NextLivingBoss();
+            if (next == null) { EndFight(false); return; }
+            if (hud != null && hud.BossBarTarget == b) hud.ShowBossBar(next);
+        }
+
+        public void DespawnAll() => EndFight(false);
+
+        BombardiroBoss NextLivingBoss()
+        {
+            foreach (var o in bosses) if (o != null && o.IsAlive) return o;
+            return null;
         }
 
         /// <summary>Stop the fight and put the training yard back (no fanfare).</summary>
@@ -62,7 +98,7 @@ namespace TungSahur.Enemies
         {
             if (ending != null) { StopCoroutine(ending); ending = null; }
             Active = false;
-            if (!keepWreck && boss != null) boss.ResetBoss();
+            if (!keepWreck) ResetAllBosses();
             foreach (var l in LivingBomb.Active.ToArray()) l.Despawn();
             hud?.HideBossBar();
             SetDummies(true);
@@ -79,9 +115,17 @@ namespace TungSahur.Enemies
             }
         }
 
+        void ResetAllBosses()
+        {
+            foreach (var b in bosses) if (b != null) b.ResetBoss();
+        }
+
         void OnBossFelled(BombardiroBoss b)
         {
             if (!Active) return;
+            // others still in the air: keep fighting, move the bar to the next one
+            var next = NextLivingBoss();
+            if (next != null) { if (hud != null && hud.BossBarTarget == b) hud.ShowBossBar(next); return; }
             ending = StartCoroutine(Victory());
         }
 
@@ -112,7 +156,7 @@ namespace TungSahur.Enemies
             yield return new WaitForSeconds(4.2f);
             if (hud != null) yield return hud.FadeScreen(1f, 0.9f);
             Active = false;
-            boss.ResetBoss();
+            ResetAllBosses();
             foreach (var l in LivingBomb.Active.ToArray()) l.Despawn();
             hud?.HideBossBar();
             SetDummies(true);

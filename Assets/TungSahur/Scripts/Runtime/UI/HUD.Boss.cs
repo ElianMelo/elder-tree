@@ -57,6 +57,9 @@ namespace TungSahur.UI
 
         public void HideBossBar() => bossVisible = false;
 
+        /// <summary>The boss whose bar is on screen (null when none has been shown yet).</summary>
+        public BombardiroBoss BossBarTarget => bossVisible ? boss : null;
+
         void OnBossDamaged(BombardiroBoss b, DamageInfo info, bool poiseBroken)
         {
             if (Time.unscaledTime - bossAccumAt > 1.6f) bossAccum = 0f;

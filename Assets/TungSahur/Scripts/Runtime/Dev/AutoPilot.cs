@@ -13,7 +13,7 @@ namespace TungSahur.Dev
     /// <summary>
     /// Development autopilot: drives a virtual gamepad from a tiny script so gameplay can be
     /// exercised and screenshotted without a human (used for automated playtests).
-    /// Script: "stick x y; rstick x y; tap RB 0.1; hold RT 0.8; press B; release B; wait 0.5; shot name; log".
+    /// Script: "stick x y; rstick x y; tap RB 0.1; hold RT 0.8; press B; release B; key F1; wait 0.5; shot name; log".
     /// </summary>
     public class AutoPilot : MonoBehaviour
     {
@@ -102,6 +102,17 @@ namespace TungSahur.Dev
                     case "press": held.Add(Parse(p[1])); break;
                     case "release": held.Remove(Parse(p[1])); break;
                     case "wait": yield return new WaitForSecondsRealtime(F(1, 0.1f)); break;
+                    case "key":
+                    {
+                        // tap a keyboard key, e.g. "key F1" or "key Digit1"
+                        var kb = Keyboard.current;
+                        if (kb == null || !System.Enum.TryParse<Key>(p[1], true, out var k)) break;
+                        InputSystem.QueueStateEvent(kb, new KeyboardState(k));
+                        yield return new WaitForSecondsRealtime(F(2, 0.08f));
+                        InputSystem.QueueStateEvent(kb, new KeyboardState());
+                        yield return null;
+                        break;
+                    }
                     case "shot":
                         System.IO.Directory.CreateDirectory(shotDir);
                         ScreenCapture.CaptureScreenshot($"{shotDir}/{p[1]}.png");
