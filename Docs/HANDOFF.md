@@ -1,5 +1,19 @@
 # Handoff — Tung Tung Tung Sahur soulslike slice
 
+## 00. Character v3: Elder Tree (PSX dark fantasy)
+
+- **Art direction** now lives in `Docs/ART_DIRECTION.md` (from the 91 images in `Assets/References`, the 4 treant images and PS1 research). Check every new model against it.
+- `Tools/Blender/build_elder_tree.py` builds the player as a low-poly treant: **2,222 tris**. 12-sided fluted trunk with a carved face (angry V brow, deep ember-lit sockets, long drooping nose), moss-strand beard cards, 8-branch antler crown with sparse dead-leaf cards, shoulder burls and spurs, root skirt over the thighs, gnarled 6-sided arms with twig fingers (right fist wraps the club axis), and root-toe feet.
+- **Same 22-bone Humanoid skeleton** as the old log, so every retargeted clip, the club grip, quiver and bow sockets work unchanged. Avatar imports valid/humanoid.
+- **Textures**: `T_ElderBark.png` (256², point filtered, no mips, uncompressed) is painted per texel: bark fibres, fissures, plates, cross cracks, knots, lichen, moss on up-facing surfaces, ground grime, ember glow around the eyes. All of it is multiplied by baked AO and a soft top light, then quantised to 15-bit with a 4×4 Bayer dither. `T_ElderMoss.png` (256², alpha cutout) holds the moss strands, leaves and hanging roots.
+- **Materials** (`BuildElderMaterials()`): `M_ElderBark` (smoothness 0.04, no specular or reflections), `M_ElderMoss` (alpha clip, double sided), `M_ElderEye` (dim amber emission).
+- `TungSahurBuilder.ModelPath` → `ElderTree.fbx`. The old log is kept at `TungModelPath`.
+- Rebuild: `blender -b --factory-startup --python Tools/Blender/build_elder_tree.py -- Tools/Blender/export --bake Assets/TungSahur/Art/Textures`, copy `ElderTree.fbx` into `Assets/TungSahur/Art/Models`, then `TungSahurBuilder.BuildAll()`. The bake takes about 5 s. Live look-dev: run the builder with `TS_EXPORT=False`, then `preview_elder_tree.py` (`ET_Cam*` cameras).
+- Shots: `Docs/Screenshots/11_elder_tree_ingame.png`, `12_elder_tree_blender.png`, `13_elder_tree_atlases.png`. Play mode console: 0 errors, 0 warnings.
+- **World pass (PSX dark fantasy)**: every lit material now uses `TungSahur/PSXLit` (vertex snap + 15-bit dither), the game renders at 0.4 scale with point upscaling, the world textures are 64–256 px dithered and point filtered, and the props, trees, club, bow, arrow and quiver were rebuilt low-poly. The sky, fog, lights and grade are now indigo/violet. Details in `Docs/ART_DIRECTION.md` §4, shots in `Docs/Screenshots/14_psx_world_sheet.png` and `15_psx_world_full.png`. Play mode console: 0 errors, 0 warnings.
+- Rebuild the world: `blender -b --factory-startup --python Tools/Blender/build_props.py -- Assets/TungSahur/Art/Models/Props`, `... build_psx_weapons.py -- Tools/Blender/export` (copy `ElderClub.fbx` to Models), `... build_bow.py -- Tools/Blender/export --icon Assets/TungSahur/UI/Icon_Bow.png` (copy the three FBX), then `TungSahurBuilder.BuildAll()`.
+- Unused after the pass (safe to delete when you review): the `T_*_Normal.png` world normal maps, `T_TungClub_*`, and the old `TungSahur_Club.fbx` (kept at `TungClubPath`).
+
 ## 0. Character v2 (reference-matched model)
 
 - `Tools/Blender/build_tung_sahur.py` now sculpts the face as a height field on a dense lathe (carved brows, socketed wide-open eyes with lids, bulbous nose, apple cheeks, smirking grin, nasolabial folds), chunkier log (r 0.27), thicker legs, big feet, gripping right fist, plain-wood bat.

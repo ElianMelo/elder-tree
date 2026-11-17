@@ -25,6 +25,10 @@ import os
 import sys
 from mathutils import Vector, Matrix
 
+# PSX pass (Docs/ART_DIRECTION.md): low sweep/lathe resolution, detail lives in the dithered textures.
+PSX = True
+ARROW_SIDES = 4 if PSX else 8
+
 _argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 _here = os.path.dirname(os.path.abspath(globals().get("__file__", bpy.data.filepath or ".")))
 OUT_DIR = globals().get("TS_OUT_DIR") or (_argv[0] if _argv else os.path.join(_here, "export"))
@@ -98,14 +102,14 @@ def material(name, rgb, rough=0.55, metal=0.0, wood=False, weave=False):
 
 
 MAT = {
-    "M_BowWood": material("M_BowWood", (0.46, 0.27, 0.13), 0.42, wood=True),
+    "M_BowWood": material("M_BowWood", (0.26, 0.18, 0.12), 0.42, wood=True),
     "M_BowHorn": material("M_BowHorn", (0.09, 0.06, 0.045), 0.3),
-    "M_Rope": material("M_Rope", (0.55, 0.43, 0.26), 0.85, weave=True),
+    "M_Rope": material("M_Rope", (0.34, 0.29, 0.21), 0.85, weave=True),
     "M_Iron": material("M_Iron", (0.17, 0.17, 0.18), 0.38, metal=0.9),
-    "M_ArrowShaft": material("M_ArrowShaft", (0.78, 0.66, 0.42), 0.5, wood=True),
-    "M_FletchRed": material("M_FletchRed", (0.62, 0.09, 0.06), 0.8),
-    "M_FletchCream": material("M_FletchCream", (0.86, 0.8, 0.66), 0.8),
-    "M_Quiver": material("M_Quiver", (0.6, 0.47, 0.28), 0.8, weave=True),
+    "M_ArrowShaft": material("M_ArrowShaft", (0.40, 0.34, 0.26), 0.5, wood=True),
+    "M_FletchRed": material("M_FletchRed", (0.34, 0.07, 0.05), 0.8),
+    "M_FletchCream": material("M_FletchCream", (0.52, 0.48, 0.40), 0.8),
+    "M_Quiver": material("M_Quiver", (0.26, 0.19, 0.13), 0.8, weave=True),
 }
 
 
@@ -254,12 +258,12 @@ def bow_section(s):
         k = smoothstep(0.965, 1.0, a)
         width *= 1 - 0.45 * k
         thick *= 1 - 0.2 * k
-    return round_rect(14, width / 2, thick / 2, r=0.55 + 0.35 * riser)
+    return round_rect(6 if PSX else 14, width / 2, thick / 2, r=0.55 + 0.35 * riser)
 
 
 def build_bow():
     mb = MeshBuilder()
-    N = 120
+    N = 22 if PSX else 120
     ss = []
     for i in range(N + 1):
         # denser sampling near the tips and riser transitions
@@ -279,7 +283,7 @@ def build_bow():
     sweep(mb, frames, sections, mat_fn, v_scale=1.5)
 
     # rattan grip wrap: tilted rings hugging the grip
-    turns = 15
+    turns = 4 if PSX else 15
     for k in range(turns):
         z0 = GRIP_LO + (GRIP_HI - GRIP_LO) * (k + 0.5) / turns
         s0 = z0 / BOW_HALF
@@ -300,7 +304,7 @@ def build_bow():
             outward = Vector((u, w)).normalized() * (tube_r * 0.85)
             tilt = 0.006 * math.sin(a)  # spiral look
             ring_pts.append(c + x * (u + outward.x) + nrm * (w + outward.y) + Vector((0, 0, tilt)))
-        tube_loop(mb, ring_pts, tube_r, 6, "M_Rope")
+        tube_loop(mb, ring_pts, tube_r, 3 if PSX else 6, "M_Rope")
 
     # leather-ish arrow shelf pad on the archer's left (-X) side
     z0 = SHELF_Z
@@ -391,7 +395,7 @@ def build_arrow(name="TungSahur_Arrow", mb=None, origin=Vector((0, 0, 0)), axis=
         for nd in nodes:
             r += 0.0009 * math.exp(-((d - nd) / 0.006) ** 2)
         shaft.append((d, r))
-        d += 0.012
+        d += 0.11 if PSX else 0.012
     shaft.append((L - 0.075, sr))
     prof = nock + shaft[1:]
     lim = len(nock) - 1
@@ -399,16 +403,16 @@ def build_arrow(name="TungSahur_Arrow", mb=None, origin=Vector((0, 0, 0)), axis=
     def m_fn(i):
         return "M_BowHorn" if i < lim else "M_ArrowShaft"
 
-    lathe(mb, prof, 8, m_fn, axis, origin, True, not head)
+    lathe(mb, prof, ARROW_SIDES, m_fn, axis, origin, True, not head)
 
     # thread wraps holding the fletching
     for d0 in (0.036, 0.17):
-        lathe(mb, [(d0 - 0.006, sr * 1.02), (d0 - 0.005, sr * 1.25), (d0 + 0.005, sr * 1.25), (d0 + 0.006, sr * 1.02)], 8,
+        lathe(mb, [(d0 - 0.006, sr * 1.02), (d0 - 0.005, sr * 1.25), (d0 + 0.005, sr * 1.25), (d0 + 0.006, sr * 1.02)], ARROW_SIDES,
               lambda i: "M_BowHorn", axis, origin, False, False)
 
     if head:
         # socket + leaf-shaped broadhead blade (two crossed thin blades read better in flight)
-        lathe(mb, [(L - 0.08, sr * 1.05), (L - 0.074, 0.0062), (L - 0.05, 0.0058), (L - 0.044, 0.0042)], 8,
+        lathe(mb, [(L - 0.08, sr * 1.05), (L - 0.074, 0.0062), (L - 0.05, 0.0058), (L - 0.044, 0.0042)], ARROW_SIDES,
               lambda i: "M_Iron", axis, origin, False, False)
         ref = Vector((1, 0, 0)) if abs(axis.dot(Vector((1, 0, 0)))) < 0.9 else Vector((0, 0, 1))
         for k in range(2):
@@ -438,7 +442,7 @@ def build_arrow(name="TungSahur_Arrow", mb=None, origin=Vector((0, 0, 0)), axis=
         out = e1 * math.cos(ang) + e2 * math.sin(ang)
         thick = axis.cross(out).normalized()
         mat = "M_FletchRed" if k == 0 else "M_FletchCream"
-        n = 9
+        n = 3 if PSX else 9
         top, bot = [], []
         for i in range(n + 1):
             t = i / n
@@ -467,25 +471,27 @@ def build_quiver():
     mb = MeshBuilder()
     H = 0.56
     body = []
-    for i in range(29):
-        t = i / 28
+    nb = 7 if PSX else 29
+    for i in range(nb):
+        t = i / (nb - 1)
         r = 0.066 + 0.012 * t + 0.003 * math.sin(t * math.pi)
         body.append((t * H - H / 2, r))
     # body (open top: inner wall)
-    lathe(mb, body, 20, lambda i: "M_Quiver", Vector((0, 0, 1)), Vector((0, 0, 0)), True, False)
+    lathe(mb, body, 8 if PSX else 20, lambda i: "M_Quiver", Vector((0, 0, 1)), Vector((0, 0, 0)), True, False)
     inner = [(H / 2, 0.074), (H / 2 - 0.12, 0.07)]
-    lathe(mb, inner, 20, lambda i: "M_Quiver", Vector((0, 0, 1)), Vector((0, 0, 0)), False, True)
+    lathe(mb, inner, 8 if PSX else 20, lambda i: "M_Quiver", Vector((0, 0, 1)), Vector((0, 0, 0)), False, True)
     # dark wooden bands: base, middle, rim
     for (z0, r0, hgt) in ((-H / 2 + 0.01, 0.069, 0.03), (0.02, 0.075, 0.024), (H / 2 - 0.014, 0.081, 0.03)):
         lathe(mb, [(z0 - hgt / 2, r0), (z0 - hgt / 2 + 0.003, r0 + 0.005), (z0 + hgt / 2 - 0.003, r0 + 0.005), (z0 + hgt / 2, r0)],
-              20, lambda i: "M_BowHorn", Vector((0, 0, 1)), Vector((0, 0, 0)), False, False)
+              8 if PSX else 20, lambda i: "M_BowHorn", Vector((0, 0, 1)), Vector((0, 0, 0)), False, False)
     # strap loops
     for z0 in (-0.12, 0.17):
         pts = []
-        for j in range(24):
-            a = 2 * math.pi * j / 24
+        ns = 8 if PSX else 24
+        for j in range(ns):
+            a = 2 * math.pi * j / ns
             pts.append(Vector((math.cos(a) * 0.084, math.sin(a) * 0.084, z0)))
-        tube_loop(mb, pts, 0.0055, 6, "M_Rope")
+        tube_loop(mb, pts, 0.0055, 3 if PSX else 6, "M_Rope")
     # arrow tails poking out (fanned)
     import random
     rng = random.Random(4)
@@ -529,7 +535,7 @@ sl = {c.name: c.location for c in bow.children}
 sp.points[0].co = (*sl["StringTop"], 1)
 sp.points[1].co = (*sl["StringBottom"], 1)
 string_ob = bpy.data.objects.new("BowStringPreview", crv)
-string_ob.data.materials.append(material("M_BowString", (0.85, 0.8, 0.68), 0.6))
+string_ob.data.materials.append(material("M_BowString", (0.5, 0.47, 0.4), 0.6))
 scene.collection.objects.link(string_ob)
 string_ob.parent = bow
 

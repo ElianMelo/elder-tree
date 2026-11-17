@@ -3,6 +3,10 @@ Tung Sahur - environment & dummy props (Blender 4.2+/5.x, headless friendly).
 
     blender -b --factory-startup --python build_props.py -- <out_dir> [preview.png]
 
+PSX pass (Docs/ART_DIRECTION.md): PSX=True strips bevels, caps cylinders at 8 sides and spheres at
+10x6, keeps faceted shading; props stay 50-600 tris and get their detail from the tiled, dithered
+Unity textures. Trees are a gnarled dead tree (Tree1) and a dark faceted pine (Tree2).
+
 Each prop is exported as its own FBX with the origin at its base. Material slot names match the
 Unity materials (M_Planks, M_Burlap, M_Rope, M_DummyPaint, M_Stone, M_Iron, M_LanternGlow,
 M_Foliage, M_Bark) so the importer can remap them.
@@ -16,7 +20,8 @@ import sys
 from mathutils import Vector, Matrix, noise
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-OUT = argv[0] if argv else os.path.join(os.path.dirname(bpy.data.filepath or "."), "props")
+PSX = True
+OUT = os.path.abspath(argv[0]) if argv else os.path.join(os.path.dirname(bpy.data.filepath or "."), "props")
 PREVIEW = argv[1] if len(argv) > 1 else None
 os.makedirs(OUT, exist_ok=True)
 random.seed(7)
@@ -54,6 +59,8 @@ def activate(o):
 
 
 def box(name, size, loc=(0, 0, 0), rot=(0, 0, 0), m="M_Planks", bevel=0.012, jitter=0.0):
+    if PSX:
+        bevel = 0
     bpy.ops.mesh.primitive_cube_add(size=1, location=loc, rotation=rot)
     o = bpy.context.active_object
     o.name = name
@@ -70,6 +77,8 @@ def box(name, size, loc=(0, 0, 0), rot=(0, 0, 0), m="M_Planks", bevel=0.012, jit
 
 
 def cyl(name, r, depth, loc=(0, 0, 0), rot=(0, 0, 0), m="M_Planks", verts=16, bevel=0.01, r2=None):
+    if PSX:
+        bevel, verts = 0, min(verts, 8)
     bpy.ops.mesh.primitive_cone_add(vertices=verts, radius1=r, radius2=r2 if r2 is not None else r, depth=depth,
                                     location=loc, rotation=rot)
     o = bpy.context.active_object
@@ -82,6 +91,8 @@ def cyl(name, r, depth, loc=(0, 0, 0), rot=(0, 0, 0), m="M_Planks", verts=16, be
 
 
 def sphere(name, r, loc, scale=(1, 1, 1), m="M_Burlap", seg=24, rings=14, lumpy=0.0, seed=0):
+    if PSX:
+        seg, rings = min(seg, 10), min(rings, 6)
     bpy.ops.mesh.primitive_uv_sphere_add(segments=seg, ring_count=rings, radius=r, location=loc)
     o = bpy.context.active_object
     o.name = name
@@ -91,6 +102,56 @@ def sphere(name, r, loc, scale=(1, 1, 1), m="M_Burlap", seg=24, rings=14, lumpy=
         for v in o.data.vertices:
             n = noise.noise(v.co * 4.0 + Vector((seed, seed * 2, 0)))
             v.co += v.normal * n * lumpy
+    o.data.materials.append(MATS[m])
+    return o
+
+
+def torus(major, minor, loc, rot=(0, 0, 0), m="M_Rope", seg=24, mseg=8):
+    if PSX:
+        seg, mseg = min(seg, 8), min(mseg, 4)
+    bpy.ops.mesh.primitive_torus_add(major_radius=major, minor_radius=minor, major_segments=seg, minor_segments=mseg,
+                                     location=loc, rotation=rot)
+    t = bpy.context.active_object
+    t.data.materials.append(MATS[m])
+    return t
+
+
+def tube(name, pts, radii, sides, m, seed=0, jag=0.15):
+    """Gnarled low-poly tube with its own UVs (u around, v along) so bark fissures run up the wood."""
+    me = bpy.data.meshes.new(name)
+    bm = bmesh.new()
+    uv = bm.loops.layers.uv.new("UVMap")
+    pts = [Vector(p) for p in pts]
+    rings, prev = [], Vector((1, 0, 0))
+    acc = [0.0]
+    for i in range(1, len(pts)):
+        acc.append(acc[-1] + (pts[i] - pts[i - 1]).length)
+    for i, c in enumerate(pts):
+        t = (pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]).normalized()
+        n = (prev - t * prev.dot(t))
+        if n.length < 1e-4:
+            n = Vector((0, 1, 0)) - t * t.y
+        n.normalize()
+        prev = n
+        b = t.cross(n)
+        ring = []
+        for j in range(sides):
+            a = 2 * math.pi * j / sides
+            k = 1 + jag * noise.noise(Vector((i * 1.7 + seed, j * 2.3, seed * 0.37)))
+            ring.append(bm.verts.new(c + (n * math.cos(a) + b * math.sin(a)) * radii[i] * k))
+        rings.append(ring)
+    reps = max(1, round(2 * math.pi * max(radii) / 0.6))
+    for i in range(len(rings) - 1):
+        for j in range(sides):
+            f = bm.faces.new([rings[i][j], rings[i][(j + 1) % sides], rings[i + 1][(j + 1) % sides], rings[i + 1][j]])
+            u0, u1 = j / sides * reps, (j + 1) / sides * reps
+            v0, v1 = acc[i] / 1.2, acc[i + 1] / 1.2
+            for loop, (uu, vv) in zip(f.loops, [(u0, v0), (u1, v0), (u1, v1), (u0, v1)]):
+                loop[uv].uv = (uu, vv)
+    bm.faces.new(list(reversed(rings[0])))
+    bm.to_mesh(me)
+    bm.free()
+    o = new_obj(name, me)
     o.data.materials.append(MATS[m])
     return o
 
@@ -105,11 +166,14 @@ def join(objs, name):
     return o
 
 
-def finish(o, smooth_angle=40, uv_scale=1.0):
+def finish(o, smooth_angle=40, uv_scale=1.0, project=True):
     activate(o)
+    if PSX:
+        smooth_angle = min(smooth_angle, 32)
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.uv.cube_project(cube_size=1.0 / uv_scale, scale_to_bounds=False, correct_aspect=True)
+    if project:
+        bpy.ops.uv.cube_project(cube_size=1.0 / uv_scale, scale_to_bounds=False, correct_aspect=True)
     bpy.ops.mesh.normals_make_consistent(inside=False)
     bpy.ops.object.mode_set(mode='OBJECT')
     try:
@@ -168,17 +232,15 @@ def build_dummy():
     body.append(sphere("knot", 0.06, (0, 0, 1.97), scale=(1, 1, 1.4), m="M_Burlap", lumpy=0.01, seed=5))
     # rope ties
     for z, r in ((1.6, 0.11), (0.88, 0.19), (1.93, 0.05)):
-        bpy.ops.mesh.primitive_torus_add(major_radius=r, minor_radius=0.018, major_segments=24, minor_segments=8, location=(0, 0, z))
-        t = bpy.context.active_object; t.data.materials.append(MATS["M_Rope"]); body.append(t)
+        body.append(torus(r, 0.018, (0, 0, z)))
     # arm bar with stuffed ends
     body.append(cyl("arms", 0.035, 1.25, (0, 0, 1.38), rot=(0, math.pi / 2, 0), verts=10))
     for s in (-1, 1):
         body.append(sphere(f"hand{s}", 0.09, (s * 0.62, 0, 1.38), scale=(1.3, 1, 1), m="M_Burlap", lumpy=0.012, seed=s + 9))
-        bpy.ops.mesh.primitive_torus_add(major_radius=0.05, minor_radius=0.014, location=(s * 0.5, 0, 1.38), rotation=(0, math.pi / 2, 0))
-        t = bpy.context.active_object; t.data.materials.append(MATS["M_Rope"]); body.append(t)
+        body.append(torus(0.05, 0.014, (s * 0.5, 0, 1.38), rot=(0, math.pi / 2, 0)))
     # painted target on the chest (front = -Y)
     for i, (r, m) in enumerate(((0.15, "M_DummyPaint"), (0.105, "M_Burlap"), (0.06, "M_DummyPaint"))):
-        bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=r, depth=0.01, location=(0, -0.222 - i * 0.004, 1.25),
+        bpy.ops.mesh.primitive_cylinder_add(vertices=8 if PSX else 32, radius=r, depth=0.01, location=(0, -0.222 - i * 0.004, 1.25),
                                             rotation=(math.pi / 2, 0, 0))
         d = bpy.context.active_object; d.data.materials.append(MATS[m]); body.append(d)
     # painted face: two X eyes + stitched mouth
@@ -289,10 +351,11 @@ def build_crate():
 def build_barrel():
     me = bpy.data.meshes.new("Barrel")
     bm = bmesh.new()
-    segs = 24
+    segs = 8 if PSX else 24
+    nprof = 5 if PSX else 13
     prof = []
-    for k in range(13):
-        z = 0.02 + 0.86 * k / 12
+    for k in range(nprof):
+        z = 0.02 + 0.86 * k / (nprof - 1)
         t = (z - 0.45) / 0.45
         prof.append((z, 0.27 + 0.05 * (1 - t * t)))
     rings = []
@@ -311,8 +374,7 @@ def build_barrel():
     parts = [o]
     for z in (0.14, 0.76):
         t_ = (z - 0.45) / 0.45
-        bpy.ops.mesh.primitive_torus_add(major_radius=0.27 + 0.05 * (1 - t_ * t_) + 0.004, minor_radius=0.014, location=(0, 0, z))
-        t = bpy.context.active_object; t.data.materials.append(MATS["M_Iron"]); parts.append(t)
+        parts.append(torus(0.27 + 0.05 * (1 - t_ * t_) + 0.012, 0.016, (0, 0, z), m="M_Iron"))
     b = finish(join(parts, "Barrel"), smooth_angle=50)
     export([b], "Barrel.fbx")
     return [b]
@@ -348,7 +410,7 @@ def build_wall():
 
 
 def build_rock(i, scale):
-    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=3, radius=0.5, location=(0, 0, 0.3))
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2 if PSX else 3, radius=0.5, location=(0, 0, 0.3))
     o = bpy.context.active_object
     o.name = f"Rock{i}"
     for v in o.data.vertices:
@@ -364,15 +426,49 @@ def build_rock(i, scale):
 
 
 def build_tree(i):
-    p = [cyl("trunk", 0.16, 3.2, (0, 0, 1.6), m="M_Bark", verts=10, r2=0.09)]
-    for k in range(5):
-        ang = k * 2.4 + i
-        h = 2.6 + k * 0.45
-        r = 1.15 - k * 0.12
-        p.append(sphere(f"leaf{k}", r, (math.cos(ang) * 0.4, math.sin(ang) * 0.4, h), scale=(1, 1, 0.75), m="M_Foliage",
-                        seg=12, rings=8, lumpy=0.18, seed=k + i * 5))
-    t = finish(join(p, f"Tree{i}"), smooth_angle=60)
-    export([t], f"Tree{i}.fbx")
+    if i == 1:
+        return build_dead_tree()
+    return build_pine()
+
+
+def build_dead_tree():
+    """Gnarled dead tree: twisted trunk, crooked bare branches clawing at the sky."""
+    random.seed(41)
+    p = [tube("trunk", [(0, 0, -0.2), (0.05, 0.02, 1.0), (-0.08, 0.06, 2.1), (0.06, -0.04, 3.1), (0.0, 0.1, 3.9)],
+              [0.30, 0.22, 0.17, 0.12, 0.05], 6, "M_Bark", seed=1, jag=0.22)]
+    for k in range(4):
+        a = k * math.pi / 2 + 0.4
+        d = Vector((math.cos(a), math.sin(a), 0))
+        p.append(tube(f"root{k}", [d * 0.1 + Vector((0, 0, 0.4)), d * 0.45 + Vector((0, 0, 0.08)), d * 0.8 + Vector((0, 0, -0.05))],
+                      [0.13, 0.08, 0.03], 4, "M_Bark", seed=10 + k))
+    for k, (z, ang, L, up) in enumerate([(1.7, 0.3, 1.5, 0.45), (2.3, 2.4, 1.3, 0.6), (2.8, 4.3, 1.1, 0.7), (3.3, 1.4, 0.9, 0.9),
+                                          (1.2, 3.6, 1.0, 0.25)]):
+        d = Vector((math.cos(ang), math.sin(ang), up)).normalized()
+        base = Vector((0, 0, z))
+        mid = base + d * L * 0.5 + Vector((random.uniform(-0.2, 0.2), random.uniform(-0.2, 0.2), -0.1))
+        tip = base + d * L + Vector((random.uniform(-0.3, 0.3), random.uniform(-0.3, 0.3), 0.25))
+        p.append(tube(f"br{k}", [base, mid, tip], [0.09, 0.05, 0.012], 4, "M_Bark", seed=20 + k))
+        side = d.cross(Vector((0, 0, 1))).normalized() * (1 if k % 2 else -1)
+        p.append(tube(f"tw{k}", [mid, mid + (d * 0.3 + side * 0.4 + Vector((0, 0, 0.3))) * L * 0.5],
+                      [0.035, 0.006], 3, "M_Bark", seed=40 + k))
+    t = finish(join(p, "Tree1"), smooth_angle=30, project=False)
+    export([t], "Tree1.fbx")
+    return [t]
+
+
+def build_pine():
+    """Dark faceted conifer: 5-sided trunk, four stacked 7-sided cones with ragged drooping skirts."""
+    p = [cyl("trunk", 0.14, 3.0, (0, 0, 1.5), m="M_Bark", verts=5, r2=0.06)]
+    for k, (z, r, h) in enumerate([(1.1, 1.35, 1.6), (2.0, 1.1, 1.5), (2.8, 0.8, 1.3), (3.5, 0.5, 1.1)]):
+        c = cyl(f"cone{k}", r, h, (0, 0, z + h / 2), m="M_Foliage", verts=7, r2=0.0, rot=(0, 0, k * 0.5))
+        for v in c.data.vertices:
+            if v.co.z < -h / 2 + 0.01:
+                v.co.z -= 0.18 * (0.5 + noise.noise(v.co * 3.0 + Vector((k, 0, 0))))
+                v.co.x *= 1.0 + 0.15 * noise.noise(v.co * 5.0)
+                v.co.y *= 1.0 + 0.15 * noise.noise(v.co * 5.0 + Vector((3, 0, 0)))
+        p.append(c)
+    t = finish(join(p, "Tree2"), smooth_angle=20, uv_scale=1.4)
+    export([t], "Tree2.fbx")
     return [t]
 
 

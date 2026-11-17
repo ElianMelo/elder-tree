@@ -14,11 +14,20 @@ namespace TungSahur.EditorTools
     public static partial class TungSahurBuilder
     {
         public const string Root = "Assets/TungSahur";
-        public const string ModelPath = Root + "/Art/Models/TungSahur.fbx";
-        public const string ClubPath = Root + "/Art/Models/TungSahur_Club.fbx";
+        // Player model: the low-poly PSX Elder Tree (Tools/Blender/build_elder_tree.py).
+        // The old log character is kept at TungModelPath; both share the same Humanoid skeleton.
+        public const string ModelPath = Root + "/Art/Models/ElderTree.fbx";
+        public const string TungModelPath = Root + "/Art/Models/TungSahur.fbx";
+        static readonly string[] CharacterMats =
+            { "M_TungWood", "M_TungEye", "M_TungDarkWood", "M_TungMouth", "M_ElderBark", "M_ElderMoss", "M_ElderEye" };
+        // PSX iron-banded cudgel (Tools/Blender/build_psx_weapons.py); the old bat stays at TungClubPath.
+        public const string ClubPath = Root + "/Art/Models/ElderClub.fbx";
+        public const string TungClubPath = Root + "/Art/Models/TungSahur_Club.fbx";
         public const string MatDir = Root + "/Art/Materials";
 
         // ------------------------------------------------------------------ materials
+        public const string PsxShader = "TungSahur/PSXLit";
+
         public static Material Lit(string name, Color color, Texture2D albedo = null, Texture2D normal = null,
             float smoothness = 0.3f, float normalScale = 1f, Vector2? tiling = null, bool smoothFromAlbedo = true,
             float metallic = 0f)
@@ -26,7 +35,8 @@ namespace TungSahur.EditorTools
             Directory.CreateDirectory(MatDir);
             string path = $"{MatDir}/{name}.mat";
             var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
-            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            // Every lit surface uses the PSX shader (Simple Lit + vertex snap + 15-bit dither).
+            var shader = Shader.Find(PsxShader) ?? Shader.Find("Universal Render Pipeline/Simple Lit");
             if (mat == null)
             {
                 mat = new Material(shader);
@@ -62,6 +72,15 @@ namespace TungSahur.EditorTools
                 mat.DisableKeyword("_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A");
                 mat.SetFloat("_Smoothness", smoothness);
             }
+            // matte PS1 surfaces: no specular, no normal maps; emission always available for flashes
+            mat.SetFloat("_Smoothness", 0f);
+            mat.SetColor("_SpecColor", Color.black);
+            mat.DisableKeyword("_SPECULAR_COLOR");
+            mat.DisableKeyword("_NORMALMAP");
+            mat.EnableKeyword("_EMISSION");
+            if (!mat.HasProperty("_EmissionColor") || mat.GetColor("_EmissionColor").maxColorComponent <= 0f)
+                mat.SetColor("_EmissionColor", Color.black);
+            mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
             EditorUtility.SetDirty(mat);
             return mat;
         }
@@ -119,47 +138,82 @@ namespace TungSahur.EditorTools
             var bodyA = TextureForge.ImportBaked("T_TungBody_Albedo", false);
             var bodyN = TextureForge.ImportBaked("T_TungBody_Normal", true);
             var bakedEye = TextureForge.ImportBaked("T_TungEye_Sculpt", false, 1024);
-            var bakedClubA = TextureForge.ImportBaked("T_TungClub_Albedo", false, 1024);
-            var bakedClubN = TextureForge.ImportBaked("T_TungClub_Normal", true, 1024);
             if (bodyA != null) Lit("M_TungWood", Color.white, bodyA, bodyN, 0.52f, 1f, null, false);
             else Lit("M_TungWood", Color.white, woodA, woodN, 0.85f, 0.6f);
             Lit("M_TungEye", Color.white, bakedEye != null ? bakedEye : eye, null, 0.86f, 1f, null, false);
             Lit("M_TungDarkWood", Palette.Brow * 1.6f, woodA, woodN, 0.6f, 0.4f, new Vector2(2, 2));
             Lit("M_TungMouth", Palette.Mouth, null, null, 0.2f);
-            if (bakedClubA != null) Lit("M_ClubWood", Color.white, bakedClubA, bakedClubN, 0.5f, 1f, null, false);
-            else Lit("M_ClubWood", Color.white, clubA, clubN, 0.9f, 0.8f);
-            Lit("M_Ground", new Color(0.92f, 0.92f, 0.95f), groundA, groundN, 0.9f, 1.0f, new Vector2(10, 10));
-            Lit("M_Planks", Color.white, plankA, plankN, 0.8f, 0.8f);
-            Lit("M_Stone", Color.white, stoneA, stoneN, 0.8f, 1f);
-            Lit("M_Burlap", Color.white, burA, burN, 0.5f, 0.8f, new Vector2(2, 2));
-            Lit("M_Rope", TextureForge.Hex("#7A6440"), burA, burN, 0.3f, 1.2f, new Vector2(1, 6));
-            Lit("M_Iron", TextureForge.Hex("#2B2B2E"), null, null, 0.55f, 1f, null, false, 0.85f);
-            var lamp = Lit("M_LanternGlow", Palette.Lantern, null, null, 0.5f);
+            BuildElderMaterials();
+            // ---- PSX dark-fantasy world (Docs/ART_DIRECTION.md): point-filtered dithered textures,
+            // shading painted in, no normal maps, dark desaturated values; glow only as accents.
+            var barkA = TextureForge.BuildBark();
+            var foliageA = TextureForge.BuildFoliage();
+            var darkWoodA = TextureForge.BuildDarkWood();
+            var leatherA = TextureForge.BuildLeather();
+            var ironA = TextureForge.BuildIron();
+            Lit("M_ClubWood", Color.white, clubA);
+            Lit("M_ClubIron", Color.white, ironA, null, 0f, 1f, new Vector2(2, 1));
+            Lit("M_Ground", Color.white, groundA, null, 0f, 1f, new Vector2(10, 10));
+            Lit("M_Planks", Color.white, plankA);
+            Lit("M_Stone", Color.white, stoneA);
+            Lit("M_Burlap", Color.white, burA, null, 0f, 1f, new Vector2(2, 2));
+            Lit("M_Rope", TextureForge.Hex("#8C7A5C"), burA, null, 0f, 1f, new Vector2(1, 6));
+            Lit("M_Iron", Color.white, ironA);
+            var lamp = Lit("M_LanternGlow", Palette.Lantern, null, null, 0f);
             lamp.EnableKeyword("_EMISSION");
-            lamp.SetColor("_EmissionColor", Palette.Lantern * 6f);
+            lamp.SetColor("_EmissionColor", Palette.Lantern * 4f);
             lamp.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-            Lit("M_DummyPaint", TextureForge.Hex("#7B1E1E"), null, null, 0.25f);
-            Lit("M_Foliage", TextureForge.Hex("#1F2B21"), burA, burN, 0.15f, 1.5f, new Vector2(3, 3));
-            Lit("M_Bark", TextureForge.Hex("#7A6A5A"), plankA, plankN, 0.5f, 1.2f, new Vector2(0.5f, 1f));
-            // materials that flash / glow through MaterialPropertyBlocks need the emission keyword on
-            foreach (var n in new[] { "M_Burlap", "M_Rope", "M_DummyPaint", "M_Planks", "M_ClubWood" })
-            {
-                var m = AssetDatabase.LoadAssetAtPath<Material>($"{MatDir}/{n}.mat");
-                m.EnableKeyword("_EMISSION");
-                m.SetColor("_EmissionColor", Color.black);
-                m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
-                EditorUtility.SetDirty(m);
-            }
+            Lit("M_DummyPaint", TextureForge.Hex("#4A1712"), burA, null, 0f, 1f, new Vector2(3, 3));
+            Lit("M_Foliage", Color.white, foliageA, null, 0f, 1f, new Vector2(2, 2));
+            Lit("M_Bark", Color.white, barkA, null, 0f, 1f, new Vector2(1, 1));
+            Lit("M_DarkWood", Color.white, darkWoodA);
+            Lit("M_Leather", Color.white, leatherA);
 
-            Unlit("M_FX_Dust", new Color(0.62f, 0.55f, 0.47f, 0.55f), dot);
-            Unlit("M_FX_Spark", Palette.Lantern, dot, additive: true);
-            Unlit("M_FX_Chip", new Color(0.85f, 0.62f, 0.38f, 1f), chip);
-            Unlit("M_FX_Trail", new Color(1f, 0.86f, 0.62f, 0.55f), trail, additive: false);
-            Unlit("M_FX_Ring", new Color(0.8f, 0.7f, 0.55f, 0.6f), ring);
+            Unlit("M_FX_Dust", new Color(0.36f, 0.33f, 0.32f, 0.5f), dot);
+            Unlit("M_FX_Spark", Palette.Ember, dot, additive: true);
+            Unlit("M_FX_Chip", new Color(0.36f, 0.27f, 0.2f, 1f), chip);
+            Unlit("M_FX_Trail", new Color(0.72f, 0.74f, 0.86f, 0.42f), trail, additive: false);
+            Unlit("M_FX_Ring", new Color(0.42f, 0.4f, 0.46f, 0.55f), ring);
             Unlit("M_FX_Glow", Palette.Lantern, dot, additive: true);
-            Unlit("M_FX_Firefly", new Color(1f, 0.85f, 0.45f, 1f), dot, additive: true);
+            Unlit("M_FX_Firefly", Palette.Wisp, dot, additive: true);
             AssetDatabase.SaveAssets();
             return "Art built";
+        }
+
+        /// <summary>PSX dark-fantasy materials for the Elder Tree (Docs/ART_DIRECTION.md): point-filtered
+        /// 256px atlases with the shading painted in, no specular, no normal maps.</summary>
+        public static void BuildElderMaterials()
+        {
+            var barkTex = TextureForge.ImportPixel("T_ElderBark");
+            var mossTex = TextureForge.ImportPixel("T_ElderMoss", alpha: true);
+            if (barkTex == null) return;   // run Tools/Blender/build_elder_tree.py --bake first
+            var bark = Lit("M_ElderBark", Color.white, barkTex, null, 0.04f, 1f, null, false);
+            bark.SetFloat("_SpecularHighlights", 0f); bark.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+            bark.SetFloat("_EnvironmentReflections", 0f); bark.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+            // emission keyword on so hit-flash style MaterialPropertyBlocks can light it up later
+            bark.EnableKeyword("_EMISSION");
+            bark.SetColor("_EmissionColor", Color.black);
+            bark.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            EditorUtility.SetDirty(bark);
+
+            var moss = Lit("M_ElderMoss", Color.white, mossTex, null, 0.0f, 1f, null, false);
+            moss.SetFloat("_AlphaClip", 1f);
+            moss.SetFloat("_Cutoff", 0.5f);
+            moss.EnableKeyword("_ALPHATEST_ON");
+            moss.SetFloat("_Cull", 0f);                    // cards are double sided
+            moss.SetOverrideTag("RenderType", "TransparentCutout");
+            moss.renderQueue = (int)RenderQueue.AlphaTest;
+            moss.SetFloat("_SpecularHighlights", 0f); moss.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+            moss.SetFloat("_EnvironmentReflections", 0f); moss.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+            EditorUtility.SetDirty(moss);
+
+            // dim ember eyes: an accent, not a light bulb
+            var glow = new Color(0.78f, 0.47f, 0.12f);
+            var eye = Lit("M_ElderEye", glow, null, null, 0.0f);
+            eye.EnableKeyword("_EMISSION");
+            eye.SetColor("_EmissionColor", glow * 2.2f);
+            eye.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            EditorUtility.SetDirty(eye);
         }
 
         // ------------------------------------------------------------------ step: model import
@@ -182,7 +236,7 @@ namespace TungSahur.EditorTools
             imp.importTangents = ModelImporterTangents.CalculateMikk;
             imp.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;
             imp.materialLocation = ModelImporterMaterialLocation.InPrefab;
-            foreach (var n in new[] { "M_TungWood", "M_TungEye", "M_TungDarkWood", "M_TungMouth" })
+            foreach (var n in CharacterMats)
             {
                 var m = AssetDatabase.LoadAssetAtPath<Material>($"{MatDir}/{n}.mat");
                 if (m != null) imp.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), n), m);
@@ -232,9 +286,12 @@ namespace TungSahur.EditorTools
             cimp.importAnimation = false;
             cimp.importTangents = ModelImporterTangents.CalculateMikk;
             cimp.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;
-            var clubMat = AssetDatabase.LoadAssetAtPath<Material>($"{MatDir}/M_ClubWood.mat");
-            foreach (var n in new[] { "M_ClubWood", "M_ClubGrip" })
-                cimp.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), n), clubMat);
+            cimp.importNormals = ModelImporterNormals.Import;
+            foreach (var n in new[] { "M_ClubWood", "M_ClubIron" })
+            {
+                var m = AssetDatabase.LoadAssetAtPath<Material>($"{MatDir}/{n}.mat");
+                if (m != null) cimp.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), n), m);
+            }
             cimp.SaveAndReimport();
 
             // report hierarchy

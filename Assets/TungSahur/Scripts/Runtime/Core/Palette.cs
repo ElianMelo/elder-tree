@@ -5,24 +5,26 @@ namespace TungSahur
     /// <summary>
     /// Art bible — the single colour source for materials, lights, particles and UI.
     ///
-    /// Style:  "Moody storybook night: soft PBR wood and stone, chunky readable silhouettes,
-    ///          warm lantern pools cutting through cool moonlit blue."
-    /// Mood:   Pre-dawn sahur. A cold moon key from high behind, warm lanterns at the
-    ///          Pos Ronda, mist swallowing the distance; gold accents mark anything important.
+    /// Style:  "PSX dark fantasy" (Docs/ART_DIRECTION.md): low-poly silhouettes, small dithered
+    ///          point-filtered textures with the shading painted in, matte surfaces.
+    /// Mood:   Pre-dawn sahur under a deep indigo/violet sky. A cold moon key, dying amber
+    ///          lanterns, sickly will-o'-wisps, purple mist swallowing the distance. Surfaces stay
+    ///          dark and desaturated; saturation lives only in the sky and in small glows.
     /// </summary>
     public static class Palette
     {
         // World
-        public static readonly Color Ground      = FromHex(0x4A3F35); // packed earth
-        public static readonly Color Stone       = FromHex(0x5B5E66); // moonlit stone
-        public static readonly Color Timber      = FromHex(0x6B4A2E); // dark timber props
-        public static readonly Color Shadow      = FromHex(0x1A2233); // night indigo (never black)
-        public static readonly Color Fog         = FromHex(0x1F2A3D);
-        public static readonly Color SkyTop      = FromHex(0x0B1220);
-        public static readonly Color SkyHorizon  = FromHex(0x2B3A55);
-        public static readonly Color Moon        = FromHex(0xA9C1FF);
+        public static readonly Color Ground      = FromHex(0x2A241F); // mud
+        public static readonly Color Stone       = FromHex(0x3E4049); // cold stone
+        public static readonly Color Timber      = FromHex(0x3A2E24); // rotting timber
+        public static readonly Color Shadow      = FromHex(0x120E1E); // violet-black (never pure black)
+        public static readonly Color Fog         = FromHex(0x2C2450); // purple mist (lighter than surfaces: silhouettes read against it)
+        public static readonly Color SkyTop      = FromHex(0x07061A);
+        public static readonly Color SkyHorizon  = FromHex(0x3A2A66);
+        public static readonly Color Moon        = FromHex(0x9FA8F0);
         public static readonly Color Lantern     = FromHex(0xFFB547); // accent
         public static readonly Color Ember       = FromHex(0xFF7A2E);
+        public static readonly Color Wisp        = FromHex(0x8FBF5A); // sickly will-o'-wisp accent
 
         // Character
         public static readonly Color TungWood    = FromHex(0xC98A4B);

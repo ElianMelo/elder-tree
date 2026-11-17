@@ -33,15 +33,17 @@ namespace TungSahur.EditorTools
         [MenuItem("Tung Sahur/4a. Build Bow Assets")]
         public static string BuildBowAssets()
         {
-            var woodA = Tex("T_TungWood_Albedo"); var woodN = Tex("T_TungWood_Normal");
-            var burA = Tex("T_Burlap_Albedo"); var burN = Tex("T_Burlap_Normal");
-            Lit("M_BowWood", TextureForge.Hex("#94705A"), woodA, woodN, 0.6f, 0.8f, new Vector2(1f, 3f));   // walnut: reads apart from Tung's pale log
-            Lit("M_BowHorn", TextureForge.Hex("#2A1A10"), null, null, 0.62f);
-            Lit("M_ArrowShaft", TextureForge.Hex("#E8D2A0"), woodA, woodN, 0.4f, 0.4f, new Vector2(1f, 8f));
-            Lit("M_FletchRed", TextureForge.Hex("#A3231A"), null, null, 0.12f);
-            Lit("M_FletchCream", TextureForge.Hex("#E9DFC6"), null, null, 0.12f);
-            Lit("M_Quiver", TextureForge.Hex("#D8C49A"), burA, burN, 0.35f, 1f, new Vector2(3f, 3f));
-            Lit("M_BowString", TextureForge.Hex("#E6DCC4"), null, null, 0.3f);
+            // PSX dark-fantasy weapons (Docs/ART_DIRECTION.md): dark oiled wood, black horn, dried-blood and
+            // bone fletching, scuffed leather quiver. Point-filtered dithered textures from TextureForge.
+            var woodA = Tex("T_DarkWood_Albedo") ?? TextureForge.BuildDarkWood();
+            var leatherA = Tex("T_Leather_Albedo") ?? TextureForge.BuildLeather();
+            Lit("M_BowWood", Color.white, woodA, null, 0f, 1f, new Vector2(1f, 3f));
+            Lit("M_BowHorn", TextureForge.Hex("#141012"), null, null, 0f);
+            Lit("M_ArrowShaft", TextureForge.Hex("#B8A890"), woodA, null, 0f, 1f, new Vector2(1f, 8f));
+            Lit("M_FletchRed", TextureForge.Hex("#4A1712"), null, null, 0f);
+            Lit("M_FletchCream", TextureForge.Hex("#7D7466"), null, null, 0f);
+            Lit("M_Quiver", Color.white, leatherA, null, 0f, 1f, new Vector2(2f, 2f));
+            Lit("M_BowString", TextureForge.Hex("#6E6656"), null, null, 0f);
 
             foreach (var path in new[] { BowPath, ArrowPath, QuiverPath })
             {

@@ -127,6 +127,28 @@ namespace TungSahur.EditorTools
             return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         }
 
+        /// <summary>PSX import: point filtering, no mipmaps, no compression (keeps the 15-bit dither crisp).</summary>
+        public static Texture2D ImportPixel(string name, bool alpha = false, int maxSize = 512)
+        {
+            string path = $"{TexDir}/{name}.png";
+            if (!File.Exists(path)) return null;
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+            imp.textureType = TextureImporterType.Default;
+            imp.sRGBTexture = true;
+            imp.alphaSource = alpha ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
+            imp.alphaIsTransparency = alpha;
+            imp.filterMode = FilterMode.Point;
+            imp.anisoLevel = 0;
+            imp.mipmapEnabled = false;
+            imp.wrapMode = TextureWrapMode.Clamp;
+            imp.maxTextureSize = maxSize;
+            imp.npotScale = TextureImporterNPOTScale.None;
+            imp.textureCompression = TextureImporterCompression.Uncompressed;
+            imp.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
         /// <summary>Builds a tangent-space normal map from a tileable height function.</summary>
         public static Texture2D SaveNormalFromHeight(string name, int w, int h, Func<int, int, float> height, float strength)
         {
@@ -219,148 +241,220 @@ namespace TungSahur.EditorTools
             });
         }
 
+        // ------------------------------------------------------------------ PSX world textures
+        // Docs/ART_DIRECTION.md: small, point filtered, 15-bit colour with a 4x4 ordered dither,
+        // shading painted in (no normal maps), dark desaturated values, every texel carries detail.
+        static readonly float[] Bayer4 = { 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5 };
+
+        public static Color Psx(Color c, int x, int y, float strength = 1f)
+        {
+            float b = (Bayer4[(y & 3) * 4 + (x & 3)] + 0.5f) / 16f - 0.5f;
+            const float L = 31f;
+            c.r = Mathf.Clamp01(Mathf.Floor(c.r * L + 0.5f + b * strength) / L);
+            c.g = Mathf.Clamp01(Mathf.Floor(c.g * L + 0.5f + b * strength) / L);
+            c.b = Mathf.Clamp01(Mathf.Floor(c.b * L + 0.5f + b * strength) / L);
+            return c;
+        }
+
+        /// <summary>Saves a tileable PSX albedo: dithered 15-bit, point filtered, uncompressed.
+        /// Mips stay on (nearest-mip) for big tiling surfaces so the ground does not boil.</summary>
+        public static Texture2D SavePsx(string name, int size, Func<float, float, int, int, Color> pixel, bool mips = true,
+            bool alpha = false)
+        {
+            Save(name, size, size, (x, y) =>
+            {
+                var c = pixel(x / (float)size, y / (float)size, x, y);
+                var q = Psx(c, x, y);
+                q.a = alpha ? (c.a > 0.5f ? 1f : 0f) : 1f;
+                return q;
+            }, aniso: 0);
+            string path = $"{TexDir}/{name}.png";
+            var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+            imp.filterMode = FilterMode.Point;
+            imp.anisoLevel = 0;
+            imp.mipmapEnabled = mips;
+            imp.alphaSource = alpha ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
+            imp.alphaIsTransparency = alpha;
+            imp.textureCompression = TextureImporterCompression.Uncompressed;
+            imp.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        static Color Mix(Color a, Color b, float t) => Color.Lerp(a, b, Mathf.Clamp01(t));
+        static float Grit(int x, int y, int seed) => Hash(x, y, seed) - 0.5f;
+
+        /// <summary>Club: gnarled dark wood along v, leather-wrapped grip for v below 0.3 (u around, v along).</summary>
         public static void BuildClub(out Texture2D albedo, out Texture2D normal)
         {
-            const int S = 512;
-            Color a = Hex("#7A4424"), b = Hex("#54301A"), grip = Hex("#1E1714"), gripHi = Hex("#3A2E28");
-            Func<float, float, float> h = (u, v) =>
+            normal = null;
+            albedo = SavePsx("T_Club_Albedo", 128, (u, v, x, y) =>
             {
-                // v covers z*2 in UV (club ~1m => v 0..1.8): the grip band is v < 0.30
                 if (v < 0.30f)
                 {
-                    float wrap = Mathf.Abs(Mathf.Sin((u * 6f + v * 28f) * Mathf.PI));
-                    return 0.6f + 0.4f * Mathf.SmoothStep(0.85f, 1f, wrap);
+                    float wrap = Mathf.Abs(Mathf.Sin((u * 5f + v * 30f) * Mathf.PI));
+                    var lc = Mix(Hex("#1A1310"), Hex("#3B2B20"), Mathf.SmoothStep(0.25f, 0.95f, wrap));
+                    lc *= 0.85f + 0.3f * Fbm(u, v, 8, 8, 3, 12) + 0.12f * Grit(x, y, 3);
+                    lc = Mix(lc, Hex("#0C0908"), Mathf.SmoothStep(0.12f, 0.0f, wrap));
+                    return lc;
                 }
-                float g = Fbm(u, v, 32, 4, 4, 17);
-                return Mathf.Pow(Mathf.Sin((u * 90f + g * 8f) * Mathf.PI) * 0.5f + 0.5f, 3) * 0.6f + g * 0.4f;
-            };
-            albedo = Save("T_Club_Albedo", S, S, (x, y) =>
-            {
-                float u = x / (float)S, v = y / (float)S;
-                float hv = h(u, v);
-                if (v < 0.30f)
-                {
-                    var gc = Color.Lerp(grip, gripHi, (hv - 0.6f) * 2.2f);
-                    gc.a = 0.15f;
-                    return gc;
-                }
-                var c = Color.Lerp(a, b, hv);
-                // battle wear: lighter dents on the barrel
-                float wear = Fbm(u, v, 8, 8, 3, 91);
-                c = Color.Lerp(c, Hex("#A8704A"), Mathf.SmoothStep(0.62f, 0.75f, wear) * Mathf.SmoothStep(0.8f, 1.2f, v * 1.6f));
-                c.a = 0.45f;
-                return c;
-            });
-            normal = SaveNormalFromHeight("T_Club_Normal", S, S, (x, y) => h(x / (float)S, y / (float)S), 2.5f);
+                float warp = Fbm(u, v, 4, 2, 3, 17) - 0.5f;
+                float ridge = Mathf.Abs(Mathf.Sin((u * 7f + warp * 2.5f) * Mathf.PI));
+                float fib = Fbm(u, v, 32, 4, 3, 18);
+                var c = Mix(Hex("#241B15"), Hex("#4E3E31"), 0.3f + 0.6f * fib + 0.2f * Grit(x, y, 4));
+                c *= 1f - 0.6f * Mathf.SmoothStep(0.3f, 0f, ridge);
+                float knot = Mathf.SmoothStep(0.78f, 0.88f, Fbm(u, v, 3, 3, 2, 19));
+                c = Mix(c, Hex("#120D0A"), knot * Mathf.Abs(Mathf.Sin(knot * 12f)));
+                // dried blood soaked into the striking end
+                float blood = Mathf.SmoothStep(0.62f, 0.72f, Fbm(u, v, 6, 6, 3, 20)) * Mathf.SmoothStep(0.6f, 0.95f, v);
+                return Mix(c, Hex("#3A120D"), blood * 0.75f);
+            }, mips: false);
         }
 
-        /// <summary>Packed earth + embedded cobbles, tileable 1024.</summary>
+        /// <summary>Mud, sunken cobbles, moss and dead grass. Tileable 256.</summary>
         public static void BuildGround(out Texture2D albedo, out Texture2D normal)
         {
-            const int S = 1024;
-            Color dirt = Hex("#4A3F35"), dirtDark = Hex("#2E2620"), stone = Hex("#6A6560"), stoneDark = Hex("#45423F");
-            Func<float, float, (float hgt, Color col, float smooth)> f = (u, v) =>
+            normal = null;
+            albedo = SavePsx("T_Ground_Albedo", 256, (u, v, x, y) =>
             {
-                Worley(u, v, 9, 3, out float f1, out float f2, out int id);
+                Worley(u, v, 7, 3, out float f1, out float f2, out int id);
                 float edge = f2 - f1;
                 float n = Fbm(u, v, 8, 8, 5, 21);
-                float stoneMask = Mathf.SmoothStep(0.06f, 0.16f, edge) * (Hash(id, 1, 5) > 0.35f ? 1 : 0);
-                float hgt = n * 0.4f + stoneMask * (0.5f + 0.25f * Fbm(u, v, 32, 32, 3, 77));
-                var dc = Color.Lerp(dirtDark, dirt, n * 1.2f);
-                float tint = Hash(id, 9, 2);
-                var sc = Color.Lerp(stoneDark, stone, 0.4f + 0.6f * Fbm(u, v, 24, 24, 3, 33)) * (0.85f + 0.3f * tint);
-                var col = Color.Lerp(dc, sc, stoneMask);
-                return (hgt, col, Mathf.Lerp(0.12f, 0.38f, stoneMask));
-            };
-            albedo = Save("T_Ground_Albedo", S, S, (x, y) =>
-            {
-                var r = f(x / (float)S, y / (float)S);
-                var c = r.col; c.a = r.smooth; return c;
+                float stone = Mathf.SmoothStep(0.05f, 0.14f, edge) * (Hash(id, 1, 5) > 0.45f ? 1 : 0);
+                var mud = Mix(Hex("#2B241E"), Hex("#4F4236"), n * 1.25f + 0.25f * Grit(x, y, 1));
+                float puddle = Mathf.SmoothStep(0.70f, 0.76f, Fbm(u, v, 4, 4, 3, 24));
+                mud = Mix(mud, Hex("#1A1A24"), puddle * 0.75f);
+                var cob = Mix(Hex("#3A3B43"), Hex("#666874"), 0.35f + 0.55f * Fbm(u, v, 24, 24, 3, 33) + 0.2f * Grit(x, y, 2));
+                cob *= 0.8f + 0.35f * Hash(id, 9, 2);
+                cob *= 0.65f + 0.35f * Mathf.SmoothStep(0.05f, 0.3f, edge);            // painted bevel shading
+                var c = Mix(mud, cob, stone);
+                float moss = Mathf.SmoothStep(0.55f, 0.72f, Fbm(u, v, 6, 6, 4, 26));
+                c = Mix(c, Mix(Hex("#1F2817"), Hex("#3A4626"), Fbm(u, v, 64, 64, 2, 27)), moss * (1 - stone * 0.5f) * 0.8f);
+                float grass = Mathf.Pow(Hash(x, y, 28), 14f) * (1 - stone);
+                return Mix(c, Hex("#4A4630"), grass * 1.6f);
             });
-            normal = SaveNormalFromHeight("T_Ground_Normal", S, S, (x, y) => f(x / (float)S, y / (float)S).hgt, 6f);
         }
 
-        /// <summary>Weathered wooden planks (hut, crates, fences).</summary>
+        /// <summary>Rotting grey planks with dark gaps, nail rust and moss.</summary>
         public static void BuildPlanks(out Texture2D albedo, out Texture2D normal)
         {
-            const int S = 1024;
-            const int planks = 6;
-            Color a = Hex("#6B4A2E"), b = Hex("#4A3220"), gap = Hex("#1D140D");
-            Func<float, float, (float h, Color c)> f = (u, v) =>
+            normal = null;
+            const int planks = 5;
+            albedo = SavePsx("T_Planks_Albedo", 256, (u, v, x, y) =>
             {
                 float pu = u * planks;
                 int pi = Mathf.FloorToInt(pu);
                 float fu = pu - pi;
-                float offset = Hash(pi, 0, 4);
-                float vv = Mathf.Repeat(v + offset, 1f);
-                float g = Fbm(u, vv, 64, 4, 4, 40 + pi);
-                float grain = Mathf.Pow(Mathf.Sin((u * 220f + g * 10f) * Mathf.PI) * 0.5f + 0.5f, 4);
-                float seam = Mathf.SmoothStep(0.0f, 0.04f, fu) * Mathf.SmoothStep(1.0f, 0.96f, fu);
-                float endSeam = Mathf.SmoothStep(0.0f, 0.01f, vv) * Mathf.SmoothStep(1.0f, 0.99f, vv);
-                float s = seam * endSeam;
-                var c = Color.Lerp(a, b, grain * 0.7f + g * 0.3f) * (0.85f + 0.3f * Hash(pi, 3, 9));
-                c = Color.Lerp(gap, c, s);
-                return (s * (0.7f + grain * 0.15f + g * 0.15f), c);
-            };
-            albedo = Save("T_Planks_Albedo", S, S, (x, y) =>
-            {
-                var r = f(x / (float)S, y / (float)S); var c = r.c; c.a = 0.22f; return c;
+                float vv = Mathf.Repeat(v + Hash(pi, 0, 4), 1f);
+                float g = Fbm(u, vv, 40, 4, 4, 40 + pi);
+                float grain = Mathf.Pow(Mathf.Sin((u * 160f + g * 9f) * Mathf.PI) * 0.5f + 0.5f, 3);
+                var c = Mix(Hex("#2C251F"), Hex("#5A4F45"), 0.25f + 0.45f * g + 0.25f * Hash(pi, 3, 9) - 0.35f * grain + 0.18f * Grit(x, y, 5));
+                float seam = Mathf.SmoothStep(0.0f, 0.06f, fu) * Mathf.SmoothStep(1.0f, 0.94f, fu);
+                float endSeam = Mathf.SmoothStep(0.0f, 0.015f, vv) * Mathf.SmoothStep(1.0f, 0.985f, vv);
+                c *= 0.7f + 0.3f * Mathf.SmoothStep(0.0f, 0.2f, fu);                     // painted edge shading
+                float rot = Mathf.SmoothStep(0.62f, 0.75f, Fbm(u, v, 5, 5, 3, 44));
+                c = Mix(c, Hex("#1A1612"), rot * 0.7f);
+                c = Mix(c, Hex("#2F3A22"), Mathf.SmoothStep(0.66f, 0.8f, Fbm(u, v, 7, 7, 3, 45)) * 0.7f);
+                float nail = (Mathf.Abs(fu - 0.5f) < 0.06f && Mathf.Abs(vv - 0.08f) < 0.012f) ? 1f : 0f;
+                c = Mix(c, Hex("#4A2614"), nail);
+                return Mix(Hex("#0B0908"), c, seam * endSeam);
             });
-            normal = SaveNormalFromHeight("T_Planks_Normal", S, S, (x, y) => f(x / (float)S, y / (float)S).h, 4f);
         }
 
-        /// <summary>Rough stone blocks for walls / low ruins.</summary>
+        /// <summary>Cold blue-grey blocks, black mortar, moss and lichen.</summary>
         public static void BuildStone(out Texture2D albedo, out Texture2D normal)
         {
-            const int S = 1024;
-            Color a = Hex("#5B5E66"), b = Hex("#3C3F46"), mortar = Hex("#2A2A2C");
-            Func<float, float, (float h, Color c)> f = (u, v) =>
+            normal = null;
+            albedo = SavePsx("T_Stone_Albedo", 256, (u, v, x, y) =>
             {
-                int rows = 4;
-                float rv = v * rows;
-                int ri = Mathf.FloorToInt(rv);
-                float fv = rv - ri;
-                float cols = 3;
-                float cu = u * cols + (ri % 2) * 0.5f;
-                int ci = Mathf.FloorToInt(cu);
-                float fu = cu - ci;
+                const int rows = 4; const float cols = 3;
+                float rv = v * rows; int ri = Mathf.FloorToInt(rv); float fv = rv - ri;
+                float cu = u * cols + (ri % 2) * 0.5f; int ci = Mathf.FloorToInt(cu); float fu = cu - ci;
                 int wci = Wrap(ci, (int)cols);
                 float n = Fbm(u, v, 16, 16, 5, 61);
-                float bevel = Mathf.SmoothStep(0, 0.06f, fu) * Mathf.SmoothStep(1, 0.94f, fu) *
-                              Mathf.SmoothStep(0, 0.08f, fv) * Mathf.SmoothStep(1, 0.92f, fv);
-                float tint = Hash(wci, ri, 12);
-                var c = Color.Lerp(a, b, n * 0.8f + tint * 0.3f);
-                // moss in crevices / bottom
-                float moss = Mathf.SmoothStep(0.55f, 0.75f, Fbm(u, v, 6, 6, 4, 70)) * (1 - bevel * 0.6f);
-                c = Color.Lerp(c, Hex("#3E4A2E"), moss * 0.55f);
-                c = Color.Lerp(mortar, c, bevel);
-                return (bevel * (0.75f + n * 0.25f), c);
-            };
-            albedo = Save("T_Stone_Albedo", S, S, (x, y) =>
-            {
-                var r = f(x / (float)S, y / (float)S); var c = r.c; c.a = 0.18f; return c;
+                float bevel = Mathf.SmoothStep(0, 0.07f, fu) * Mathf.SmoothStep(1, 0.93f, fu) *
+                              Mathf.SmoothStep(0, 0.09f, fv) * Mathf.SmoothStep(1, 0.91f, fv);
+                var c = Mix(Hex("#2A2C33"), Hex("#555865"), 0.3f + 0.5f * n + 0.25f * Hash(wci, ri, 12) + 0.2f * Grit(x, y, 6));
+                c *= 0.72f + 0.28f * Mathf.SmoothStep(0.0f, 0.5f, fv);                  // top-lit block faces
+                float crack = Mathf.SmoothStep(0.012f, 0.0f, Mathf.Abs(Fbm(u, v, 8, 8, 3, 63) - 0.5f));
+                c = Mix(c, Hex("#15161A"), crack * 0.8f);
+                float moss = Mathf.SmoothStep(0.52f, 0.7f, Fbm(u, v, 6, 6, 4, 70) + (1 - fv) * 0.15f);
+                c = Mix(c, Mix(Hex("#1E2816"), Hex("#3D4A27"), Fbm(u, v, 48, 48, 2, 71)), moss * 0.85f);
+                float lichen = Mathf.SmoothStep(0.70f, 0.76f, Fbm(u, v, 20, 20, 3, 72));
+                c = Mix(c, Hex("#6B7163"), lichen * 0.6f);
+                return Mix(Hex("#0E0E11"), c, bevel);
             });
-            normal = SaveNormalFromHeight("T_Stone_Normal", S, S, (x, y) => f(x / (float)S, y / (float)S).h, 5f);
         }
 
-        /// <summary>Burlap / straw for the training dummy.</summary>
+        /// <summary>Filthy sack-cloth with dried blood (training dummy, sacks).</summary>
         public static void BuildBurlap(out Texture2D albedo, out Texture2D normal)
         {
-            const int S = 512;
-            Color a = Hex("#B59A6A"), b = Hex("#8C7449");
-            Func<float, float, float> h = (u, v) =>
+            normal = null;
+            albedo = SavePsx("T_Burlap_Albedo", 128, (u, v, x, y) =>
             {
-                float wx = Mathf.Sin(u * 2 * Mathf.PI * 96), wy = Mathf.Sin(v * 2 * Mathf.PI * 96);
-                float weave = (Mathf.Abs(wx) * (wy > 0 ? 1 : 0.5f) + Mathf.Abs(wy) * (wx > 0 ? 0.5f : 1)) * 0.5f;
-                return weave * 0.7f + Fbm(u, v, 16, 16, 3, 5) * 0.3f;
-            };
-            albedo = Save("T_Burlap_Albedo", S, S, (x, y) =>
-            {
-                float u = x / (float)S, v = y / (float)S;
-                var c = Color.Lerp(b, a, h(u, v)) * (0.85f + 0.3f * Fbm(u, v, 4, 4, 3, 8));
-                c.a = 0.1f; return c;
+                bool warp = ((x >> 1) + (y >> 1)) % 2 == 0;
+                var c = Mix(Hex("#3F3426"), Hex("#6A5A40"), (warp ? 0.65f : 0.35f) + 0.35f * (Fbm(u, v, 8, 8, 3, 5) - 0.5f) + 0.25f * Grit(x, y, 7));
+                c = Mix(c, Hex("#221B14"), Mathf.SmoothStep(0.6f, 0.75f, Fbm(u, v, 4, 4, 3, 8)) * 0.7f);
+                return Mix(c, Hex("#3C130E"), Mathf.SmoothStep(0.7f, 0.78f, Fbm(u, v, 5, 5, 3, 9)) * 0.85f);
             });
-            normal = SaveNormalFromHeight("T_Burlap_Normal", S, S, (x, y) => h(x / (float)S, y / (float)S), 3f);
+        }
+
+        /// <summary>Dead-tree bark: deep vertical fissures (v runs up the trunk).</summary>
+        public static Texture2D BuildBark()
+        {
+            return SavePsx("T_Bark_Albedo", 128, (u, v, x, y) =>
+            {
+                float warp = Fbm(u, v, 3, 2, 3, 81) - 0.5f;
+                float ridge = Mathf.Abs(Mathf.Sin((u * 6f + warp * 2.2f) * Mathf.PI));
+                var c = Mix(Hex("#1E1813"), Hex("#4A3D31"), 0.3f + 0.5f * Fbm(u, v, 24, 3, 3, 82) + 0.25f * Grit(x, y, 8));
+                c *= 1f - 0.7f * Mathf.SmoothStep(0.35f, 0f, ridge);
+                c = Mix(c, Hex("#646B5C"), Mathf.SmoothStep(0.72f, 0.78f, Fbm(u, v, 12, 12, 3, 83)) * 0.55f);
+                return Mix(c, Hex("#26311C"), Mathf.SmoothStep(0.58f, 0.75f, Fbm(u, v, 5, 5, 3, 84)) * 0.75f);
+            });
+        }
+
+        /// <summary>Pine needles for the dark conifers: near-black teal with sparse cold highlights.</summary>
+        public static Texture2D BuildFoliage()
+        {
+            return SavePsx("T_Foliage_Albedo", 128, (u, v, x, y) =>
+            {
+                float needles = Mathf.Abs(Mathf.Sin((u * 26f + v * 13f + Fbm(u, v, 8, 8, 2, 91) * 3f) * Mathf.PI));
+                var c = Mix(Hex("#0D1612"), Hex("#2A3D33"), needles * 0.6f + 0.35f * Fbm(u, v, 8, 8, 3, 92) + 0.3f * Grit(x, y, 9));
+                return Mix(c, Hex("#3E4B3A"), Mathf.Pow(Hash(x, y, 93), 10f));
+            });
+        }
+
+        /// <summary>Dark oiled wood for the bow and arrows (grain along v).</summary>
+        public static Texture2D BuildDarkWood()
+        {
+            return SavePsx("T_DarkWood_Albedo", 128, (u, v, x, y) =>
+            {
+                float g = Fbm(u, v, 16, 2, 3, 101);
+                float grain = Mathf.Pow(Mathf.Sin((u * 40f + g * 6f) * Mathf.PI) * 0.5f + 0.5f, 3);
+                return Mix(Hex("#1C1410"), Hex("#4A3526"), 0.35f + 0.45f * g - 0.3f * grain + 0.18f * Grit(x, y, 10));
+            });
+        }
+
+        /// <summary>Worn, scuffed leather with stitching (quiver, straps).</summary>
+        public static Texture2D BuildLeather()
+        {
+            return SavePsx("T_Leather_Albedo", 128, (u, v, x, y) =>
+            {
+                var c = Mix(Hex("#1E1511"), Hex("#4A3426"), 0.4f + 0.45f * Fbm(u, v, 12, 12, 4, 111) + 0.2f * Grit(x, y, 11));
+                c = Mix(c, Hex("#6A5643"), Mathf.SmoothStep(0.68f, 0.78f, Fbm(u, v, 6, 6, 3, 112)) * 0.5f);   // scuffs
+                bool stitch = (x % 128 < 3 || x % 128 > 124) && (y % 6) < 3;
+                return stitch ? Hex("#7A6A52") : c;
+            });
+        }
+
+        /// <summary>Black iron with rust blooms.</summary>
+        public static Texture2D BuildIron()
+        {
+            return SavePsx("T_Iron_Albedo", 64, (u, v, x, y) =>
+            {
+                var c = Mix(Hex("#141416"), Hex("#3A3A40"), 0.4f + 0.4f * Fbm(u, v, 8, 8, 3, 121) + 0.25f * Grit(x, y, 12));
+                return Mix(c, Mix(Hex("#3A1A0C"), Hex("#6B3418"), Fbm(u, v, 16, 16, 2, 122)),
+                    Mathf.SmoothStep(0.55f, 0.7f, Fbm(u, v, 5, 5, 3, 123)) * 0.8f);
+            });
         }
 
         /// <summary>Soft radial sprite used by particles (dust, sparks, glow).</summary>

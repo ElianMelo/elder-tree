@@ -86,17 +86,21 @@ namespace TungSahur.EditorTools
             go.hideFlags = HideFlags.DontSave;
             go.transform.position = new Vector3(1000, 1000, 1000);
             go.transform.rotation = Quaternion.Euler(0, 0, -45);
+            const int IconLayer = 31;   // render only the club, nothing else in the open scene
+            foreach (var t in go.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = IconLayer;
             var camGo = new GameObject("IconCam") { hideFlags = HideFlags.DontSave };
             var cam = camGo.AddComponent<Camera>();
             cam.orthographic = true;
-            cam.orthographicSize = 0.36f;
+            cam.cullingMask = 1 << IconLayer;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0, 0, 0, 0);
             var bounds = go.GetComponentInChildren<Renderer>().bounds;
+            cam.orthographicSize = Mathf.Max(bounds.extents.x, bounds.extents.y) * 1.08f;
             cam.transform.position = bounds.center - Vector3.forward * 3f;
             cam.transform.LookAt(bounds.center);
             var lgo = new GameObject("IconLight") { hideFlags = HideFlags.DontSave };
-            var l = lgo.AddComponent<Light>(); l.type = LightType.Directional; l.intensity = 2.2f; l.color = new Color(1f, 0.93f, 0.82f);
+            var l = lgo.AddComponent<Light>(); l.type = LightType.Directional; l.intensity = 1.7f; l.color = new Color(0.92f, 0.92f, 1f);
+            l.cullingMask = 1 << IconLayer;
             lgo.transform.rotation = Quaternion.Euler(20, 30, 0);
             var rt = new RenderTexture(S, S, 24, RenderTextureFormat.ARGB32) { antiAliasing = 8 };
             cam.targetTexture = rt;
@@ -134,6 +138,9 @@ namespace TungSahur.EditorTools
             return go;
         }
 
+        /// <summary>Internal resolution scale (0.4 of 1080p ~ 768x432): pixels read at 1080p like a PS1 on a CRT.</summary>
+        public static float PsxRenderScale = 0.4f;
+
         [MenuItem("Tung Sahur/6. Build Arena Scene")]
         public static string BuildScene()
         {
@@ -142,16 +149,20 @@ namespace TungSahur.EditorTools
             Directory.CreateDirectory(Root + "/Settings");
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            // ---------------- render pipeline polish
+            // ---------------- render pipeline: PSX output (Docs/ART_DIRECTION.md)
+            // Low internal resolution upscaled with nearest filtering, no MSAA, hard low-res shadows.
+            // UI Toolkit draws on top at native resolution, so text stays crisp.
             var rp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
             if (rp != null)
             {
-                rp.shadowDistance = 55f;
-                rp.msaaSampleCount = 4;
+                rp.shadowDistance = 40f;
+                rp.msaaSampleCount = 1;
+                rp.renderScale = PsxRenderScale;
+                rp.upscalingFilter = UpscalingFilterSelection.Point;
                 var so = new SerializedObject(rp);
-                so.FindProperty("m_MainLightShadowmapResolution").intValue = 4096;
-                so.FindProperty("m_AdditionalLightsShadowmapResolution").intValue = 2048;
-                so.FindProperty("m_SoftShadowsSupported").boolValue = true;
+                so.FindProperty("m_MainLightShadowmapResolution").intValue = 1024;
+                so.FindProperty("m_AdditionalLightsShadowmapResolution").intValue = 512;
+                so.FindProperty("m_SoftShadowsSupported").boolValue = false;
                 so.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(rp);
             }
@@ -162,19 +173,25 @@ namespace TungSahur.EditorTools
             skyMat.shader = Shader.Find("TungSahur/NightSky");
             skyMat.SetColor("_ZenithColor", Palette.SkyTop);
             skyMat.SetColor("_HorizonColor", Palette.SkyHorizon);
+            skyMat.SetColor("_GroundColor", Palette.Shadow);
+            skyMat.SetColor("_CloudColor", TextureForge.Hex("#3A2A5E"));
+            skyMat.SetColor("_MoonColor", TextureForge.Hex("#D8DCFF"));
+            skyMat.SetFloat("_CloudStrength", 0.7f);
+            skyMat.SetFloat("_StarBrightness", 1.9f);
+            skyMat.SetFloat("_HorizonSharpness", 2.0f);
             // the visible moon sits low on the horizon opposite the light's travel direction
             Vector3 moonDir = Quaternion.Euler(-11f, 18f, 0) * Vector3.forward;
             skyMat.SetVector("_MoonDir", new Vector4(moonDir.x, moonDir.y, moonDir.z, 0));
             RenderSettings.skybox = skyMat;
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = Palette.SkyHorizon * 1.9f;
-            RenderSettings.ambientEquatorColor = Palette.Fog * 1.8f;
-            RenderSettings.ambientGroundColor = new Color(0.12f, 0.1f, 0.09f);
+            RenderSettings.ambientSkyColor = Palette.SkyHorizon * 2.1f;
+            RenderSettings.ambientEquatorColor = Palette.Fog * 2.3f;
+            RenderSettings.ambientGroundColor = new Color(0.06f, 0.05f, 0.07f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = Palette.Fog;
-            RenderSettings.fogDensity = 0.022f;
-            RenderSettings.reflectionIntensity = 0.6f;
+            RenderSettings.fogDensity = 0.03f;
+            RenderSettings.reflectionIntensity = 0.15f;
 
             var sysRoot = new GameObject("--- Systems ---").transform;
             var envRoot = new GameObject("--- Environment ---").transform;
@@ -187,8 +204,8 @@ namespace TungSahur.EditorTools
             var moon = moonGo.AddComponent<Light>();
             moon.type = LightType.Directional;
             moon.color = Palette.Moon;
-            moon.intensity = 1.35f;
-            moon.shadows = LightShadows.Soft;
+            moon.intensity = 1.8f;
+            moon.shadows = LightShadows.Hard;
             moon.shadowStrength = 0.9f;
             moonGo.transform.rotation = Quaternion.Euler(34f, 198f, 0);
             RenderSettings.sun = moon;
@@ -198,7 +215,7 @@ namespace TungSahur.EditorTools
             var fillGo = new GameObject("WarmFill");
             fillGo.transform.SetParent(lightRoot);
             var fill = fillGo.AddComponent<Light>();
-            fill.type = LightType.Directional; fill.color = Palette.Lantern; fill.intensity = 0.28f; fill.shadows = LightShadows.None;
+            fill.type = LightType.Directional; fill.color = Palette.Lantern; fill.intensity = 0.18f; fill.shadows = LightShadows.None;
             fillGo.transform.rotation = Quaternion.Euler(12f, 40f, 0);
 
             // ---------------- ground
@@ -209,14 +226,13 @@ namespace TungSahur.EditorTools
             ground.GetComponent<Renderer>().sharedMaterial = M("M_Ground");
             ground.isStatic = true;
             var gm = M("M_Ground");
-            gm.SetTextureScale("_BaseMap", new Vector2(48, 48));
-            gm.SetTextureScale("_BumpMap", new Vector2(48, 48));
-            gm.SetColor("_BaseColor", new Color(1.15f, 1.12f, 1.1f));
+            gm.SetTextureScale("_BaseMap", new Vector2(26, 26));   // ~5.4 m per 256 px tile: chunky PSX texels
+            gm.SetColor("_BaseColor", new Color(1.2f, 1.2f, 1.25f));
 
             // ---------------- the Pos Ronda (hero landmark) + lanterns
             var hut = Place(Prop("PosRonda"), new Vector3(-6.5f, 0, 10.5f), 160f, envRoot, 1f, true, "PosRonda");
             AddSign(hut);
-            AddPointLight(hut.transform, new Vector3(0, 2.2f, 0.2f), 28f, 13f, true, "HutLantern");
+            AddPointLight(hut.transform, new Vector3(0, 2.2f, 0.2f), 20f, 13f, true, "HutLantern");
             var hutLanternGlow = GameObject.CreatePrimitive(PrimitiveType.Cube);
             Object.DestroyImmediate(hutLanternGlow.GetComponent<Collider>());
             hutLanternGlow.name = "HutLanternGlow";
@@ -232,7 +248,7 @@ namespace TungSahur.EditorTools
                 float yaw = Mathf.Atan2(-p.x, -p.z) * Mathf.Rad2Deg - 90f;
                 var lamp = Place(Prop("LampPost"), p, yaw, envRoot, 1f, true, $"LampPost{i}");
                 var glow = lamp.GetComponentsInChildren<Renderer>().FirstOrDefault(r => r.name.Contains("Glow"));
-                var l = AddPointLight(lamp.transform, new Vector3(0.58f, 2.3f, 0), 24f, 12.5f, i < 2, $"LampLight{i}");
+                var l = AddPointLight(lamp.transform, new Vector3(0.58f, 2.3f, 0), 15f, 12f, i < 2, $"LampLight{i}");
                 l.GetComponent<LanternFlicker>().glowRenderer = glow;
             }
 
@@ -284,6 +300,7 @@ namespace TungSahur.EditorTools
             var vol = volGo.AddComponent<Volume>();
             vol.isGlobal = true;
             vol.sharedProfile = BuildPostProfile();
+            volGo.AddComponent<PSXGlobals>();
 
             // ---------------- actors
             var spawn = new GameObject("PlayerSpawn").transform;
@@ -486,17 +503,18 @@ namespace TungSahur.EditorTools
                 return c;
             }
 
+            // PSX dark-fantasy grade: crushed violet shadows, cold mids, amber glows bloom softly.
             var tone = Add<Tonemapping>(); tone.mode.Override(TonemappingMode.ACES);
-            var bloom = Add<Bloom>(); bloom.threshold.Override(0.95f); bloom.intensity.Override(0.9f); bloom.scatter.Override(0.72f);
-            bloom.tint.Override(new Color(1f, 0.9f, 0.78f));
-            var ca = Add<ColorAdjustments>(); ca.postExposure.Override(0.7f); ca.contrast.Override(14f); ca.saturation.Override(-6f);
+            var bloom = Add<Bloom>(); bloom.threshold.Override(0.85f); bloom.intensity.Override(0.75f); bloom.scatter.Override(0.65f);
+            bloom.tint.Override(new Color(1f, 0.88f, 0.8f));
+            var ca = Add<ColorAdjustments>(); ca.postExposure.Override(0.95f); ca.contrast.Override(10f); ca.saturation.Override(-4f);
             var smh = Add<ShadowsMidtonesHighlights>();
-            smh.shadows.Override(new Vector4(0.86f, 0.93f, 1.12f, 0f));
-            smh.highlights.Override(new Vector4(1.08f, 1.0f, 0.88f, 0f));
-            var wb = Add<WhiteBalance>(); wb.temperature.Override(-6f);
-            var vig = Add<Vignette>(); vig.intensity.Override(0.34f); vig.smoothness.Override(0.42f); vig.color.Override(new Color(0.02f, 0.03f, 0.06f));
-            var grain = Add<FilmGrain>(); grain.type.Override(FilmGrainLookup.Thin1); grain.intensity.Override(0.18f); grain.response.Override(0.85f);
-            var ab = Add<ChromaticAberration>(); ab.intensity.Override(0.06f);
+            smh.shadows.Override(new Vector4(0.95f, 0.86f, 1.18f, 0f));
+            smh.midtones.Override(new Vector4(0.95f, 0.97f, 1.06f, 0f));
+            smh.highlights.Override(new Vector4(1.06f, 1.0f, 0.92f, 0f));
+            var wb = Add<WhiteBalance>(); wb.temperature.Override(-8f); wb.tint.Override(10f);
+            var vig = Add<Vignette>(); vig.intensity.Override(0.42f); vig.smoothness.Override(0.45f); vig.color.Override(new Color(0.03f, 0.01f, 0.05f));
+            var grain = Add<FilmGrain>(); grain.type.Override(FilmGrainLookup.Medium2); grain.intensity.Override(0.28f); grain.response.Override(0.7f);
             EditorUtility.SetDirty(profile);
             AssetDatabase.SaveAssets();
             return profile;
