@@ -72,7 +72,7 @@ namespace TungSahur.Enemies
         public int strikeBombs = 3;
         public float strikeRadius = 3.1f;
         public float strikeDamage = 165f;
-        public float strikeFallTime = 1.6f;
+        public float strikeFallTime = 1.35f;
 
         [Header("Living bombs")]
         public int livingBombs = 3;
@@ -84,7 +84,7 @@ namespace TungSahur.Enemies
         [Tooltip("Half width of the fuselage + inner propellers that runs you over.")]
         public float chargeHalfWidth = 2.6f;
         public float noseReach = 7.2f;
-        public float groundedTime = 6.5f;
+        public float groundedTime = 9f;
         public float biteDamage = 120f;
         public float staggerTime = 3.4f;
 
@@ -160,6 +160,8 @@ namespace TungSahur.Enemies
             Health = maxHealth;
             Poise = maxPoise;
             PhaseTwo = false;
+            closePressure = spinCd = hopCd = belchCd = 0f;
+            Pose(0f, 0f, 0f, 0f, 3f);
             foreach (var s in engineSmoke) if (s) s.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             State = Mode.Flying;
             gameObject.SetActive(true);
@@ -260,11 +262,11 @@ namespace TungSahur.Enemies
 
         void ApplyAttitude(float dt, bool flying)
         {
-            float targetBank = flying ? Mathf.Clamp(-yawRate * 0.55f, -maxBank, maxBank) : 0f;
+            float targetBank = flying ? Mathf.Clamp(-yawRate * 0.55f, -maxBank, maxBank) : groundBank;
             float speed = Mathf.Max(1f, Flat(vel).magnitude);
             float targetPitch = flying ? Mathf.Clamp(-Mathf.Atan2(vel.y, speed) * Mathf.Rad2Deg, -18f, 18f) : 0f;
-            bank = Mathf.Lerp(bank, targetBank, Ease.Damp(3f, dt));
-            pitch = Mathf.Lerp(pitch, targetPitch + pitchOffset, Ease.Damp(4f, dt));
+            bank = Mathf.Lerp(bank, targetBank, Ease.Damp(flying ? 3f : poseSharp, dt));
+            pitch = Mathf.Lerp(pitch, targetPitch + pitchOffset, Ease.Damp(flying ? 4f : poseSharp + 1f, dt));
             transform.rotation = Quaternion.Euler(0f, yaw, 0f);
             if (pivot) pivot.localRotation = Quaternion.Euler(pitch, 0f, bank);
         }
@@ -460,11 +462,18 @@ namespace TungSahur.Enemies
                 Steer(to.magnitude > 9f ? to : Heading, cruiseAltitude, speed, dt, 1.1f);
                 if (Time.time >= nextDrop && to.magnitude < 17f && PlayerAlive)
                 {
-                    Vector3 lead = Player.motor.PlanarVelocity * strikeFallTime * 0.55f;
+                    Vector3 lead = Player.motor.PlanarVelocity * strikeFallTime * 0.9f;
                     Vector3 target = Blast.Ground(PlayerPos + lead);
                     var b = GetBomb();
                     b.Plan(target, strikeRadius, strikeDamage, Time.time + strikeFallTime, gameObject);
                     b.Release(SocketPos, vel);
+                    if (PhaseTwo)
+                    {
+                        // a second bomb where you are now: running in a straight line isn't enough
+                        var b2 = GetBomb();
+                        b2.Plan(Blast.Ground(PlayerPos), strikeRadius * 0.85f, strikeDamage * 0.8f, Time.time + strikeFallTime + 0.15f, gameObject);
+                        b2.Release(SocketPos, vel);
+                    }
                     dropped++;
                     nextDrop = Time.time + (PhaseTwo ? 0.8f : 1.05f);
                 }
@@ -667,61 +676,352 @@ namespace TungSahur.Enemies
             });
         }
 
-        // ================================================================== grounded window
+        // ================================================================== grounded melee
+        // On the field the croc fights back. Every move is announced by the body, not by a ground marker:
+        //  - Bite combo (in front): rears its head up, jaws gaping, then lunges and snaps; 2 bites (3 in phase 2).
+        //  - Wing sweep (at a flank): turns away and cocks the near wing high, revs, then whips round.
+        //  - Tail slam (behind): nose dips into the dirt so the tail lifts high, then it crashes down.
+        //  - Propeller spin (you've been hugging / hitting it): crouches, the props scream up, then a full
+        //    whirl that clips everything around it; it staggers dizzy afterwards (punish window).
+        //  - Hop slam (mid range): crouches low and bounces onto you; the landing shakes three bombs loose.
+        //  - Bomb belch (far): head rears back, mouth wide, and lobs a spread of bombs (their shadows show where).
+        float closePressure, spinCd, hopCd, belchCd;
+        float liftTarget, lift, groundBank, poseSharp = 3f;
+        Vector3 pivotBase;
+        bool pivotBaseSet;
+
+        Vector3 Rel => transform.InverseTransformPoint(PlayerPos);
+        float FlatDist => Flat(PlayerPos - transform.position).magnitude;
+
+        void Pose(float pitchT, float bankT, float liftT, float jawT, float sharp)
+        {
+            pitchOffset = pitchT;
+            groundBank = bankT;
+            liftTarget = liftT;
+            jawTarget = jawT;
+            poseSharp = sharp;
+        }
+
+        void YawToward(Vector3 at, float rate, float dt)
+        {
+            Vector3 to = Flat(at - transform.position);
+            if (to.sqrMagnitude < 0.5f) return;
+            float prev = yaw;
+            yaw = Mathf.MoveTowardsAngle(yaw, Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg, rate * dt);
+            yawRate = Mathf.DeltaAngle(prev, yaw) / Mathf.Max(dt, 1e-4f);
+        }
+
+        void GroundStep(float dt) => ApplyAttitude(dt, false);
+
+        void SlideBy(Vector3 delta)
+        {
+            Vector3 np = transform.position + delta;
+            Vector3 rel = Flat(np - arenaCenter);
+            if (rel.magnitude > arenaRadius) np = arenaCenter + rel.normalized * arenaRadius + Vector3.up * np.y;
+            transform.position = np;
+        }
+
+        IEnumerator Hold(float time, System.Action<float, float> each = null)
+        {
+            float t = 0f;
+            while (t < time)
+            {
+                float dt = Time.deltaTime;
+                t += dt;
+                each?.Invoke(t / time, dt);
+                GroundStep(dt);
+                yield return null;
+            }
+        }
+
+        bool HitPlayer(float damage, ImpactWeight weight, Vector3 push, float poise)
+        {
+            if (!PlayerAlive) return false;
+            push.y = 0f;
+            return Player.TakeHit(new DamageInfo
+            {
+                damage = damage, poiseDamage = poise, point = PlayerPos + Vector3.up, direction = push.sqrMagnitude > 1e-3f ? push.normalized : transform.forward,
+                weight = weight, source = gameObject
+            });
+        }
+
         IEnumerator Grounded(float duration)
         {
             State = Mode.Grounded;
             CurrentMove = "Grounded";
             SetBodyColliders(true);
             propTarget = 600f;
-            float t = 0f, biteCd = 1.2f;
+            float t = 0f, cd = 0.9f;
             while (t < duration)
             {
                 float dt = Time.deltaTime;
                 t += dt;
-                biteCd -= dt;
-                Vector3 rel = transform.InverseTransformPoint(PlayerPos);
-                // tracks you slowly while you are in front; flanks and the tail are safe
-                if (PlayerAlive && rel.z > 0f && Mathf.Abs(Mathf.Atan2(rel.x, rel.z)) < 1.2f) TurnInPlace(PlayerPos, 28f, dt);
-                jawTarget = 6f + 4f * Mathf.Sin(t * 2.3f);
-                bool inFront = PlayerAlive && rel.z > 2.5f && rel.z < noseReach + 1.5f && Mathf.Abs(rel.x) < 2.4f;
-                if (inFront && biteCd <= 0f)
+                cd -= dt;
+                spinCd -= dt; hopCd -= dt; belchCd -= dt;
+                Vector3 rel = Rel;
+                float dist = FlatDist;
+                if (dist < 6.5f) closePressure += dt * 0.22f;
+                else closePressure = Mathf.Max(0f, closePressure - dt * 0.15f);
+
+                // idle: breathing jaw, slowly squaring up to you
+                Pose(0f, 0f, 0f, 6f + 4f * Mathf.Sin(t * 2.3f), 4f);
+                if (PlayerAlive && rel.z > -1f) YawToward(PlayerPos, 45f * SpeedMul, dt);
+                GroundStep(dt);
+
+                if (cd <= 0f && PlayerAlive)
                 {
-                    yield return Bite();
-                    biteCd = PhaseTwo ? 1.0f : 1.6f;
-                    t += 0.7f;
+                    float t0 = Time.time;
+                    IEnumerator move = PickGroundMove(rel, dist);
+                    if (move != null)
+                    {
+                        yield return move;
+                        t += Time.time - t0;
+                        cd = Random.Range(PhaseTwo ? 0.25f : 0.45f, PhaseTwo ? 0.6f : 0.95f);
+                        CurrentMove = "Grounded";
+                        continue;
+                    }
                 }
                 yield return null;
             }
+            Pose(0f, 0f, 0f, 0f, 3f);
             SetBodyColliders(false);
         }
 
-        IEnumerator Bite()
+        IEnumerator PickGroundMove(Vector3 rel, float dist)
         {
-            CurrentMove = "Bite";
-            AudioManager.Play(Sfx.CrocRoar, transform.position + transform.forward * 5f, 0.5f, 1.6f);
-            jawTarget = 48f;
-            pitchOffset = -5f;      // head rears up
-            float t = 0f;
-            while (t < 0.55f) { t += Time.deltaTime; TurnInPlace(PlayerPos, 40f, Time.deltaTime); ApplyAttitudeGround(); yield return null; }
-            jawTarget = -2f;
-            pitchOffset = 4f;       // lunges down
-            yield return new WaitForSeconds(0.08f);
-            AudioManager.Play(Sfx.JawSnap, transform.position + transform.forward * 5f, 1f);
-            CameraDirector.Instance?.Shake(0.25f, transform.forward);
-            if (PlayerAlive)
+            float side = Mathf.Sign(rel.x == 0f ? 1f : rel.x);
+            if (closePressure >= 1f && spinCd <= 0f && dist < 9f) return PropSpin();
+            if (rel.z < -1.8f && Mathf.Abs(rel.x) < 3.6f && dist < 10f) return TailSlam();
+            if (Mathf.Abs(rel.x) > 1.5f && rel.z > -3.5f && rel.z < 4f && dist < 7.5f) return WingSweep(side);
+            if (rel.z > 1.2f && Mathf.Abs(rel.x) < 2.8f && rel.z < noseReach + 3.5f) return BiteCombo();
+            if (dist > 7f && dist < 15f && hopCd <= 0f && (belchCd > 0f || Random.value < 0.55f)) return HopSlam();
+            if (dist > 8f && belchCd <= 0f) return BombBelch();
+            return null;
+        }
+
+        IEnumerator BiteCombo()
+        {
+            int bites = PhaseTwo ? 3 : 2;
+            for (int i = 0; i < bites; i++)
             {
-                Vector3 rel = transform.InverseTransformPoint(PlayerPos);
-                if (rel.z > 2.5f && rel.z < noseReach + 1.3f && Mathf.Abs(rel.x) < 2.0f && rel.y < 3f)
-                    Player.TakeHit(new DamageInfo
+                CurrentMove = "Bite";
+                // rear up: head high, jaws wide, weight shifted back; tracks you while it winds up
+                float windup = (i == 0 ? 0.62f : 0.4f) / SpeedMul;
+                AudioManager.Play(Sfx.CrocRoar, transform.position + transform.forward * 5f, 0.45f, 1.7f);
+                yield return Hold(windup, (k, dt) =>
+                {
+                    Pose(-13f * Ease.OutCubic(k), 0f, 0.45f * k, 58f, 7f);
+                    YawToward(PlayerPos, 70f * SpeedMul, dt);
+                    SlideBy(-transform.forward * dt * 0.5f);
+                });
+                // lunge + snap
+                AudioManager.Play(Sfx.WhooshHeavy, transform.position + transform.forward * 5f, 1f, 0.7f);
+                bool hit = false;
+                yield return Hold(0.13f, (k, dt) =>
+                {
+                    Pose(9f, 0f, -0.1f, -2f, 22f);
+                    SlideBy(transform.forward * dt * 2.4f / 0.13f);
+                    if (!hit)
                     {
-                        damage = biteDamage, poiseDamage = 60f, point = PlayerPos + Vector3.up, direction = transform.forward,
-                        weight = ImpactWeight.Heavy, source = gameObject
-                    });
+                        Vector3 r = Rel;
+                        if (r.z > 2f && r.z < noseReach + 2.4f && Mathf.Abs(r.x) < 2.2f && r.y < 3f)
+                            hit = HitPlayer(biteDamage * (i == bites - 1 ? 1.15f : 1f), ImpactWeight.Heavy, transform.forward, 60f);
+                    }
+                });
+                AudioManager.Play(Sfx.JawSnap, transform.position + transform.forward * 5f, 1f);
+                CameraDirector.Instance?.Shake(0.28f, transform.forward);
+                FXManager.Spawn(FXType.DustSmall, transform.position + transform.forward * 6f, Quaternion.identity, 1.6f);
+                yield return Hold(i == bites - 1 ? 0.55f : 0.16f, (k, dt) => Pose(4f * (1f - k), 0f, 0f, 4f, 6f));
             }
-            yield return new WaitForSeconds(0.45f);
-            pitchOffset = 0f;
-            CurrentMove = "Grounded";
+        }
+
+        IEnumerator WingSweep(float side)
+        {
+            CurrentMove = "WingSweep";
+            // turn away from you and cock the near wing up (positive bank lifts the right wing)
+            float startYaw = yaw;
+            engineRev = 1f;
+            propTarget = 2400f;
+            AudioManager.Play(Sfx.Skid, transform.position, 0.5f, 0.75f);
+            yield return Hold(0.8f / SpeedMul, (k, dt) =>
+            {
+                float e = Ease.OutCubic(k);
+                yaw = startYaw - side * 32f * e;
+                Pose(0f, side * 30f * e, 0.45f * e, 20f, 8f);
+                if (Random.value < dt * 10f) FXManager.Spawn(FXType.DustSmall, transform.position + transform.right * side * 4.5f, Quaternion.identity, 1.2f);
+            });
+            // whip round through the flank, the wing slamming down
+            AudioManager.Play(Sfx.WhooshHeavy, transform.position + transform.right * side * 4f, 1f, 0.6f);
+            bool hit = false;
+            float from = yaw;
+            yield return Hold(0.3f, (k, dt) =>
+            {
+                float prev = yaw;
+                yaw = from + side * 115f * Ease.InOutCubic(k);
+                yawRate = Mathf.DeltaAngle(prev, yaw) / Mathf.Max(dt, 1e-4f);
+                Pose(0f, -side * 14f, 0f, 20f, 18f);
+                if (!hit)
+                {
+                    Vector3 r = Rel;
+                    if (r.y < 2.8f && Mathf.Abs(r.z) < 2.8f && r.x * side > 1.2f && r.x * side < 6.6f)
+                        hit = HitPlayer(150f, ImpactWeight.Heavy, transform.right * side + transform.forward * 0.4f, 70f);
+                }
+            });
+            CameraDirector.Instance?.Shake(0.35f, transform.right * side);
+            FXManager.Spawn(FXType.Dust, transform.position + transform.right * side * 4.5f, Quaternion.identity, 1.6f);
+            AudioManager.Play(Sfx.Slam, transform.position + transform.right * side * 4f, 0.6f, 1.2f);
+            yield return Hold(0.65f, (k, dt) => Pose(0f, 0f, 0f, 8f, 5f));
+        }
+
+        IEnumerator TailSlam()
+        {
+            CurrentMove = "TailSlam";
+            // nose into the dirt, tail up high, a rattle of warning
+            AudioManager.Play(Sfx.Skid, transform.position, 0.6f, 0.6f);
+            AudioManager.Play(Sfx.CrocRoar, transform.position, 0.4f, 1.9f);
+            yield return Hold(0.85f / SpeedMul, (k, dt) =>
+            {
+                Pose(15f * Ease.OutCubic(k), Mathf.Sin(k * 20f) * 2f * k, 0.25f * k, 0f, 6f);
+                if (Random.value < dt * 8f) FXManager.Spawn(FXType.DustSmall, transform.position + transform.forward * 5.5f, Quaternion.identity, 1f);
+            });
+            bool hit = false;
+            yield return Hold(0.14f, (k, dt) =>
+            {
+                Pose(-7f, 0f, -0.15f, 0f, 26f);
+                if (!hit && k > 0.6f)
+                {
+                    Vector3 r = Rel;
+                    if (r.z < -2.2f && r.z > -9.5f && Mathf.Abs(r.x) < 3.2f && r.y < 2.5f)
+                        hit = HitPlayer(170f, ImpactWeight.Slam, -transform.forward, 90f);
+                }
+            });
+            Vector3 tail = transform.position - transform.forward * 5.6f;
+            FXManager.Spawn(FXType.SlamRing, Blast.Ground(tail) + Vector3.up * 0.05f, Quaternion.identity, 2.4f);
+            FXManager.Spawn(FXType.Dust, tail, Quaternion.identity, 2f);
+            FXManager.Spawn(FXType.SlamDebris, tail, Quaternion.identity, 1.2f);
+            AudioManager.Play(Sfx.Slam, tail, 1f, 0.8f);
+            CameraDirector.Instance?.Shake(0.55f, Vector3.down);
+            yield return Hold(0.75f, (k, dt) => Pose(-2f * (1f - k), 0f, 0f, 6f, 4f));
+        }
+
+        IEnumerator PropSpin()
+        {
+            CurrentMove = "Spin";
+            closePressure = 0f;
+            spinCd = PhaseTwo ? 7f : 10f;
+            // crouch, props wind up to a scream: get out
+            propTarget = 2400f;
+            engineRev = 1f;
+            AudioManager.Play(Sfx.CrocRoar, transform.position, 0.8f, 1.2f);
+            yield return Hold(0.95f / SpeedMul, (k, dt) =>
+            {
+                engineRev = 1f;
+                Pose(-3f, Mathf.Sin(k * 40f) * 3f * k, -0.3f * k, 12f, 8f);
+                if (Random.value < dt * 16f)
+                {
+                    float a = Random.value * Mathf.PI * 2f;
+                    FXManager.Spawn(FXType.DustSmall, transform.position + new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * 4.5f, Quaternion.identity, 1.3f);
+                }
+            });
+            bool hit = false;
+            float from = yaw;
+            float dir = Random.value < 0.5f ? 1f : -1f;
+            AudioManager.Play(Sfx.WhooshHeavy, transform.position, 1f, 0.55f);
+            yield return Hold(0.7f, (k, dt) =>
+            {
+                float prev = yaw;
+                yaw = from + dir * 540f * Ease.InOutCubic(k);
+                yawRate = Mathf.DeltaAngle(prev, yaw) / Mathf.Max(dt, 1e-4f);
+                Pose(0f, dir * 16f, 0.2f, 30f, 12f);
+                if (Random.value < dt * 20f) WheelDust(1.2f);
+                if (!hit && PlayerAlive && FlatDist < 7f && Rel.y < 2.6f)
+                    hit = HitPlayer(130f, ImpactWeight.Heavy, Flat(PlayerPos - transform.position), 80f);
+            });
+            CameraDirector.Instance?.Shake(0.4f, Vector3.down);
+            // dizzy: the punish window
+            CurrentMove = "Dizzy";
+            propTarget = 300f;
+            yield return Hold(1.15f, (k, dt) => Pose(5f, Mathf.Sin(k * 14f) * 9f * (1f - k), -0.1f, 32f, 5f));
+        }
+
+        IEnumerator HopSlam()
+        {
+            CurrentMove = "HopSlam";
+            hopCd = PhaseTwo ? 4f : 6f;
+            propTarget = 2400f;
+            engineRev = 1f;
+            AudioManager.Play(Sfx.CrocRoar, transform.position, 0.6f, 1.4f);
+            yield return Hold(0.6f / SpeedMul, (k, dt) =>
+            {
+                YawToward(PlayerPos, 160f, dt);
+                Pose(-6f * k, 0f, -0.4f * Ease.OutCubic(k), 30f, 9f);
+            });
+            // hop onto where you are (clamped inside the arena)
+            Vector3 start = transform.position;
+            Vector3 land = PlayerPos;
+            Vector3 lr = Flat(land - arenaCenter);
+            if (lr.magnitude > arenaRadius - 1f) land = arenaCenter + lr.normalized * (arenaRadius - 1f);
+            land = Blast.Floor(land) - transform.forward * 1.5f;   // the belly lands on you, not the nose
+            AudioManager.Play(Sfx.Jump, transform.position, 1f, 0.5f);
+            FXManager.Spawn(FXType.Dust, transform.position, Quaternion.identity, 2f);
+            const float air = 0.8f;
+            float t = 0f;
+            while (t < air)
+            {
+                float dt = Time.deltaTime;
+                t += dt;
+                float s = Mathf.Clamp01(t / air);
+                Vector3 p = Vector3.Lerp(start, land, s);
+                p.y = Mathf.Lerp(start.y, land.y, s) + Mathf.Sin(s * Mathf.PI) * 4f;
+                transform.position = p;
+                Pose(Mathf.Lerp(-10f, 6f, s), 0f, 0f, 30f, 8f);
+                GroundStep(dt);
+                yield return null;
+            }
+            transform.position = land;
+            Touchdown(1.1f);
+            FXManager.Spawn(FXType.SlamRing, land + Vector3.up * 0.05f, Quaternion.identity, 3f);
+            if (PlayerAlive && FlatDist < 5.2f && Rel.y < 2.5f)
+                HitPlayer(160f, ImpactWeight.Slam, Flat(PlayerPos - transform.position), 90f);
+            // the landing shakes bombs loose: their shadows show where
+            int n = PhaseTwo ? 4 : 3;
+            for (int i = 0; i < n; i++)
+            {
+                float a = Random.value * Mathf.PI * 2f;
+                Vector3 p = Blast.Ground(transform.position + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * Random.Range(3.5f, 6.5f));
+                var b = GetBomb();
+                b.Plan(p, 1.9f, 75f, Time.time + 1.0f + i * 0.12f, gameObject);
+                b.Release(p + Vector3.up * 7f, Vector3.zero);
+            }
+            yield return Hold(0.6f, (k, dt) => Pose(4f * (1f - k), 0f, 0f, 10f, 5f));
+        }
+
+        IEnumerator BombBelch()
+        {
+            CurrentMove = "Belch";
+            belchCd = PhaseTwo ? 4.5f : 6.5f;
+            AudioManager.Play(Sfx.CrocRoar, transform.position + transform.forward * 5f, 0.9f, 0.9f);
+            yield return Hold(0.75f / SpeedMul, (k, dt) =>
+            {
+                YawToward(PlayerPos, 120f, dt);
+                Pose(-17f * Ease.OutCubic(k), 0f, 0.3f * k, 64f, 7f);
+            });
+            int n = PhaseTwo ? 5 : 3;
+            Vector3 mouth = transform.position + transform.forward * 6.5f + Vector3.up * 2.4f;
+            Vector3 lead = Player != null ? Player.motor.PlanarVelocity * 0.8f : Vector3.zero;
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 jitter = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f)) * (i == 0 ? 0.3f : 2.6f);
+                Vector3 p = Blast.Ground(PlayerPos + lead * (i == 0 ? 1f : 0.5f) + jitter);
+                var b = GetBomb();
+                b.Plan(p, 2.3f, strikeDamage * 0.75f, Time.time + 1.15f + i * 0.14f, gameObject);
+                b.Release(mouth, (p - mouth) * 0.6f + Vector3.up * 6f);
+                AudioManager.Play(Sfx.BombPop, mouth, 0.5f, 1.4f);
+                pitchOffset = 4f;
+                yield return Hold(0.12f);
+                pitchOffset = -14f;
+            }
+            yield return Hold(0.6f, (k, dt) => Pose(0f, 0f, 0f, 10f, 5f));
         }
 
         void ApplyAttitudeGround() => ApplyAttitude(Time.deltaTime, false);
@@ -729,6 +1029,7 @@ namespace TungSahur.Enemies
         IEnumerator Takeoff()
         {
             CurrentMove = "Takeoff";
+            Pose(0f, 0f, 0f, 0f, 3f);
             State = Mode.Charging;
             SetBodyColliders(false);
             // face across the arena if the wall is close ahead
@@ -774,6 +1075,7 @@ namespace TungSahur.Enemies
         {
             CurrentMove = "Stagger";
             pitchOffset = 0f;
+            groundBank = 0f; liftTarget = 0f; poseSharp = 3f; closePressure = 0f;
             SetBodyColliders(false);
             AudioManager.Play(Sfx.Stagger, transform.position, 1f, 0.6f);
             AudioManager.Play(Sfx.CrocRoar, transform.position, 0.8f, 0.75f);
@@ -826,6 +1128,7 @@ namespace TungSahur.Enemies
         {
             if (!IsAlive || State == Mode.Crashing) return false;
             lastHitTime = Time.time;
+            if (State == Mode.Grounded) closePressure += info.explosive ? 0.12f : 0.2f;
             Health = Mathf.Max(0f, Health - info.damage);
             bool broke = false;
             if (State != Mode.Staggered && !info.critical)
@@ -849,6 +1152,7 @@ namespace TungSahur.Enemies
             ClearProjectiles();
             State = Mode.Dead;
             CurrentMove = "Dead";
+            groundBank = 0f; liftTarget = 0f; poseSharp = 3f;
             SetBodyColliders(true);
             Felled?.Invoke(this);
             StartCoroutine(DeathRoutine());
@@ -940,6 +1244,14 @@ namespace TungSahur.Enemies
 
             if (IsAlive && State != Mode.Staggered && Time.time - lastHitTime > poiseRegenDelay)
                 Poise = Mathf.MoveTowards(Poise, maxPoise, maxPoise * 0.25f * dt);
+
+            // ground poses raise / lower the body on its gear
+            if (pivot)
+            {
+                if (!pivotBaseSet) { pivotBase = pivot.localPosition; pivotBaseSet = true; }
+                lift = Mathf.Lerp(lift, liftTarget, Ease.Damp(10f, dt));
+                pivot.localPosition = pivotBase + Vector3.up * lift;
+            }
 
             // propellers: spin around the nose axis, each a little out of phase
             propSpin = Mathf.Lerp(propSpin, propTarget, Ease.Damp(engineRev > 0.1f ? 4f : 1.2f, dt));

@@ -10,15 +10,19 @@ namespace TungSahur.UI
 {
     public partial class HUD
     {
-        // ================================================================== F1 debug menu: boss roster
+        // ================================================================== F1 debug menu: boss roster + test tools
         // Lists every boss configured on the BossEncounter. Up/Down + Select (or 1-9) spawns or
         // despawns one; the last row sends them all away. Pauses the game while open, like the
         // pause menu, so the menu keys never leak into gameplay.
         class DebugRow
         {
-            public BombardiroBoss boss;     // null = "Despawn all"
+            public BombardiroBoss boss;     // null + no tool = "Despawn all"
             public VisualElement row;
             public Label status, action;
+            // tool rows (masks, obstacles): run an action, show a live status
+            public System.Action tool;
+            public System.Func<string> toolStatus;
+            public string toolAction;
         }
 
         VisualElement debugRoot, debugList;
@@ -33,7 +37,7 @@ namespace TungSahur.UI
             debugRoot.style.display = DisplayStyle.None;
             var frame = El("dbg__frame", debugRoot);
             var head = El("dbg__head", frame);
-            ApplySerif(Lbl("BOSSES", "dbg__title", head));
+            ApplySerif(Lbl("BOSSES & TESTS", "dbg__title", head));
             Lbl("DEBUG · F1", "dbg__tag", head);
             debugList = El("dbg__list", frame);
             Lbl("", "dbg__foot", frame).name = "dbg-foot";
@@ -60,6 +64,33 @@ namespace TungSahur.UI
                 }
             }
             if (debugRows.Count == 0) Lbl("No bosses configured on the BossEncounter.", "dbg__empty", debugList);
+
+            // standalone tests for the mask reward and the breakable obstacles
+            void Tool(string name, string action, System.Action run, System.Func<string> status)
+            {
+                var r = new DebugRow { row = El("dbg__row", debugList), tool = run, toolStatus = status, toolAction = action };
+                Lbl("", "dbg__key", r.row);
+                var c = El("dbg__col", r.row);
+                ApplySerif(Lbl(name, "dbg__name", c));
+                r.status = Lbl("", "dbg__status", c);
+                r.action = Lbl(action, "dbg__action", r.row);
+                debugRows.Add(r);
+            }
+            var masks = Masks.MaskSystem.Instance;
+            if (enc != null && enc.rewardMask != null)
+            {
+                var mk = enc.rewardMask;
+                Tool($"{mk.displayName} (pickup)", "Spawn", () => enc.SpawnMaskForTest(),
+                    () => masks != null && masks.Owns(mk) ? "Owned: putting it on is a quick transformation" : "Not owned: picking it up plays the cinematic");
+                Tool("Forget all masks", "Forget", () => masks?.ForgetAll(),
+                    () => masks != null && masks.Worn != null ? $"Wearing {masks.Worn.displayName}" : "Elder Tree form");
+            }
+            Tool("Restore breakables", "Restore", World.Breakable.RestoreAll, () =>
+            {
+                int broken = 0;
+                foreach (var b in World.Breakable.All) if (b != null && b.Broken) broken++;
+                return $"{broken} / {World.Breakable.All.Count} broken";
+            });
 
             var all = new DebugRow { row = El("dbg__row dbg__row--all", debugList) };
             Lbl("0", "dbg__key", all.row);
@@ -92,6 +123,14 @@ namespace TungSahur.UI
             var enc = BossEncounter.Instance;
             if (enc == null || i < 0 || i >= debugRows.Count) return;
             debugIndex = i;
+            var tool = debugRows[i].tool;
+            if (tool != null)
+            {
+                tool();
+                AudioManager.Play2D(Sfx.UISelect, 0.7f);
+                RefreshDebugRows();
+                return;
+            }
             var b = debugRows[i].boss;
             if (b == null) enc.DespawnAll();
             else if (BossEncounter.IsSpawned(b)) enc.Despawn(b);
@@ -114,6 +153,7 @@ namespace TungSahur.UI
             {
                 var r = debugRows[i];
                 r.row.EnableInClassList("dbg__row--active", i == debugIndex);
+                if (r.tool != null) { r.status.text = r.toolStatus?.Invoke() ?? ""; r.action.text = r.toolAction; continue; }
                 if (r.boss == null) continue;
                 bool on = BossEncounter.IsSpawned(r.boss);
                 if (on) spawned++;
@@ -146,7 +186,9 @@ namespace TungSahur.UI
             if (input.SubmitPressed) ActivateDebugRow(debugIndex);
             if (kb != null)
             {
-                for (int i = 0; i < 9 && i < debugRows.Count - 1; i++)
+                int bossRows = 0;
+                foreach (var r in debugRows) if (r.boss != null) bossRows++;
+                for (int i = 0; i < 9 && i < bossRows; i++)
                     if (kb[Key.Digit1 + i].wasPressedThisFrame || kb[Key.Numpad1 + i].wasPressedThisFrame) ActivateDebugRow(i);
                 if (kb.digit0Key.wasPressedThisFrame || kb.numpad0Key.wasPressedThisFrame) ActivateDebugRow(debugRows.Count - 1);
             }

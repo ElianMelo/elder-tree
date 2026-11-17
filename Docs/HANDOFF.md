@@ -1,5 +1,41 @@
 # Handoff — Tung Tung Tung Sahur soulslike slice
 
+## 00000. Alligator Mask (Bombardiro reward) + feedback pass
+
+**Reward:** felling Bombardiro Crocodilo drops the **Alligator Mask** beside the wreck (only if you don't own it yet). Walk into it to pick it up. The first time, a Majora's Mask–style cinematic plays: the mask is raised to the face and clamps on, then the world drops away into a churning vortex (only the body is drawn) while the body screams and flickers faster and faster between Elder Tree and alligator in hard camera cuts (face, low spin, overhead, profile), with bone-scale body horror, chromatic aberration, lens warp and hue shift. A white-out follows, the alligator roars, and an **ALLIGATOR MASK** card shows the controls. Skippable after 2.5 s (B / Esc / A). Ownership is saved in PlayerPrefs (`TungSahur.Masks.Owned`).
+
+**Masks:** slots on **1-4 / D-pad ↑ → ↓ ←** (alligator = slot 1 / ↑). Press a slot to put the mask on (a quick 0.6 s hand-to-face transformation, invulnerable), press it again to return to the Elder Tree. Empty or unowned slots shake in the HUD's mask strip (above the equipment cross).
+
+| Alligator form | What it does |
+|---|---|
+| Body | `CrocForm.fbx`, humanoid alligator, 2,548 tris, **same skeleton as the Elder Tree** (all pack clips and sockets work), PS1 rigid skinning. Croc hide, pale belly scutes, toxic eyes, leather aviator cap and goggles, riveted bomber-metal pauldron, bomb bandolier, tail with a scute crest. Takes 15% less damage and ignores light flinches; 6% slower, shorter roll. |
+| Bombardiro Hammer | Drop-bomb head with a toothed croc nose. 3-hit light chain + 2 chargeable heavies on the pack's 2H clips. **Every swing that connects explodes once**, whether it hits an enemy, an obstacle, or the ground (overheads and slams). Breaks obstacles. |
+| Crocodilo Cannon | Engine-nacelle cannon with croc jaws. LT raises it (Bazooka clips; the spine pitches to the aim and the barrel is aimed at the crosshair every frame), RT fires a shell that explodes. 1.5 s reload (the crosshair closes as it reloads, gold when ready), 62 m/s, 140 m range, 95 direct + 60 blast. 22 mana. |
+| Sky Bombardment (RB + RT) | Crouch, leap 5.5 m, hang, hurl the hammer down at the lock target (or 6 m ahead): 6.5 m blast (260 dmg), secondary pops, slow-mo, then the hammer flies back. 45 mana. Hyper armour while it runs. |
+
+**All tuning is in ScriptableObjects** (`Assets/TungSahur/Data`). The builder only *creates* them when they are missing, so your edits survive rebuilds:
+`Forms/Form_ElderTree`, `Forms/Form_Alligator` (loadout + body handling), `Equipment/Melee_SahurClub`, `Melee_BombardiroHammer` (explosion radius / damage, break power), `Bow_Sahur` (mana per arrow, draw, flight, damage, lead), `Cannon_Crocodilo`, `Special_SkyBombardment`, `Masks/Mask_Alligator` (cinematic colours, card text), `CrocHammerMoveset` (attack timings; clip lengths are refreshed on build). Note: `TungMoveset.asset` is still rewritten by `BuildMoveset()` as before.
+
+**Breakables:** a cracked wall plugs one gap in the arena ring and three boulders sit around the yard (`World/Breakable.cs`, prefabs in `Prefabs/Breakables`). Only blows with `breakPower ≥ requiredPower` shatter them into tumbling chunks: the hammer, cannon shells and Sky Bombardment. The club and arrows clank off with sparks.
+
+**Debug (F1, now "BOSSES & TESTS"):** besides the boss roster, **Alligator Mask (pickup)** spawns the pickup 3 m ahead (it plays the cinematic if the mask isn't owned), **Forget all masks** resets ownership and returns you to the Elder Tree, and **Restore breakables** puts the obstacles back.
+
+**Feedback addressed:**
+- **Bow precision:** an unreachable aim point (open sky, or too far for a weak draw) used to fall back to a **45° lob** over the crosshair. Now the arrow flies straight at the point, and open sky aims 60 m down the view ray. While locked on, arrows **lead moving targets** (velocity tracked, iterated on flight time) unless you steer the lead offset yourself. A shot that enters a hurtbox always lands, even when it misses the mesh-ellipsoid test that decides where it sticks (it used to pass through wings and thin parts). Arrow speed went from 22-60 to 34-72 m/s.
+- **Boss too easy:** the red ground rings are gone. **Bombs cast a shadow**: a dark soft blob under the falling bomb that tightens and darkens as it comes down. That and the whistle are the only warning. Precision strikes lead you harder and, in phase 2, drop a second bomb where you stand. **On the ground** the croc now fights with body-language telegraphs, not markers: a bite combo (rears up with jaws gaping, then lunges; 2 bites, 3 in phase 2), a wing sweep at a flank (turns away, cocks the wing, whips round), a tail slam behind (the nose dips so the tail rises, then it crashes down), a propeller spin when you hug or spam it (crouches as the props scream up, whirls 1.5 turns, then stays dizzy as a punish window), a hop slam at mid range (bounces onto you and shakes bombs loose), and a bomb belch at range (rears back and lobs a spread). The grounded window is 9 s.
+- **Special = light + heavy together** (RB + RT within 75 ms on a pad; single presses wait that long before they count). Y no longer does anything. Keyboard keeps Shift + RMB.
+- **Block on LB:** guard was already bound to LB on the pad (Left Alt on keyboard) and nothing changed. See question 1.
+- **Mana instead of ammo:** FP became **mana** (blue bar). It regenerates over time, and every spend stops regeneration for **2 s** before it resumes. Arrows (7), cannon shells (22), the Tung Slam skill (30) and Sky Bombardment (45) cost mana. When you don't have enough, you hear a dry click and the bar blinks. The equipment cross shows the cost per shot (◆ 7 / ◆ 22).
+
+**Code map:** `Runtime/Equipment/*` (SO types), `Runtime/Masks/` (`MaskSystem`, `MaskPickup`, `MaskCinematic`, `FormRig`), `Player/PlayerController.Form.cs` (form swap, hammer blasts, cannon, Sky Bombardment, quick transform, cinematic hold), `Player/CannonRig.cs`, `Combat/Explosions.cs`, `Combat/CannonShell.cs`, `World/Breakable.cs`, `UI/HUD.Masks.cs`, `Editor/TungSahurBuilder.Masks.cs` (menu **8. Build Alligator Mask set**, part of `BuildAll()`; note the new order: Boss → Mask set → Prefabs), boss AI in `BombardiroBoss.cs` (grounded melee section). Models: `Tools/Blender/build_croc_form.py -- <abs out dir>`, then copy the 7 FBX into `Art/Models/Croc`. New SFX in `SfxForge` (deflect, rock break, cannon, mask on, scream, transform swap, mana empty, mask fanfare). New animator states, all from the Human Mega pack: SpecialHold/Throw (ThrowBigRock01), CannonAim/Shoot (Bazooka_Aim01), MaskDon (Drink01_R), MaskScream (Pain01), MaskRoar (Angry01).
+
+**Verified in play mode** (autopilot, god mode): pickup → full cinematic → alligator; the hammer combo and charged heavy explode on the dummies; the cannon fires, explodes and costs 22 mana; Sky Bombardment rises to 5 m and its blast hits all three dummies; mana resumes after the 2 s pause; D-pad ↑ swaps back to the Elder Tree; the club clanks off a boulder and the hammer shatters it; the grounded croc chains bites with the rear-up telegraph; bomb shadows show on the ground. Console: 0 errors, 0 warnings. **Not verified:** the full kill → drop-at-the-wreck path (the debug spawn uses the same pickup), every grounded move in turn (only bites were captured), the keyboard chord, and how the difficulty feels by hand.
+
+**Questions:**
+1. **Block on LB:** it was already LB on the pad. Did something else feel wrong (for example guard not working while locked on or right after aiming), or did you mean the keyboard (currently Left Alt)?
+2. On keyboard, should the special also be LMB + RMB? It's still Shift + RMB, because RMB alone raises the bow.
+3. Mask ownership persists between sessions (PlayerPrefs). Is that what you want, or should it reset each run until there's a save system?
+
 ## 0000. Animation: Human Mega Animations Pack is the source of truth
 
 All player motion now comes from **Kevin Iglesias / Human Mega Animations Pack** (`Assets/Kevin Iglesias/Human Animations/Animations/Male`). Don't mix in other packs: the ExplosiveLLC jump/fall/land were the last outside clips and are gone.

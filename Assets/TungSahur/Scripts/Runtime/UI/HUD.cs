@@ -76,9 +76,10 @@ namespace TungSahur.UI
             BuildBossUI();
             BuildPause();
             BuildDebugMenu();
+            BuildMasks();
             BuildTitle();
 
-            if (input != null) input.DeviceChanged += _ => RefreshHints();
+            if (input != null) input.DeviceChanged += _ => { RefreshHints(); RefreshMaskBar(); };
             if (lockOn != null) lockOn.Changed += OnLockChanged;
             foreach (var d in FindObjectsByType<TrainingDummy>(FindObjectsSortMode.None))
             {
@@ -129,7 +130,7 @@ namespace TungSahur.UI
         {
             statusBox = El("status", root);
             hp = MakeBar(statusBox, "bar--hp", stats.maxHealth * 0.62f, 19);
-            fp = MakeBar(statusBox, "bar--fp", stats.maxFocus * 2.2f, 13);
+            fp = MakeBar(statusBox, "bar--fp", stats.maxMana * 2.2f, 13);
             st = MakeBar(statusBox, "bar--st", stats.maxStamina * 2.6f, 13);
         }
 
@@ -199,7 +200,7 @@ namespace TungSahur.UI
             if (stats != null)
             {
                 TickBar(hp, stats.Health / stats.maxHealth, dt);
-                TickBar(fp, stats.Focus / stats.maxFocus, dt);
+                TickBar(fp, stats.Mana / stats.maxMana, dt);
                 TickBar(st, Mathf.Max(0f, stats.Stamina) / stats.maxStamina, dt);
             }
 
@@ -225,6 +226,7 @@ namespace TungSahur.UI
             TickBanner(dt);
             TickBossBar(dt);
             TickDebugMenu(dt);
+            TickMasks(dt);
             TickPause();
             TickTitle(dt);
         }
@@ -236,14 +238,15 @@ namespace TungSahur.UI
         {
             new Hint { pad = "RB", kbm = "LMB", label = "Light attack" },
             new Hint { pad = "RT", kbm = "Shift + LMB", label = "Heavy attack (hold to charge)" },
-            new Hint { pad = "LT", kbm = "RMB", label = "Bow: hold to aim & draw" },
-            new Hint { pad = "LT + RT", kbm = "RMB + LMB", label = "Loose arrow (full draw hits harder)" },
-            new Hint { pad = "Y", kbm = "Shift + RMB", label = "Skill: Tung Tung Slam" },
+            new Hint { pad = "RB + RT", kbm = "Shift + RMB", label = "Special attack (mana)" },
+            new Hint { pad = "LT", kbm = "RMB", label = "Ranged: hold to aim" },
+            new Hint { pad = "LT + RT", kbm = "RMB + LMB", label = "Shoot (mana per shot)" },
             new Hint { pad = "LB", kbm = "Alt", label = "Guard" },
             new Hint { pad = "B", kbm = "Space", label = "Roll / backstep · hold: sprint" },
             new Hint { pad = "A", kbm = "F", label = "Jump" },
             new Hint { pad = "R3", kbm = "Q / MMB", label = "Lock on · reset camera" },
             new Hint { pad = "R-Stick ←→", kbm = "Mouse flick / wheel", label = "Switch target" },
+            new Hint { pad = "D-Pad", kbm = "1 - 4", label = "Masks: wear · again to remove" },
             new Hint { pad = "L3", kbm = "Ctrl", label = "Walk toggle" },
             new Hint { pad = "Start", kbm = "Esc", label = "Menu" },
         };

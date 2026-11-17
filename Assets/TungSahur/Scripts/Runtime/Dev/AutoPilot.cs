@@ -156,7 +156,7 @@ namespace TungSahur.Dev
             {
                 sb.Append($"t={Time.time:F2} state={pc.State} pos={pc.transform.position.ToString("F2")} yaw={pc.transform.eulerAngles.y:F0} ");
                 sb.Append($"vel={pc.motor.PlanarVelocity.magnitude:F2} grounded={pc.motor.Grounded} sprint={pc.IsSprinting} ");
-                sb.Append($"stam={pc.stats.Stamina:F0} fp={pc.stats.Focus:F0} atk={(pc.CurrentAttack != null ? pc.CurrentAttack.id : "-")} ");
+                sb.Append($"stam={pc.stats.Stamina:F0} mana={pc.stats.Mana:F0} atk={(pc.CurrentAttack != null ? pc.CurrentAttack.id : "-")} ");
                 sb.Append($"lock={(pc.lockOn.Current != null ? pc.lockOn.Current.name : "-")} ");
             }
             var boss = Enemies.BossEncounter.Instance != null ? Enemies.BossEncounter.Instance.boss : null;

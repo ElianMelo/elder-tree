@@ -35,7 +35,7 @@ namespace TungSahur.Player
         public bool StartAttack(AttackData a)
         {
             if (a == null) return false;
-            if (a.fpCost > 0f && !stats.TrySpendFocus(a.fpCost))
+            if (a.manaCost > 0f && !stats.TrySpendMana(a.manaCost))
             {
                 AudioManager.Play2D(Sfx.UIBack, 0.5f, 0.8f);
                 return false;
@@ -55,6 +55,7 @@ namespace TungSahur.Player
             slamDone = false;
             queued = Queued.None;
             hitsThisSwing = 0;
+            blastDone = false;
             prevLunge = LungeCurve(a, attackT);
 
             // pick a direction: lock-on snaps to the target, otherwise the stick decides
@@ -169,6 +170,7 @@ namespace TungSahur.Player
                 bool heavy = a.weight != ImpactWeight.Light;
                 AudioManager.Play(heavy ? Sfx.WhooshHeavy : Sfx.WhooshLight, clubTip.position, heavy ? 0.9f : 0.75f, charging ? 0.9f : 1f);
             }
+            if (windowOpen && weapon.Active) CheckGroundBlast();
             if (windowOpen && weapon.Active && attackT >= a.hitEnd)
             {
                 weapon.End();
@@ -207,6 +209,12 @@ namespace TungSahur.Player
                 queued = Queued.None;
                 EndSwing();
                 if (stats.TrySpendStamina(jumpStamina)) { motor.Jump(jumpHeight); EnterAir(true); return; }
+            }
+            if (queued == Queued.Skill && attackT >= a.comboOpen && motor.Grounded && CurrentForm != null && CurrentForm.special != null)
+            {
+                queued = Queued.None;
+                EndSwing();
+                if (TryStartSpecial()) return;
             }
             if ((queued == Queued.Light || queued == Queued.Heavy || queued == Queued.Skill) && attackT >= a.comboOpen && motor.Grounded)
             {
@@ -250,27 +258,41 @@ namespace TungSahur.Player
         void OnWeaponHit(IDamageable target, Collider col, Vector3 point)
         {
             if (attack == null) return;
+            var melee = Melee;
             bool charged = chargeTime > 0.05f;
             bool critical = target is IStaggerable st && st.IsStaggered;
+            float dmgMul = melee != null ? melee.damageMultiplier : 1f;
+            float poiseMul = melee != null ? melee.poiseMultiplier : 1f;
             Vector3 dir = target.Root.position - transform.position;
             dir.y = 0;
             dir = dir.sqrMagnitude > 1e-4f ? dir.normalized : transform.forward;
             var info = new DamageInfo
             {
-                damage = Mathf.Round(attack.damage * ChargeMultiplier * (critical ? 2.6f : 1f) * Random.Range(0.96f, 1.04f)),
+                damage = Mathf.Round(attack.damage * dmgMul * ChargeMultiplier * (critical ? 2.6f : 1f) * Random.Range(0.96f, 1.04f)),
                 critical = critical,
-                poiseDamage = attack.poiseDamage * ChargeMultiplier,
+                poiseDamage = attack.poiseDamage * poiseMul * ChargeMultiplier,
+                breakPower = melee != null ? melee.breakPower : 0,
                 point = point,
                 direction = dir,
                 weight = attack.weight,
                 charged = charged,
                 source = gameObject
             };
-            if (!target.ReceiveHit(info)) return;
+            if (!target.ReceiveHit(info))
+            {
+                // clanked off something this weapon can't break: a jolt back up the arm
+                if (target is World.Breakable)
+                {
+                    TimeDirector.HitStop(0.06f);
+                    input.Rumble(0.3f, 0.5f, 0.1f);
+                }
+                return;
+            }
             hitsThisSwing++;
             HitLanded?.Invoke(info, target);
+            TryWeaponBlast(point, target);
 
-            float k = critical ? 1.8f : charged ? 1.35f : 1f;
+            float k = (critical ? 1.8f : charged ? 1.35f : 1f) * (melee != null ? melee.hitStopMultiplier : 1f);
             if (critical)
             {
                 TimeDirector.SlowMo(0.45f, 0.4f);
@@ -299,6 +321,7 @@ namespace TungSahur.Player
             FXManager.Spawn(FXType.SlamDebris, p, Quaternion.identity, k);
             FXManager.Spawn(FXType.Dust, p, Quaternion.identity, a.slamRadius / 1.6f);
             AudioManager.Play(Sfx.Slam, p, 1f, a == moveset.skill ? 0.85f : 1f);
+            TryWeaponBlast(p + Vector3.up * 0.05f, null);
             CameraDirector.Instance?.Shake(a.shake * 0.8f * k, Vector3.down);
             input.Rumble(0.9f, 0.5f, 0.22f);
             if (hitsThisSwing == 0) TimeDirector.HitStop(0.05f);
@@ -320,6 +343,7 @@ namespace TungSahur.Player
                     direction = dir.sqrMagnitude > 1e-4f ? dir.normalized : transform.forward,
                     weight = ImpactWeight.Heavy,
                     isSlamWave = true,
+                    breakPower = Melee != null ? Melee.breakPower : 0,
                     source = gameObject
                 };
                 if (target.ReceiveHit(info))

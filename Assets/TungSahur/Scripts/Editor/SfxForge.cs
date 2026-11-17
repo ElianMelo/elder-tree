@@ -709,5 +709,131 @@ namespace TungSahur.EditorTools
             for (int i = 0; i < n; i++) b[i] *= 0.75f / m;
             return Write("sfx_engine_loop", b, loop: true);
         }
+
+        // ------------------------------------------------------------------ Alligator Mask set
+        /// <summary>Weapon glancing off stone: a dull ringing clank and grit.</summary>
+        public static AudioClip[] Deflect()
+        {
+            var clips = new AudioClip[2];
+            for (int v = 0; v < 2; v++)
+            {
+                var b = Buf(0.6f);
+                float f = 610f + v * 70f;
+                Modal(b, 0f, new[] { (f, 0.7f, 0.12f), (f * 2.31f, 0.4f, 0.06f), (f * 3.9f, 0.25f, 0.03f), (180f, 0.6f, 0.07f) });
+                NoiseBurst(b, 0f, 0.02f, 1f, 9000f, 4000f, 0.4f, 900 + v, mode: "band");
+                NoiseBurst(b, 0.01f, 0.25f, 0.35f, 3000f, 900f, 0.6f, 910 + v, mode: "band", curve: 2f);
+                clips[v] = Write($"sfx_deflect_{v}", Normalize(b, 0.8f));
+            }
+            return clips;
+        }
+
+        /// <summary>Stone giving way: a deep crack, then a rumble of tumbling blocks.</summary>
+        public static AudioClip[] RockBreak()
+        {
+            var clips = new AudioClip[2];
+            for (int v = 0; v < 2; v++)
+            {
+                var b = Buf(1.8f);
+                Modal(b, 0f, new[] { (64f + v * 6, 1f, 0.35f), (101f, 0.6f, 0.18f), (173f, 0.4f, 0.08f) }, pitchDrop: 0.8f, dropTime: 0.03f);
+                NoiseBurst(b, 0f, 0.06f, 1f, 7000f, 2500f, 0.4f, 920 + v, mode: "band");
+                NoiseBurst(b, 0.02f, 1.5f, 0.7f, 1600f, 140f, 0.7f, 930 + v, curve: 2f);
+                var r = new Rng(940 + v);
+                for (int k = 0; k < 18; k++)
+                {
+                    float at = 0.08f + k * 0.07f + Mathf.Abs(r.Next()) * 0.06f;
+                    Modal(b, at, new[] { (180f + Mathf.Abs(r.Next()) * 300f, 0.35f * (1f - k / 20f), 0.04f) });
+                    NoiseBurst(b, at, 0.04f, 0.25f * (1f - k / 20f), 3500f, 1200f, 0.6f, 950 + k + v * 30, mode: "band");
+                }
+                clips[v] = Write($"sfx_rock_break_{v}", Normalize(b));
+            }
+            return clips;
+        }
+
+        /// <summary>Cannon: a hard crack, a chest-thumping low boom and a metallic ring from the nacelle.</summary>
+        public static AudioClip[] CannonFire()
+        {
+            var clips = new AudioClip[2];
+            for (int v = 0; v < 2; v++)
+            {
+                var b = Buf(1.7f);
+                Modal(b, 0f, new[] { (48f + v * 5, 1f, 0.32f), (76f, 0.7f, 0.18f), (122f, 0.4f, 0.09f) }, pitchDrop: 2.2f, dropTime: 0.035f);
+                NoiseBurst(b, 0f, 0.04f, 1f, 9000f, 3500f, 0.35f, 960 + v, mode: "band");
+                NoiseBurst(b, 0f, 1.3f, 0.6f, 2400f, 90f, 0.7f, 965 + v, curve: 2.8f);
+                Modal(b, 0.01f, new[] { (430f, 0.18f, 0.35f), (1185f, 0.1f, 0.2f) });
+                clips[v] = Write($"sfx_cannon_fire_{v}", Normalize(b));
+            }
+            return clips;
+        }
+
+        /// <summary>The mask clamping onto the face: a wet crunch with a low thud and a sting.</summary>
+        public static AudioClip[] MaskOn()
+        {
+            var b = Buf(1.1f);
+            Modal(b, 0f, new[] { (92f, 1f, 0.16f), (151f, 0.5f, 0.08f) }, pitchDrop: 0.5f, dropTime: 0.02f);
+            var r = new Rng(970);
+            for (int k = 0; k < 6; k++)
+                NoiseBurst(b, k * 0.025f + Mathf.Abs(r.Next()) * 0.01f, 0.05f, 0.5f, 2600f, 900f, 1.4f, 971 + k, mode: "band");
+            Harmonics(b, 0.05f, 1.0f, t => 311f * (1f + 0.04f * Mathf.Sin(t * 31f)), new[] { 0.25f, 0.12f, 0.08f }, k => Mathf.Pow(1f - k, 2f));
+            return new[] { Write("sfx_mask_on", Normalize(b, 0.85f)) };
+        }
+
+        /// <summary>The transformation scream: a strained vocal formant over a sliding, ring-modulated growl.</summary>
+        public static AudioClip[] MaskScream()
+        {
+            const float L = 3.3f;
+            var b = Buf(L);
+            Harmonics(b, 0f, L, t => (180f + 120f * Mathf.Sin(Mathf.PI * Mathf.Min(1f, t / 1.2f))) * (1f + 0.035f * Mathf.Sin(t * 41f)),
+                new[] { 1f, 0.9f, 0.7f, 0.55f, 0.4f, 0.3f, 0.2f },
+                k => Mathf.Min(1f, k * 12f) * Mathf.Pow(1f - k, 0.6f) * (0.6f + 0.4f * Mathf.Sin(k * L * 2 * Mathf.PI * 11f)));
+            var r = new Rng(980);
+            var f1 = new SVF();
+            var f2 = new SVF();
+            for (int i = 0; i < b.Length; i++)
+            {
+                float k = i / (float)b.Length;
+                float n = r.Next();
+                f1.Process(n, 800f + 400f * Mathf.Sin(k * 9f), 0.18f, out _, out float a1);
+                f2.Process(n, 2400f + 600f * Mathf.Sin(k * 5f), 0.25f, out _, out float a2);
+                float env = Mathf.Min(1f, k * 10f) * Mathf.Pow(1f - k, 0.8f);
+                b[i] = b[i] * (0.7f + 0.3f * Mathf.Sin(i / (float)SR * 2f * Mathf.PI * 57f)) + (a1 * 0.8f + a2 * 0.4f) * env;
+                b[i] = (float)Math.Tanh(b[i] * 1.8f);      // strained, clipped
+            }
+            Modal(b, 0f, new[] { (55f, 0.8f, 1.2f) });
+            return new[] { Write("sfx_mask_scream", Normalize(b)) };
+        }
+
+        /// <summary>Body swap: a reversed-sounding inhale swelling into a pop.</summary>
+        public static AudioClip[] TransformSwap()
+        {
+            var b = Buf(0.9f);
+            Whoosh(b, 0.6f, 1f, 200f, 2800f, 0.95f, 990, 0.4f);
+            Modal(b, 0.55f, new[] { (120f, 0.9f, 0.12f), (240f, 0.4f, 0.06f) }, pitchDrop: 0.8f, dropTime: 0.02f);
+            NoiseBurst(b, 0.55f, 0.3f, 0.6f, 4000f, 600f, 0.5f, 991, mode: "band", curve: 2f);
+            return new[] { Write("sfx_transform", Normalize(b, 0.85f)) };
+        }
+
+        /// <summary>Not enough mana: a dry, muted double tick.</summary>
+        public static AudioClip[] ManaEmpty()
+        {
+            var b = Buf(0.3f);
+            Modal(b, 0f, new[] { (1250f, 0.6f, 0.02f), (2700f, 0.3f, 0.01f) });
+            Modal(b, 0.07f, new[] { (900f, 0.5f, 0.025f) });
+            NoiseBurst(b, 0f, 0.02f, 0.4f, 6000f, 3000f, 0.4f, 995, mode: "band");
+            return new[] { Write("sfx_mana_empty", Normalize(b, 0.6f)) };
+        }
+
+        /// <summary>Item fanfare (dark, minor): a rising bell arpeggio over a low drone.</summary>
+        public static AudioClip[] MaskReceived()
+        {
+            var b = Buf(3.2f);
+            float[] notes = { 220f, 261.6f, 329.6f, 415.3f, 440f };
+            for (int k = 0; k < notes.Length; k++)
+            {
+                float f = notes[k];
+                Modal(b, k * 0.16f, new[] { (f, 0.5f, 1.4f), (f * 2.01f, 0.2f, 0.7f), (f * 3.98f, 0.08f, 0.3f), (f * 0.5f, 0.15f, 1.6f) });
+            }
+            Harmonics(b, 0f, 3.2f, _ => 55f, new[] { 0.35f, 0.2f, 0.1f }, k => Mathf.Sin(Mathf.PI * k));
+            return new[] { Write("sfx_mask_received", Normalize(b, 0.8f)) };
+        }
     }
 }

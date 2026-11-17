@@ -24,7 +24,8 @@ namespace TungSahur.Combat
         public float damage = 30f;
         public float poiseDamage = 12f;
         public float staminaCost = 16f;
-        public float fpCost;
+        [Tooltip("Mana spent to start the attack (specials).")]
+        [UnityEngine.Serialization.FormerlySerializedAs("fpCost")] public float manaCost;
         public ImpactWeight weight = ImpactWeight.Light;
 
         [Header("Timing (normalized)")]

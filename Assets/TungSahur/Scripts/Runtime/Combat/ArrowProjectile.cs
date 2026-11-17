@@ -90,6 +90,7 @@ namespace TungSahur.Combat
             public float distance;
             public Transform part;          // what the arrow sticks into
             public IDamageable target;
+            public bool glance;          // hurtbox hit without a mesh to stick into
         }
 
         static readonly List<Renderer> renderers = new();
@@ -112,9 +113,20 @@ namespace TungSahur.Combat
                     // hurtboxes are generous capsules: only count it where the shaft meets the visible body,
                     // so arrows stick in the straw instead of hovering beside it (and clean misses stay misses)
                     Vector3 entry = from + dir * Mathf.Max(0f, h.distance - 0.02f);
-                    if (!VisualHit(target, entry, dir, 1.6f, out var vp, out var vn, out var part)) continue;
-                    float d = Vector3.Distance(from, vp);
-                    if (d < bestD) { bestD = d; best = new Hit { point = vp, normal = vn, distance = d, part = part, target = target }; }
+                    if (VisualHit(target, entry, dir, 1.6f, out var vp, out var vn, out var part))
+                    {
+                        float d = Vector3.Distance(from, vp);
+                        if (d < bestD) { bestD = d; best = new Hit { point = vp, normal = vn, distance = d, part = part, target = target }; }
+                    }
+                    else if (h.distance + 0.9f < bestD)
+                    {
+                        // inside the hurtbox but off every mesh ellipsoid (wings, thin parts): it still lands,
+                        // the arrow just can't stick anywhere believable so it breaks on impact
+                        float d = h.distance + 0.9f;
+                        Vector3 hp = h.point == Vector3.zero ? from : h.point;
+                        bestD = d;
+                        best = new Hit { point = hp, normal = h.normal, distance = d, part = null, target = target, glance = true };
+                    }
                     continue;
                 }
                 if (h.distance < bestD)
@@ -193,6 +205,12 @@ namespace TungSahur.Combat
                 FXManager.Spawn(FXType.WoodChips, hit.point, Quaternion.LookRotation(Vector3.Reflect(dir, hit.normal) + hit.normal), 0.45f);
             }
 
+            if (hit.glance)
+            {
+                FXManager.Spawn(FXType.WoodChips, hit.point, Quaternion.LookRotation(-dir + Vector3.up * 0.5f), 0.4f);
+                Destroy(gameObject);
+                return;
+            }
             // bury the head: deeper in soft targets, shallower at a grazing angle
             float graze = Mathf.Clamp01(Vector3.Dot(-dir, hit.normal));
             float pen = (target != null ? 0.16f : 0.13f) * Mathf.Lerp(0.55f, 1f, graze) * Mathf.Lerp(0.75f, 1.15f, Power);

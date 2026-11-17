@@ -627,3 +627,104 @@
     letter-spacing: 1px;
     color: rgb(154, 146, 127);
 }
+
+/* ---------------------------------------------------------------- mask slots (1-4 / D-pad) */
+.maskbar {
+    position: absolute;
+    left: 70px;
+    bottom: 290px;
+    width: 220px;
+    height: 70px;
+    flex-direction: row;
+    transition-property: opacity;
+    transition-duration: 0.3s;
+}
+
+.maskbar__slot {
+    width: 38px;
+    height: 38px;
+    margin: 7px 7px 0 7px;
+    background-color: rgba(10, 11, 14, 0.55);
+    border-width: 1px;
+    border-color: rgba(216, 180, 106, 0.22);
+    rotate: 45deg;
+    align-items: center;
+    justify-content: center;
+}
+
+.maskbar__slot--owned { border-color: rgba(216, 180, 106, 0.6); }
+.maskbar__slot--worn {
+    border-color: rgb(196, 214, 88);
+    background-color: rgba(52, 60, 22, 0.8);
+    border-width: 2px;
+}
+
+.maskbar__icon {
+    width: 46px;
+    height: 46px;
+    rotate: -45deg;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.maskbar__key {
+    position: absolute;
+    top: 50px;
+    width: 40px;
+    font-size: 12px;
+    -unity-text-align: middle-center;
+    color: rgba(237, 230, 214, 0.7);
+    -unity-text-outline-width: 0.4px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.8);
+}
+
+/* ---------------------------------------------------------------- cinematic overlays */
+.letterbox {
+    position: absolute;
+    left: 0; right: 0;
+    height: 0;
+    background-color: rgb(0, 0, 0);
+}
+.letterbox--top { top: 0; }
+.letterbox--bottom { bottom: 0; }
+
+.whiteflash {
+    position: absolute;
+    left: 0; right: 0; top: 0; bottom: 0;
+    background-color: rgb(255, 250, 236);
+}
+
+.maskcard {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 15%;
+    height: 170px;
+    align-items: center;
+    justify-content: center;
+}
+
+.maskcard__band {
+    position: absolute;
+    left: 0; right: 0; top: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+.maskcard__title {
+    font-size: 54px;
+    color: rgb(204, 214, 104);
+    letter-spacing: 12px;
+    -unity-text-outline-width: 0.5px;
+    -unity-text-outline-color: rgba(30, 40, 10, 0.9);
+}
+
+.maskcard__line {
+    margin-top: 6px;
+    font-size: 19px;
+    -unity-text-align: middle-center;
+    color: rgb(237, 230, 214);
+}
+
+.maskcard__hint {
+    margin-top: 10px;
+    font-size: 15px;
+    color: rgb(216, 180, 106);
+}

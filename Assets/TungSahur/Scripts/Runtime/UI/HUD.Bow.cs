@@ -8,7 +8,8 @@ namespace TungSahur.UI
     /// <summary>
     /// Bow HUD: a centre crosshair whose four ticks close in as the string comes back (gold and a
     /// pulse at full draw, warm tint over a target), a hit marker when an arrow lands, and the bow
-    /// slot (left hand) with an infinite-ammo counter in the equipment cross.
+    /// slot (left hand) with its mana cost per shot in the equipment cross. The cannon reuses the
+    /// crosshair: the ticks close as it reloads and turn gold when a shell is ready.
     /// </summary>
     public partial class HUD
     {
@@ -61,7 +62,7 @@ namespace TungSahur.UI
             clubSlot = cross.Q(className: "equip__slot--right");
             if (bowSlot == null) return;
             if (bowIcon) { var img = El("equip__icon", bowSlot); img.style.backgroundImage = bowIcon; }
-            ammoLabel = Lbl("∞", "equip__ammo", cross);
+            ammoLabel = Lbl("", "equip__ammo", cross);
         }
 
         void TickBow(float dt)
@@ -107,7 +108,7 @@ namespace TungSahur.UI
             {
                 bowSlot.EnableInClassList("equip__slot--active", raised);
                 clubSlot?.EnableInClassList("equip__slot--active", !raised);
-                if (equipName is Label l) l.text = raised ? "Sahur Bow" : "Sahur Club";
+                if (equipName is Label l) l.text = raised ? RangedName : MeleeName;
             }
         }
     }

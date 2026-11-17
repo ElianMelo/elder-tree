@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace TungSahur.Player
 {
-    public enum PlayerState { Locomotion, Air, Landing, Attack, Dodge, Hit, Dead, Aim }
+    public enum PlayerState { Locomotion, Air, Landing, Attack, Dodge, Hit, Dead, Aim, Special, Transform, Cinematic }
 
     /// <summary>
     /// Souls-like player brain. Locomotion (free + lock-on strafing), sprint, jump, roll/backstep with
@@ -96,6 +96,7 @@ namespace TungSahur.Player
             if (!stats) stats = GetComponent<PlayerStats>();
             if (weapon) weapon.OnHit = OnWeaponHit;
             prevYaw = transform.eulerAngles.y;
+            InitForms();
         }
 
         void OnDestroy() { if (Instance == this) Instance = null; }
@@ -125,6 +126,7 @@ namespace TungSahur.Player
             }
 
             stateTime += dt;
+            UpdateLockVelocity(dt);
             switch (State)
             {
                 case PlayerState.Locomotion: UpdateLocomotion(dt); break;
@@ -135,7 +137,11 @@ namespace TungSahur.Player
                 case PlayerState.Hit: UpdateHitReaction(dt); break;
                 case PlayerState.Dead: UpdateDead(dt); break;
                 case PlayerState.Aim: UpdateAim(dt); break;
+                case PlayerState.Special: UpdateSpecial(dt); break;
+                case PlayerState.Transform: UpdateTransform(dt); break;
+                case PlayerState.Cinematic: UpdateCinematic(dt); break;
             }
+            if (State != PlayerState.Special) UpdateThrownHammer(dt);
 
             motor.Tick(dt);
             if (motor.Grounded) lastGroundedTime = Time.time;
@@ -156,8 +162,8 @@ namespace TungSahur.Player
 
         void LateUpdate()
         {
-            // bones are posed now: sweep the club
-            weapon.Tick();
+            // bones are posed now: sweep the weapon
+            if (weapon && !HammerThrown) weapon.Tick();
             UpdateVisualRoll();
         }
 
@@ -237,10 +243,10 @@ namespace TungSahur.Player
             if (!input.GameplayEnabled) return false;
             if (input.HasBufferedDodge && TryDodge()) return true;
             if (input.AimHeld && motor.Grounded && TryEnterAim()) return true;
-            if (input.HasBufferedSkill && moveset.skill != null)
+            if (input.HasBufferedSkill)
             {
                 input.ConsumeSkill();
-                if (StartAttack(moveset.skill)) return true;
+                if (TryStartSpecial()) return true;
             }
             if (input.HasBufferedLight)
             {

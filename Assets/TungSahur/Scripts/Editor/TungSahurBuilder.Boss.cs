@@ -143,6 +143,7 @@ namespace TungSahur.EditorTools
             var markFill = Unlit("M_FX_BombFill", Color.white, disk, additive: true);
             markRim.renderQueue = markFill.renderQueue = (int)RenderQueue.Transparent - 10;
 
+            BuildBombShadowMaterial();
             var dot = AssetDatabase.LoadAssetAtPath<Texture2D>(TextureForge.TexDir + "/T_FX_SoftDot.png") ?? TextureForge.BuildSoftDot();
             Unlit("M_FX_Fire", new Color(1f, 0.55f, 0.18f, 1f), dot, additive: true);
             Unlit("M_FX_Smoke", new Color(0.13f, 0.11f, 0.15f, 0.75f), dot);
@@ -340,15 +341,12 @@ namespace TungSahur.EditorTools
             model.name = "Model";
             model.transform.SetParent(root.transform, false);
             foreach (var r in model.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = ShadowCastingMode.On;
-            var marker = Child("Marker", root.transform, Vector3.zero);
-            var rim = Quad("Rim", marker.transform, M("M_FX_BombRim"));
-            var fillRoot = Child("FillRoot", marker.transform, Vector3.up * 0.005f);
-            var fill = Quad("Fill", fillRoot.transform, M("M_FX_BombFill"));
+            // no glowing marker: the warning is the bomb's own shadow on the ground
+            var shadowRoot = Child("Shadow", root.transform, Vector3.zero);
+            var shadow = Quad("Blob", shadowRoot.transform, M("M_FX_BombShadow"));
             bomb.model = model.transform;
-            bomb.marker = marker.transform;
-            bomb.markerFill = fillRoot.transform;
-            bomb.markerRimRenderer = rim.GetComponent<Renderer>();
-            bomb.markerFillRenderer = fill.GetComponent<Renderer>();
+            bomb.shadow = shadowRoot.transform;
+            bomb.shadowRenderer = shadow.GetComponent<Renderer>();
             PrefabUtility.SaveAsPrefabAsset(root, AerialBombPrefabPath);
             Object.DestroyImmediate(root);
         }

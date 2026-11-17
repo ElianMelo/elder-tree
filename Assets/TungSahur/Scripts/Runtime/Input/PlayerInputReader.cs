@@ -8,8 +8,10 @@ namespace TungSahur.InputHandling
 
     /// <summary>
     /// Souls-style input layer: buffered presses, tap-vs-hold on the dodge button (tap = dodge on
-    /// release, hold = sprint), modifier chords for keyboard (Shift+LMB heavy, Shift+RMB skill),
-    /// target switching by stick flick / mouse flick / scroll, and last-used-device tracking.
+    /// release, hold = sprint), modifier chords for keyboard (Shift+LMB heavy, Shift+RMB special),
+    /// the special as a light + heavy chord on the pad (RB + RT within <see cref="chordWindow"/>),
+    /// mask slots (1-4 / D-pad), target switching by stick flick / mouse flick / scroll, and
+    /// last-used-device tracking.
     /// </summary>
     [DefaultExecutionOrder(-500)]
     public class PlayerInputReader : MonoBehaviour
@@ -25,6 +27,8 @@ namespace TungSahur.InputHandling
         [Header("Buffers")]
         public float bufferWindow = 0.4f;
         public float sprintHoldThreshold = 0.22f;
+        [Tooltip("Light and heavy pressed within this window (pad) = special attack. Single presses wait this long before they count.")]
+        public float chordWindow = 0.075f;
 
         public static PlayerInputReader Instance { get; private set; }
         public InputDeviceKind Device { get; private set; } = InputDeviceKind.KeyboardMouse;
@@ -32,6 +36,8 @@ namespace TungSahur.InputHandling
 
         InputActionMap gameplay, ui;
         InputAction move, look, lightAct, heavy, modifier, guard, skill, aim, dodge, jump, lockOn, switchTarget, walk, pause, help, interact, useItem;
+        readonly InputAction[] maskSlots = new InputAction[4];
+        int pendingMask = -1;
         InputAction navigate, submit, cancel, tabLeft, tabRight;
 
         float lightAt = -99, heavyAt = -99, skillAt = -99, dodgeAt = -99, jumpAt = -99, fireAt = -99;
@@ -58,19 +64,29 @@ namespace TungSahur.InputHandling
             modifier = gameplay["Modifier"]; guard = gameplay["Guard"]; skill = gameplay["Skill"]; aim = gameplay["Aim"]; dodge = gameplay["Dodge"];
             jump = gameplay["Jump"]; lockOn = gameplay["LockOn"]; switchTarget = gameplay["SwitchTarget"]; walk = gameplay["Walk"];
             pause = gameplay["Pause"]; help = gameplay["Help"]; interact = gameplay["Interact"]; useItem = gameplay["UseItem"];
+            for (int i = 0; i < 4; i++)
+            {
+                int slot = i;
+                maskSlots[i] = gameplay.FindAction($"Mask{i + 1}");
+                if (maskSlots[i] != null) maskSlots[i].performed += _ => pendingMask = slot;
+            }
             navigate = ui["Navigate"]; submit = ui["Submit"]; cancel = ui["Cancel"]; tabLeft = ui["TabLeft"]; tabRight = ui["TabRight"];
 
             // while the bow is up, the attack buttons (RT / LMB, and RB) loose an arrow instead
-            lightAct.performed += _ =>
+            lightAct.performed += ctx =>
             {
-                if (AimHeld) fireAt = Time.unscaledTime;
-                else if (modifier.IsPressed()) { heavyAt = Time.unscaledTime; heavyFromModifier = true; }
-                else lightAt = Time.unscaledTime;
+                float now = Time.unscaledTime;
+                if (AimHeld) fireAt = now;
+                else if (modifier.IsPressed()) { heavyAt = now; heavyFromModifier = true; }
+                else if (ctx.control.device is Gamepad && now - heavyAt <= chordWindow) { skillAt = now; heavyAt = lightAt = -99; }
+                else lightAt = now;
             };
-            heavy.performed += _ =>
+            heavy.performed += ctx =>
             {
-                if (AimHeld) fireAt = Time.unscaledTime;
-                else { heavyAt = Time.unscaledTime; heavyFromModifier = false; }
+                float now = Time.unscaledTime;
+                if (AimHeld) fireAt = now;
+                else if (ctx.control.device is Gamepad && now - lightAt <= chordWindow) { skillAt = now; heavyAt = lightAt = -99; }
+                else { heavyAt = now; heavyFromModifier = false; }
             };
             // Shift + RMB keeps the keyboard skill chord (plain RMB aims)
             aim.performed += ctx => { if (ctx.control.device is Mouse && modifier.IsPressed()) skillAt = Time.unscaledTime; };
@@ -221,13 +237,15 @@ namespace TungSahur.InputHandling
 
         bool Peek(float t, float window) => Time.unscaledTime - t <= window;
 
-        public bool ConsumeLight() => Consume(ref lightAt, bufferWindow);
-        public bool ConsumeHeavy() => Consume(ref heavyAt, bufferWindow);
+        /// <summary>Pad presses wait out the chord window (it might become RB + RT); keyboard presses don't.</summary>
+        bool ChordSettled(float t) => Device != InputDeviceKind.Gamepad || Time.unscaledTime - t >= chordWindow;
+        public bool ConsumeLight() => ChordSettled(lightAt) && Consume(ref lightAt, bufferWindow);
+        public bool ConsumeHeavy() => ChordSettled(heavyAt) && Consume(ref heavyAt, bufferWindow);
         public bool ConsumeSkill() => Consume(ref skillAt, bufferWindow);
         public bool ConsumeDodge() => Consume(ref dodgeAt, bufferWindow * 0.75f);
         public bool ConsumeJump() => Consume(ref jumpAt, bufferWindow * 0.6f);
-        public bool HasBufferedLight => Peek(lightAt, bufferWindow);
-        public bool HasBufferedHeavy => Peek(heavyAt, bufferWindow);
+        public bool HasBufferedLight => Peek(lightAt, bufferWindow) && ChordSettled(lightAt);
+        public bool HasBufferedHeavy => Peek(heavyAt, bufferWindow) && ChordSettled(heavyAt);
         public bool HasBufferedSkill => Peek(skillAt, bufferWindow);
         public bool HasBufferedDodge => Peek(dodgeAt, bufferWindow * 0.75f);
         public bool HasBufferedJump => Peek(jumpAt, bufferWindow * 0.6f);
@@ -235,7 +253,10 @@ namespace TungSahur.InputHandling
         public bool HasBufferedFire => Peek(fireAt, bufferWindow);
         public void ClearFire() => fireAt = -99;
         public void ClearAttackBuffers() { lightAt = heavyAt = skillAt = -99; }
-        public void ClearAll() { lightAt = heavyAt = skillAt = dodgeAt = jumpAt = fireAt = -99; lockOnPressed = false; pendingSwitch = 0; }
+        public void ClearAll() { lightAt = heavyAt = skillAt = dodgeAt = jumpAt = fireAt = -99; lockOnPressed = false; pendingSwitch = 0; pendingMask = -1; }
+
+        /// <summary>Mask slot pressed this frame or earlier (0-3), or -1.</summary>
+        public int ConsumeMaskSlot() { int v = pendingMask; pendingMask = -1; return v; }
 
         public bool ConsumeLockOn() { bool v = lockOnPressed; lockOnPressed = false; return v; }
         public bool ConsumePause() { bool v = pausePressed; pausePressed = false; return v; }

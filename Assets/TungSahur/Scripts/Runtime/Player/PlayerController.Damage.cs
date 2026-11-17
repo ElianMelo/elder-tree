@@ -42,7 +42,7 @@ namespace TungSahur.Player
             Vector3 dir = info.direction; dir.y = 0f;
             if (dir.sqrMagnitude < 1e-4f) dir = -transform.forward;
             dir.Normalize();
-            float dmg = DevNoDamage ? 0f : info.damage;
+            float dmg = DevNoDamage ? 0f : info.damage * (CurrentForm != null ? CurrentForm.damageTakenMultiplier : 1f);
 
             // guard: must face the blow
             if (IsGuarding && Vector3.Dot(transform.forward, -dir) > 0.2f)
@@ -85,8 +85,14 @@ namespace TungSahur.Player
 
             if (stats.Health <= 0f) { Die(dir); return true; }
 
+            // hyper armour: the big croc shrugs off light blows, and Sky Bombardment can't be knocked out of the air
+            bool armoured = State == PlayerState.Special || State == PlayerState.Transform || State == PlayerState.Cinematic ||
+                            (info.weight == ImpactWeight.Light && CurrentForm != null && CurrentForm.ignoreLightFlinch && State != PlayerState.Dodge);
+            if (armoured) return true;
+
             // interrupt whatever we were doing
             EndSwing();
+            motor.GravityScale = 1f;
             if (State == PlayerState.Aim) ExitAim();
             IsSprinting = false;
             rollAngle = 0f;
@@ -141,6 +147,8 @@ namespace TungSahur.Player
         void Die(Vector3 dir)
         {
             EndSwing();
+            ReturnHammer(true);
+            motor.GravityScale = 1f;
             if (State == PlayerState.Aim) ExitAim();
             IsSprinting = false;
             Invulnerable = false;

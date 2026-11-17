@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using TungSahur.Audio;
+using TungSahur.Equipment;
 using TungSahur.FX;
+using TungSahur.Masks;
 using TungSahur.Player;
 using TungSahur.UI;
 using UnityEngine;
@@ -25,6 +27,10 @@ namespace TungSahur.Enemies
         public PlayerController player;
         public HUD hud;
         public Transform spawnPoint;
+        [Header("Reward")]
+        [Tooltip("Dropped where the primary boss falls, unless the player already owns it.")]
+        public MaskData rewardMask;
+        public MaskPickup pickupPrefab;
 
         public static BossEncounter Instance { get; private set; }
         public bool Active { get; private set; }
@@ -134,12 +140,34 @@ namespace TungSahur.Enemies
             yield return new WaitForSeconds(2.6f);
             AudioManager.Play2D(Sfx.GreatEnemyFelled, 1f);
             hud?.ShowBanner("GREAT ENEMY FELLED");
-            yield return new WaitForSeconds(3f);
+            yield return new WaitForSeconds(2.2f);
+            // the mask rises out of the wreck (only the first time: you can't win it twice)
+            var ms = MaskSystem.Instance;
+            if (rewardMask != null && pickupPrefab != null && (ms == null || !ms.Owns(rewardMask)))
+                MaskPickup.Spawn(pickupPrefab, rewardMask, RewardPoint(boss != null ? boss.transform.position : Vector3.zero));
+            yield return new WaitForSeconds(0.8f);
             hud?.HideBossBar();
             Active = false;
             yield return new WaitForSeconds(6f);
             SetDummies(true);
             ending = null;
+        }
+
+        /// <summary>A clear spot beside the wreck, on the arena side, where the player can walk.</summary>
+        Vector3 RewardPoint(Vector3 wreck)
+        {
+            Vector3 c = boss != null ? boss.arenaCenter : Vector3.zero;
+            Vector3 to = c - wreck; to.y = 0f;
+            Vector3 p = wreck + (to.sqrMagnitude > 1f ? to.normalized : Vector3.forward) * 6.5f;
+            return Blast.Floor(p);
+        }
+
+        /// <summary>Debug (F1): drop the reward mask a few steps in front of the player.</summary>
+        public void SpawnMaskForTest()
+        {
+            if (rewardMask == null || pickupPrefab == null || player == null) return;
+            Vector3 p = player.transform.position + player.transform.forward * 3f;
+            MaskPickup.Spawn(pickupPrefab, rewardMask, Blast.Floor(p));
         }
 
         void OnPlayerDied()

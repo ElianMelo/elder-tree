@@ -144,6 +144,14 @@ namespace TungSahur.EditorTools
             Act("JumpAttack", K("Combat/2H/HumanM@Attack2H02"));
             Act("DodgeAttack", K("Combat/1H/HumanM@Attack1H01_R"));
             Act("Skill", K("Combat/2H/HumanM@Attack2H04"));
+            // Alligator Mask: Sky Bombardment (two-handed overhead hurl), the shoulder cannon, transformations
+            Act("SpecialHold", K("Combat/Thrown/Rock/HumanM@ThrowBigRock01 - Hold"));
+            Act("SpecialThrow", K("Combat/Thrown/Rock/HumanM@ThrowBigRock01"));
+            Act("CannonAim", K("Combat/Bazooka/HumanM@Bazooka_Aim01"));
+            Act("CannonShoot", K("Combat/Bazooka/HumanM@Bazooka_Aim01_Shoot01"));
+            Act("MaskDon", K("Misc/Drink/HumanM@Drink01_R"));
+            Act("MaskScream", K("Social/Emotions/HumanM@Pain01"));
+            Act("MaskRoar", K("Social/Emotions/HumanM@Angry01"));
 
             // ---------------- Archer (full body, entered from code). The pack keeps the root facing the
             // target and turns hips/chest ~85 deg inside the clip, so the stance comes from the animation.
@@ -277,7 +285,7 @@ namespace TungSahur.EditorTools
                 hitStart = 0.16f, hitEnd = 0.32f, comboOpen = 0.5f, cancelOpen = 0.5f, exitTime = 0.72f, trackUntil = 0.16f,
                 windupSpeed = 1.2f, activeSpeed = 1.3f, recoverySpeed = 1.3f, lungeDistance = 1.2f, lungeStart = 0.0f, lungeEnd = 0.3f,
                 hitStop = 0.06f, shake = 0.3f, next = "Light2" };
-            ms.skill = new AttackData { id = "Skill", state = "Skill", damage = 110, poiseDamage = 70, staminaCost = 20, fpCost = 30,
+            ms.skill = new AttackData { id = "Skill", state = "Skill", damage = 110, poiseDamage = 70, staminaCost = 20, manaCost = 30,
                 weight = ImpactWeight.Slam, hitStart = 0.32f, hitEnd = 0.45f, comboOpen = 0.7f, cancelOpen = 0.7f, exitTime = 0.86f,
                 trackUntil = 0.30f, windupSpeed = 0.9f, activeSpeed = 1.2f, recoverySpeed = 1.15f, lungeDistance = 2.4f, lungeStart = 0.05f,
                 lungeEnd = 0.36f, hitStop = 0.16f, shake = 1.3f, rumbleLow = 1f, rumbleHigh = 0.8f, slamRadius = 3.2f, slamDamageScale = 0.7f,

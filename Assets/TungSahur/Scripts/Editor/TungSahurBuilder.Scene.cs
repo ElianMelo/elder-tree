@@ -28,8 +28,9 @@ namespace TungSahur.EditorTools
             log.AppendLine(ConfigureCharacterImport());
             log.AppendLine(SetupProject());
             log.AppendLine(BuildAnimator());
+            log.AppendLine(BuildBoss());            // boss materials are shared by the mask set
+            log.AppendLine(BuildMaskSet());         // data + models the player prefab needs
             log.AppendLine(BuildPrefabs());
-            log.AppendLine(BuildBoss());
             log.AppendLine(BuildAudio());
             log.AppendLine(RenderClubIcon());
             log.AppendLine(ImportBowIcon());
@@ -85,6 +86,14 @@ namespace TungSahur.EditorTools
                 C(Sfx.Skid, SfxForge.Skid(), 0.85f, 0.95f, 1.05f, 0.6f, 0.2f),
                 C(Sfx.YouDied, SfxForge.YouDied(), 0.9f, 1f, 1f, 0f, 1f),
                 C(Sfx.GreatEnemyFelled, SfxForge.GreatEnemyFelled(), 0.9f, 1f, 1f, 0f, 1f),
+                C(Sfx.Deflect, SfxForge.Deflect(), 0.8f, 0.93f, 1.07f, 0.6f, 0.08f),
+                C(Sfx.RockBreak, SfxForge.RockBreak(), 1f, 0.93f, 1.05f, 0.6f, 0.1f),
+                C(Sfx.CannonFire, SfxForge.CannonFire(), 1f, 0.95f, 1.05f, 0.3f, 0.1f),
+                C(Sfx.MaskOn, SfxForge.MaskOn(), 0.9f, 0.97f, 1.03f, 0.2f, 0.2f),
+                C(Sfx.MaskScream, SfxForge.MaskScream(), 0.95f, 1f, 1f, 0f, 0.5f),
+                C(Sfx.Transform, SfxForge.TransformSwap(), 0.8f, 0.95f, 1.05f, 0.3f, 0.06f),
+                C(Sfx.ManaEmpty, SfxForge.ManaEmpty(), 0.6f, 0.97f, 1.03f, 0f, 0.12f),
+                C(Sfx.MaskReceived, SfxForge.MaskReceived(), 0.85f, 1f, 1f, 0f, 1f),
             };
             ambience = SfxForge.Ambience();
             return $"Audio built: {cues.Length} cues";
@@ -427,6 +436,7 @@ namespace TungSahur.EditorTools
             var boot = sys.AddComponent<GameBootstrap>();
             boot.player = pc; boot.hud = hud; boot.spawnPoint = spawn;
             PlaceBoss(actorRoot, sys, pc, hud, spawn);
+            PlaceMaskSet(envRoot, sys, pc, hud);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             // set as the only build scene + open by default

@@ -16,10 +16,15 @@ namespace TungSahur.FX
         Transform lf, rf;
         bool lDown = true, rDown = true;
 
-        void Start()
+        void Start() => SetAnimator(animator);
+
+        /// <summary>Follow another body (mask transformations swap the model).</summary>
+        public void SetAnimator(Animator a)
         {
-            lf = animator.GetBoneTransform(HumanBodyBones.LeftFoot);
-            rf = animator.GetBoneTransform(HumanBodyBones.RightFoot);
+            animator = a;
+            if (a == null) return;
+            lf = a.GetBoneTransform(HumanBodyBones.LeftFoot);
+            rf = a.GetBoneTransform(HumanBodyBones.RightFoot);
         }
 
         void LateUpdate()

@@ -587,7 +587,7 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!1 &4726362526276063721
+--- !u!1 &4730695033244583421
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -595,9 +595,285 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 359703145521315531}
-  - component: {fileID: 2288877319398431619}
-  - component: {fileID: 7946506999798961190}
+  - component: {fileID: 7339022575314549871}
+  - component: {fileID: 8580391099749289804}
+  - component: {fileID: 2313958397992261071}
+  - component: {fileID: 6576519370399078669}
+  - component: {fileID: 5035462425348954427}
+  m_Layer: 10
+  m_Name: Bombardiro
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7339022575314549871
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4730695033244583421}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4826420578504631060}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!54 &8580391099749289804
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4730695033244583421}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!82 &2313958397992261071
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4730695033244583421}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 8300000, guid: ffd5b4d3a0d1d6a4c9477f5e95f40ed8, type: 3}
+  m_PlayOnAwake: 0
+  m_Volume: 0
+  m_Pitch: 1
+  Loop: 1
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 0
+  MinDistance: 10
+  MaxDistance: 90
+  Pan2D: 0
+  rolloffMode: 1
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0.8
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!114 &6576519370399078669
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4730695033244583421}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: caf3a1b48d6dd364d8d5cb89cea001e4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TungSahur.Runtime::TungSahur.Enemies.BombardiroBoss
+  displayName: Bombardiro Crocodilo
+  pivot: {fileID: 4826420578504631060}
+  jaw: {fileID: 8782170950320947892}
+  props:
+  - {fileID: 4528750257236558249}
+  - {fileID: 4990565970474523063}
+  - {fileID: 6738649079744359256}
+  - {fileID: 7590850973588712865}
+  bombSocket: {fileID: 711022109662906990}
+  flashRenderers:
+  - {fileID: 2630906401532578490}
+  - {fileID: 506582169620933728}
+  - {fileID: 4670221826032228282}
+  - {fileID: 285592829165026399}
+  - {fileID: 1000639124086293280}
+  - {fileID: 5451538507575862770}
+  - {fileID: 2673460747138408071}
+  engineAudio: {fileID: 2313958397992261071}
+  engineSmoke:
+  - {fileID: 73428868038067244}
+  - {fileID: 4381443900741760007}
+  bodyColliders:
+  - {fileID: 2073122047146230816}
+  - {fileID: 7639130033708747627}
+  beacon: {fileID: 6738100925432091653}
+  beaconGlow: {fileID: 6859607196127368022}
+  bombPrefab: {fileID: 5541522465296954858, guid: d1cf420e7ca361646830aa56492b4f28, type: 3}
+  livingBombPrefab: {fileID: 7354017496830208730, guid: 4acac3eabc6c8684a9c2a3705ccd65df, type: 3}
+  arenaCenter: {x: 0, y: 0, z: 0}
+  arenaRadius: 13
+  orbitRadius: 12.5
+  cruiseAltitude: 11
+  maxHealth: 3200
+  maxPoise: 150
+  poiseRegenDelay: 4
+  phaseTwoAt: 0.5
+  cruiseSpeed: 13
+  turnRate: 70
+  maxBank: 38
+  carpetBombs: 7
+  carpetSpacing: 2.7
+  carpetRadius: 2.5
+  carpetDamage: 140
+  bombFallTime: 1.25
+  strikeBombs: 3
+  strikeRadius: 3.1
+  strikeDamage: 165
+  strikeFallTime: 1.35
+  livingBombs: 3
+  maxLivingBombs: 6
+  chargeSpeed: 17
+  chargeDamage: 190
+  chargeHalfWidth: 2.6
+  noseReach: 7.2
+  groundedTime: 9
+  biteDamage: 120
+  staggerTime: 3.4
+--- !u!114 &5035462425348954427
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4730695033244583421}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd6373ef14d8c54449babb0896659375, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TungSahur.Runtime::TungSahur.Combat.Targetable
+  lockPoint: {fileID: 2186324428698158025}
+  lockRadius: 1.2
+  displayName: Bombardiro Crocodilo
+  rangeScale: 1.75
+--- !u!1 &5228037564438410625
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 711022109662906990}
+  m_Layer: 10
+  m_Name: BombSocket
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &711022109662906990
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5228037564438410625}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.95, z: -0.3}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4826420578504631060}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &5460536685614878032
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3635351517767586475}
+  - component: {fileID: 4381443900741760007}
+  - component: {fileID: 2576029587257481236}
   m_Layer: 10
   m_Name: EngineSmoke
   m_TagString: Untagged
@@ -605,13 +881,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &359703145521315531
+--- !u!4 &3635351517767586475
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4726362526276063721}
+  m_GameObject: {fileID: 5460536685614878032}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
   m_LocalPosition: {x: -3.9, y: 0.75, z: -0.9}
@@ -620,13 +896,13 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4826420578504631060}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!198 &2288877319398431619
+--- !u!198 &4381443900741760007
 ParticleSystem:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4726362526276063721}
+  m_GameObject: {fileID: 5460536685614878032}
   serializedVersion: 8
   lengthInSec: 2
   simulationSpeed: 1
@@ -5343,14 +5619,14 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     vectorLabel1_3: W
---- !u!199 &7946506999798961190
+--- !u!199 &2576029587257481236
 ParticleSystemRenderer:
   serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4726362526276063721}
+  m_GameObject: {fileID: 5460536685614878032}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -5423,282 +5699,6 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
---- !u!1 &4730695033244583421
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7339022575314549871}
-  - component: {fileID: 8580391099749289804}
-  - component: {fileID: 2313958397992261071}
-  - component: {fileID: 6576519370399078669}
-  - component: {fileID: 5035462425348954427}
-  m_Layer: 10
-  m_Name: Bombardiro
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &7339022575314549871
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4730695033244583421}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 4826420578504631060}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!54 &8580391099749289804
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4730695033244583421}
-  serializedVersion: 5
-  m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 0
-  m_IsKinematic: 1
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
---- !u!82 &2313958397992261071
-AudioSource:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4730695033244583421}
-  m_Enabled: 1
-  serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 8300000, guid: ffd5b4d3a0d1d6a4c9477f5e95f40ed8, type: 3}
-  m_PlayOnAwake: 0
-  m_Volume: 0
-  m_Pitch: 1
-  Loop: 1
-  Mute: 0
-  Spatialize: 0
-  SpatializePostEffects: 0
-  Priority: 128
-  DopplerLevel: 0
-  MinDistance: 10
-  MaxDistance: 90
-  Pan2D: 0
-  rolloffMode: 1
-  BypassEffects: 0
-  BypassListenerEffects: 0
-  BypassReverbZones: 0
-  rolloffCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  panLevelCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0.8
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  spreadCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  reverbZoneMixCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
---- !u!114 &6576519370399078669
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4730695033244583421}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: caf3a1b48d6dd364d8d5cb89cea001e4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: TungSahur.Runtime::TungSahur.Enemies.BombardiroBoss
-  displayName: Bombardiro Crocodilo
-  pivot: {fileID: 4826420578504631060}
-  jaw: {fileID: 8782170950320947892}
-  props:
-  - {fileID: 4528750257236558249}
-  - {fileID: 4990565970474523063}
-  - {fileID: 6738649079744359256}
-  - {fileID: 7590850973588712865}
-  bombSocket: {fileID: 711022109662906990}
-  flashRenderers:
-  - {fileID: 2630906401532578490}
-  - {fileID: 506582169620933728}
-  - {fileID: 4670221826032228282}
-  - {fileID: 285592829165026399}
-  - {fileID: 1000639124086293280}
-  - {fileID: 5451538507575862770}
-  - {fileID: 2673460747138408071}
-  engineAudio: {fileID: 2313958397992261071}
-  engineSmoke:
-  - {fileID: 73428868038067244}
-  - {fileID: 2288877319398431619}
-  bodyColliders:
-  - {fileID: 2073122047146230816}
-  - {fileID: 7639130033708747627}
-  beacon: {fileID: 6738100925432091653}
-  beaconGlow: {fileID: 6859607196127368022}
-  bombPrefab: {fileID: 5541522465296954858, guid: d1cf420e7ca361646830aa56492b4f28, type: 3}
-  livingBombPrefab: {fileID: 7354017496830208730, guid: 4acac3eabc6c8684a9c2a3705ccd65df, type: 3}
-  arenaCenter: {x: 0, y: 0, z: 0}
-  arenaRadius: 13
-  orbitRadius: 12.5
-  cruiseAltitude: 11
-  maxHealth: 3200
-  maxPoise: 150
-  poiseRegenDelay: 4
-  phaseTwoAt: 0.5
-  cruiseSpeed: 13
-  turnRate: 70
-  maxBank: 38
-  carpetBombs: 7
-  carpetSpacing: 2.7
-  carpetRadius: 2.5
-  carpetDamage: 140
-  bombFallTime: 1.25
-  strikeBombs: 3
-  strikeRadius: 3.1
-  strikeDamage: 165
-  strikeFallTime: 1.6
-  livingBombs: 3
-  maxLivingBombs: 6
-  chargeSpeed: 17
-  chargeDamage: 190
-  chargeHalfWidth: 2.6
-  noseReach: 7.2
-  groundedTime: 6.5
-  biteDamage: 120
-  staggerTime: 3.4
---- !u!114 &5035462425348954427
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4730695033244583421}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fd6373ef14d8c54449babb0896659375, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: TungSahur.Runtime::TungSahur.Combat.Targetable
-  lockPoint: {fileID: 2186324428698158025}
-  lockRadius: 1.2
-  displayName: Bombardiro Crocodilo
-  rangeScale: 1.75
---- !u!1 &5228037564438410625
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 711022109662906990}
-  m_Layer: 10
-  m_Name: BombSocket
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &711022109662906990
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5228037564438410625}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.95, z: -0.3}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 4826420578504631060}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6089792641883680456
 GameObject:
   m_ObjectHideFlags: 0
@@ -10731,7 +10731,7 @@ Transform:
   - {fileID: 2186324428698158025}
   - {fileID: 711022109662906990}
   - {fileID: 9084499600728419991}
-  - {fileID: 359703145521315531}
+  - {fileID: 3635351517767586475}
   - {fileID: 689161343040644988}
   - {fileID: 1480236274849066018}
   - {fileID: 8772950047301443782}

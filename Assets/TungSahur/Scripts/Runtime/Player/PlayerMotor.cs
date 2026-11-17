@@ -48,6 +48,13 @@ namespace TungSahur.Player
             jumpedThisFrame = true;
         }
 
+        /// <summary>Direct vertical control (special attacks hang in the air, slam down).</summary>
+        public void SetVerticalVelocity(float v)
+        {
+            VerticalVelocity = v;
+            if (v > 0f) { Grounded = false; jumpedThisFrame = true; }
+        }
+
         public void Tick(float dt)
         {
             LandedThisFrame = false;

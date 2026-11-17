@@ -69,6 +69,8 @@ namespace TungSahur.CameraSystem
         [Tooltip("Bow aim while locked on: how far (degrees) look input can lead the target.")]
         public float maxAimLead = 14f;
         Vector2 aimLead;
+        /// <summary>Bow aim while locked on: the hand-steered lead offset (degrees).</summary>
+        public Vector2 AimLead => aimLead;
         bool wasAiming;
 
         void Awake()

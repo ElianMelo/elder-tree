@@ -146,6 +146,8 @@ namespace TungSahur.EditorTools
 
             var steps = root.AddComponent<FootstepFX>();
             steps.animator = animator; steps.motor = motor; steps.controller = pc;
+            // masks: the Elder Tree becomes one form rig, the alligator body is added beside it
+            AttachForms(root, visual.transform, pc, animator, hitbox, clubTip, clubRenderer, trail, steps);
 
             SetLayerRecursive(root, LayerPlayer);
             PrefabUtility.SaveAsPrefabAsset(root, PrefabDir + "/Player.prefab");

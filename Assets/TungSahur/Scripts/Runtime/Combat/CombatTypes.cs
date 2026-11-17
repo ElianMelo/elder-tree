@@ -13,6 +13,10 @@ namespace TungSahur.Combat
         public bool charged;
         public bool isSlamWave;
         public bool critical;
+        /// <summary>Breaks obstacles whose requiredPower is at most this (0 = can't break anything).</summary>
+        public int breakPower;
+        /// <summary>Damage came from an explosion (no per-swing hit-stop, splash feedback).</summary>
+        public bool explosive;
         public GameObject source;
     }
 
