@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: a701906382a540c4ba0c5ad8559e9a5c
+guid: afb43255b6ad9904bac0eae7f07dae00
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 2100000
@@ -8,9 +8,9 @@ NativeFormatImporter:
   assetBundleVariant: 
 AssetOrigin:
   serializedVersion: 1
-  productId: 151650
-  packageName: Human Melee Animations
-  packageVersion: 2.1
+  productId: 162341
+  packageName: Human Mega Animations Pack
+  packageVersion: 2.0
   assetPath: Assets/Kevin Iglesias/Human Animations/Unity Demo Scenes/Human Melee
     Animations/Materials/HumanMeleeAnimations_Dummy-Red.mat
-  uploadId: 937378
+  uploadId: 912162
