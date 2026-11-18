@@ -485,6 +485,7 @@ namespace TungSahur.EditorTools
             var enc = systems.AddComponent<BossEncounter>();
             enc.boss = boss; enc.player = pc; enc.hud = hud; enc.spawnPoint = spawn;
             enc.bosses.Add(boss);
+            PlaceTralalero(actorRoot, enc);
         }
     }
 }

@@ -11,7 +11,7 @@ using UnityEngine;
 namespace TungSahur.Enemies
 {
     /// <summary>
-    /// Runs the Bombardiro fight: summoned from the pause menu, it clears the training dummies off the
+    /// Runs the boss fights: summoned from the pause menu, it clears the training dummies off the
     /// field, shows the boss bar, and handles both endings. On death: YOU DIED, fade, back at the
     /// spawn, boss gone, dummies back. On victory: GREAT ENEMY FELLED, and the wreck smoulders until
     /// the next summon or reset. Several bosses can be configured in <see cref="bosses"/>; the F1
@@ -20,10 +20,10 @@ namespace TungSahur.Enemies
     /// </summary>
     public class BossEncounter : MonoBehaviour
     {
-        [Tooltip("Primary boss: the one the pause menu summons.")]
-        public BombardiroBoss boss;
-        [Tooltip("Every boss the F1 debug menu can spawn / despawn. The primary is added automatically.")]
-        public List<BombardiroBoss> bosses = new();
+        [Tooltip("Primary boss: it drops the reward mask.")]
+        public BossBase boss;
+        [Tooltip("Every boss the pause menu and the F1 debug menu can spawn / despawn. The primary is added automatically.")]
+        public List<BossBase> bosses = new();
         public PlayerController player;
         public HUD hud;
         public Transform spawnPoint;
@@ -37,6 +37,7 @@ namespace TungSahur.Enemies
 
         readonly List<TrainingDummy> dummies = new();
         Coroutine ending;
+        bool primaryFelled;
 
         void Awake()
         {
@@ -58,22 +59,42 @@ namespace TungSahur.Enemies
             if (player != null) player.Died += OnPlayerDied;
             if (hud != null)
             {
-                hud.SummonBossRequested += StartFight;
+                hud.SummonBossRequested += Summon;
                 hud.ResetTrainingRequested += () => EndFight(false);
             }
         }
 
         public void StartFight() => Spawn(boss);
 
+        /// <summary>Pause menu: summon boss <paramref name="index"/> of the roster on its own.</summary>
+        public void Summon(int index)
+        {
+            if (index < 0 || index >= bosses.Count || bosses[index] == null) return;
+            var b = bosses[index];
+            foreach (var o in bosses) if (o != null && o != b && IsSpawned(o)) o.ResetBoss();
+            Spawn(b);
+        }
+
+        /// <summary>Find a boss in the roster by (part of) its name, e.g. "Tralalero".</summary>
+        public BossBase Find(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return boss;
+            foreach (var b in bosses)
+                if (b != null && (b.DisplayName.IndexOf(name, System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                  b.name.IndexOf(name, System.StringComparison.OrdinalIgnoreCase) >= 0)) return b;
+            return null;
+        }
+
         /// <summary>A boss is spawned while it is in the world: fighting, or felled and smouldering.</summary>
-        public static bool IsSpawned(BombardiroBoss b) => b != null && b.gameObject.activeSelf;
+        public static bool IsSpawned(BossBase b) => b != null && b.gameObject.activeSelf;
 
         /// <summary>Bring a boss into the fight (restarts it if it was already there).</summary>
-        public void Spawn(BombardiroBoss b)
+        public void Spawn(BossBase b)
         {
             if (b == null) return;
             if (player != null && player.IsDead) return;
             if (ending != null) { StopCoroutine(ending); ending = null; }
+            if (!Active) primaryFelled = false;
             Active = true;
             SetDummies(false);
             b.BeginFight();
@@ -81,7 +102,7 @@ namespace TungSahur.Enemies
         }
 
         /// <summary>Send one boss away. The fight ends once no boss is left standing.</summary>
-        public void Despawn(BombardiroBoss b)
+        public void Despawn(BossBase b)
         {
             if (b == null) return;
             if (IsSpawned(b)) FXManager.Spawn(FXType.Dust, b.transform.position, Quaternion.identity, 2f);
@@ -93,7 +114,7 @@ namespace TungSahur.Enemies
 
         public void DespawnAll() => EndFight(false);
 
-        BombardiroBoss NextLivingBoss()
+        BossBase NextLivingBoss()
         {
             foreach (var o in bosses) if (o != null && o.IsAlive) return o;
             return null;
@@ -126,9 +147,10 @@ namespace TungSahur.Enemies
             foreach (var b in bosses) if (b != null) b.ResetBoss();
         }
 
-        void OnBossFelled(BombardiroBoss b)
+        void OnBossFelled(BossBase b)
         {
             if (!Active) return;
+            if (b == boss) primaryFelled = true;
             // others still in the air: keep fighting, move the bar to the next one
             var next = NextLivingBoss();
             if (next != null) { if (hud != null && hud.BossBarTarget == b) hud.ShowBossBar(next); return; }
@@ -143,7 +165,7 @@ namespace TungSahur.Enemies
             yield return new WaitForSeconds(2.2f);
             // the mask rises out of the wreck (only the first time: you can't win it twice)
             var ms = MaskSystem.Instance;
-            if (rewardMask != null && pickupPrefab != null && (ms == null || !ms.Owns(rewardMask)))
+            if (primaryFelled && rewardMask != null && pickupPrefab != null && (ms == null || !ms.Owns(rewardMask)))
                 MaskPickup.Spawn(pickupPrefab, rewardMask, RewardPoint(boss != null ? boss.transform.position : Vector3.zero));
             yield return new WaitForSeconds(0.8f);
             hud?.HideBossBar();
@@ -156,7 +178,7 @@ namespace TungSahur.Enemies
         /// <summary>A clear spot beside the wreck, on the arena side, where the player can walk.</summary>
         Vector3 RewardPoint(Vector3 wreck)
         {
-            Vector3 c = boss != null ? boss.arenaCenter : Vector3.zero;
+            Vector3 c = boss != null ? boss.ArenaCenter : Vector3.zero;
             Vector3 to = c - wreck; to.y = 0f;
             Vector3 p = wreck + (to.sqrMagnitude > 1f ? to.normalized : Vector3.forward) * 6.5f;
             return Blast.Floor(p);

@@ -16,7 +16,7 @@ namespace TungSahur.UI
         // pause menu, so the menu keys never leak into gameplay.
         class DebugRow
         {
-            public BombardiroBoss boss;     // null + no tool = "Despawn all"
+            public BossBase boss;     // null + no tool = "Despawn all"
             public VisualElement row;
             public Label status, action;
             // tool rows (masks, obstacles): run an action, show a live status
@@ -57,7 +57,7 @@ namespace TungSahur.UI
                     var r = new DebugRow { boss = b, row = El("dbg__row", debugList) };
                     Lbl(i < 9 ? (i + 1).ToString() : "", "dbg__key", r.row);
                     var col = El("dbg__col", r.row);
-                    ApplySerif(Lbl(b.displayName, "dbg__name", col));
+                    ApplySerif(Lbl(b.DisplayName, "dbg__name", col));
                     r.status = Lbl("", "dbg__status", col);
                     r.action = Lbl("", "dbg__action", r.row);
                     debugRows.Add(r);
@@ -139,11 +139,11 @@ namespace TungSahur.UI
             RefreshDebugRows();
         }
 
-        static string BossStatus(BombardiroBoss b)
+        static string BossStatus(BossBase b)
         {
             if (!BossEncounter.IsSpawned(b)) return "Not spawned";
-            if (b.State == BombardiroBoss.Mode.Dead) return "Felled";
-            return $"{b.State} · {Mathf.CeilToInt(b.Health)} / {Mathf.RoundToInt(b.maxHealth)} HP{(b.PhaseTwo ? " · Phase 2" : "")}";
+            if (b.IsDead) return "Felled";
+            return $"{b.StateLabel} · {Mathf.CeilToInt(b.Health)} / {Mathf.RoundToInt(b.MaxHealth)} HP{(b.PhaseTwo ? " · Phase 2" : "")}";
         }
 
         void RefreshDebugRows()

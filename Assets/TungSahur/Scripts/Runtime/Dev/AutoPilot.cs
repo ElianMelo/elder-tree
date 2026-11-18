@@ -14,6 +14,8 @@ namespace TungSahur.Dev
     /// Development autopilot: drives a virtual gamepad from a tiny script so gameplay can be
     /// exercised and screenshotted without a human (used for automated playtests).
     /// Script: "stick x y; rstick x y; tap RB 0.1; hold RT 0.8; press B; release B; key F1; wait 0.5; shot name; log".
+    /// Bosses: "boss [name]" spawns one (primary by default) and makes it the focus of "bossmove X",
+    /// "bosshp dmg [poise]", "lockboss", "bossaway" and the log.
     /// </summary>
     public class AutoPilot : MonoBehaviour
     {
@@ -27,6 +29,9 @@ namespace TungSahur.Dev
         Coroutine running;
         public bool Busy => running != null;
         public string shotDir = "Temp/Shots";
+        /// <summary>The boss the boss commands act on (last one spawned with "boss").</summary>
+        public static BossBase Focus;
+        static BossBase FocusBoss => Focus != null ? Focus : BossEncounter.Instance != null ? BossEncounter.Instance.boss : null;
 
         public static AutoPilot Ensure()
         {
@@ -119,17 +124,25 @@ namespace TungSahur.Dev
                         yield return null;
                         break;
                     case "log": Log.Add(Report()); break;
-                    case "boss": Enemies.BossEncounter.Instance?.StartFight(); break;
-                    case "bossmove": Enemies.BossEncounter.Instance?.boss?.ForceNextMove(p[1]); break;
+                    case "boss":
+                    {
+                        var enc = BossEncounter.Instance;
+                        if (enc == null) break;
+                        Focus = enc.Find(p.Length > 1 ? p[1] : null);
+                        if (Focus != null) enc.Spawn(Focus);
+                        break;
+                    }
+                    case "bossaway": if (FocusBoss != null) BossEncounter.Instance?.Despawn(FocusBoss); break;
+                    case "bossmove": FocusBoss?.ForceNextMove(p[1]); break;
                     case "bosshp":
                     {
-                        var b = Enemies.BossEncounter.Instance?.boss;
+                        var b = FocusBoss;
                         if (b != null) b.ReceiveHit(new Combat.DamageInfo { damage = F(1, 100), poiseDamage = F(2, 0), point = b.transform.position + Vector3.up * 2, direction = Vector3.forward });
                         break;
                     }
                     case "lockboss":
                     {
-                        var b = Enemies.BossEncounter.Instance?.boss;
+                        var b = FocusBoss;
                         if (b != null && PlayerController.Instance != null) PlayerController.Instance.lockOn.ForceLock(b.GetComponent<Combat.Targetable>());
                         break;
                     }
@@ -159,9 +172,9 @@ namespace TungSahur.Dev
                 sb.Append($"stam={pc.stats.Stamina:F0} mana={pc.stats.Mana:F0} atk={(pc.CurrentAttack != null ? pc.CurrentAttack.id : "-")} ");
                 sb.Append($"lock={(pc.lockOn.Current != null ? pc.lockOn.Current.name : "-")} ");
             }
-            var boss = Enemies.BossEncounter.Instance != null ? Enemies.BossEncounter.Instance.boss : null;
+            var boss = FocusBoss;
             if (boss != null && boss.gameObject.activeInHierarchy)
-                sb.Append($"[BOSS {boss.State} move={boss.CurrentMove} hp={boss.Health:F0} poise={boss.Poise:F0} p2={boss.PhaseTwo} pos={boss.transform.position.ToString("F1")}] ");
+                sb.Append($"[BOSS {boss.name} {boss.StateLabel} move={boss.CurrentMove} hp={boss.Health:F0} poise={boss.Poise:F0} p2={boss.PhaseTwo} pos={boss.transform.position.ToString("F1")}] ");
             if (pc != null) sb.Append($"php={pc.stats.Health:F0} ");
             if (Enemies.AerialBomb.Live.Count > 0 && pc != null)
             {

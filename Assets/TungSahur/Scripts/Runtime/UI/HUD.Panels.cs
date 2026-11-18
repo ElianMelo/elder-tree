@@ -194,7 +194,7 @@ namespace TungSahur.UI
         public System.Action QuitRequested;
         public System.Action<bool> PauseChanged;
 
-        static readonly string[] MenuNames = { "Resume", "Controls", "Settings", "Summon Bombardiro", "Reset Training", "Quit" };
+        static readonly string[] MenuNames = { "Resume", "Controls", "Settings", "Summon Bombardiro", "Summon Tralalero", "Reset Training", "Quit" };
 
         void BuildPause()
         {
@@ -294,10 +294,21 @@ namespace TungSahur.UI
                     break;
                 }
                 case 4:
+                {
+                    var t = Lbl("Squeaking rubber, then a fin cutting through the dirt.", "panel__flavor", pausePanel);
+                    ApplySerif(t);
+                    Lbl("Tralalero Tralala runs the arena on three sneakered legs. It sprints in and lunges with its jaws: roll through the bite, " +
+                        "not away. It whips its tail at anyone on its flank or behind it, and spins like a top when you hug it; it reels " +
+                        "afterwards. When it dives into the ground, watch the fin. Where the dirt starts to boil, it erupts jaws first. " +
+                        "It is open after a skid, a spin, and every belly flop.", "panel__text", pausePanel);
+                    Lbl("Press Select to summon.", "panel__text panel__text--dim", pausePanel);
+                    break;
+                }
+                case 5:
                     Lbl("Stand every dummy back up at full health, send any boss away and restore your HP, FP and stamina.", "panel__text", pausePanel);
                     Lbl("Press Select to reset.", "panel__text panel__text--dim", pausePanel);
                     break;
-                case 5:
+                case 6:
                     Lbl("Return to the desktop?", "panel__text", pausePanel);
                     Lbl("Press Select to quit.", "panel__text panel__text--dim", pausePanel);
                     break;
@@ -339,9 +350,10 @@ namespace TungSahur.UI
                     {
                         case 0: SetPause(false); return;
                         case 2: if (settingRows.Count > 0) { panelIndex = 0; settingIndex = 0; RefreshMenu(); } break;
-                        case 3: SetPause(false); SummonBossRequested?.Invoke(); return;
-                        case 4: ResetTrainingRequested?.Invoke(); SetPause(false); return;
-                        case 5: QuitRequested?.Invoke(); return;
+                        case 3: SetPause(false); SummonBossRequested?.Invoke(0); return;
+                        case 4: SetPause(false); SummonBossRequested?.Invoke(1); return;
+                        case 5: ResetTrainingRequested?.Invoke(); SetPause(false); return;
+                        case 6: QuitRequested?.Invoke(); return;
                     }
                 }
                 if (input.CancelPressed) { SetPause(false); return; }

@@ -835,5 +835,107 @@ namespace TungSahur.EditorTools
             Harmonics(b, 0f, 3.2f, _ => 55f, new[] { 0.35f, 0.2f, 0.1f }, k => Mathf.Sin(Mathf.PI * k));
             return new[] { Write("sfx_mask_received", Normalize(b, 0.8f)) };
         }
+
+        // ------------------------------------------------------------------ Tralalero Tralala
+        /// <summary>
+        /// The shark's cry: three wet, gargled syllables ("tra-la-la") stepping down a minor third,
+        /// a buzzy throat stack with bubbling AM and a hissing formant on top.
+        /// </summary>
+        public static AudioClip[] SharkRoar()
+        {
+            var clips = new AudioClip[2];
+            for (int v = 0; v < 2; v++)
+            {
+                const float L = 1.7f;
+                var b = Buf(L);
+                float f0 = 96f + v * 9f;
+                float[] steps = { 1f, 1.335f, 1.19f };          // tra / LA / la
+                float[] starts = { 0f, 0.36f, 0.86f }, lens = { 0.34f, 0.48f, 0.8f };
+                var r = new Rng(1100 + v);
+                for (int s = 0; s < 3; s++)
+                {
+                    float f = f0 * steps[s];
+                    float len = lens[s];
+                    Harmonics(b, starts[s], len, t => f * (1f + 0.06f * Mathf.Sin(Mathf.PI * t / len)) * (1f + 0.025f * Mathf.Sin(t * 210f)),
+                        new[] { 1f, 0.85f, 0.7f, 0.55f, 0.45f, 0.32f, 0.22f, 0.14f },
+                        k => Mathf.Min(1f, k * 9f) * Mathf.Pow(1f - k, 1.2f) * (0.55f + 0.45f * Mathf.Sin(k * len * 2 * Mathf.PI * (31f + s * 5f))));
+                    // the consonant at the start of each syllable: a tongue flap of filtered noise
+                    NoiseBurst(b, starts[s], 0.05f, 0.6f, 2600f, 900f, 0.5f, 1110 + s + v * 10, mode: "band");
+                }
+                // wet gurgle + hiss through a moving formant
+                var f1 = new SVF();
+                var f2 = new SVF();
+                for (int i = 0; i < b.Length; i++)
+                {
+                    float k = i / (float)b.Length;
+                    float n = r.Next();
+                    f1.Process(n, 520f + 260f * Mathf.Sin(k * 17f), 0.3f, out _, out float a1);
+                    f2.Process(n, 3200f, 0.6f, out _, out float a2);
+                    float bubble = 0.5f + 0.5f * Mathf.Sin(i / (float)SR * 2f * Mathf.PI * (19f + 7f * Mathf.Sin(k * 6f)));
+                    float env = Mathf.Min(1f, k * 14f) * Mathf.Pow(1f - k, 0.7f);
+                    b[i] = b[i] * (0.75f + 0.25f * bubble) + (a1 * 0.7f * bubble + a2 * 0.12f) * env;
+                }
+                clips[v] = Write($"sfx_shark_roar_{v}", Normalize(b));
+            }
+            return clips;
+        }
+
+        /// <summary>Rubber sole on hard dirt: a fast rising chirp with a wobble and a scuff.</summary>
+        public static AudioClip[] SneakerSqueak()
+        {
+            var clips = new AudioClip[3];
+            for (int v = 0; v < 3; v++)
+            {
+                float L = 0.16f + v * 0.05f;
+                var b = Buf(L + 0.05f);
+                float lo = 1150f + v * 230f, hi = lo * (1.5f + v * 0.12f);
+                Harmonics(b, 0f, L, t => Mathf.Lerp(lo, hi, Mathf.Pow(t / L, 0.6f)) * (1f + 0.04f * Mathf.Sin(t * 260f)),
+                    new[] { 1f, 0.35f, 0.15f }, k => Mathf.Min(1f, k * 20f) * (k > 0.75f ? (1f - k) / 0.25f : 1f));
+                NoiseBurst(b, 0f, L, 0.35f, 1800f, 3500f, 0.6f, 1130 + v, mode: "band");
+                clips[v] = Write($"sfx_sneaker_squeak_{v}", Normalize(b, 0.7f));
+            }
+            return clips;
+        }
+
+        /// <summary>Breaking through the ground: a deep thump, a long gritty roar of dirt and falling clods.</summary>
+        public static AudioClip[] Burrow()
+        {
+            var clips = new AudioClip[2];
+            for (int v = 0; v < 2; v++)
+            {
+                var b = Buf(1.6f);
+                Modal(b, 0f, new[] { (44f + v * 5, 1f, 0.4f), (71f, 0.5f, 0.2f) }, pitchDrop: 0.8f, dropTime: 0.05f);
+                NoiseBurst(b, 0f, 1.4f, 0.9f, 1600f, 120f, 0.8f, 1140 + v, attack: 0.01f, curve: 1.8f);
+                var r = new Rng(1150 + v);
+                for (int k = 0; k < 18; k++)                                  // clods pattering down
+                    NoiseBurst(b, 0.2f + k * 0.065f + Mathf.Abs(r.Next()) * 0.05f, 0.02f, 0.25f * (1f - k / 20f), 2600f, 1400f, 0.6f, 1160 + k + v * 30, mode: "band");
+                clips[v] = Write($"sfx_burrow_{v}", Normalize(b));
+            }
+            return clips;
+        }
+
+        /// <summary>Seamless loop of earth being churned (the fin cutting through the arena).</summary>
+        public static AudioClip DigLoop()
+        {
+            const float L = 2.4f, X = 0.3f;     // loop length, crossfade
+            var b = Buf(L + X);
+            NoiseBurst(b, 0f, L + X, 0.8f, 380f, 380f, 0.9f, 1200, attack: 0.0001f, curve: 0f);
+            var r = new Rng(1201);
+            for (int k = 0; k < 60; k++)
+                NoiseBurst(b, Mathf.Abs(r.Next()) * (L + X - 0.03f), 0.025f, 0.12f + 0.1f * Mathf.Abs(r.Next()), 2200f, 1200f, 0.6f, 1210 + k, mode: "band");
+            Harmonics(b, 0f, L + X, t => 38f * (1f + 0.05f * Mathf.Sin(t * 2f * Mathf.PI / L)), new[] { 0.5f, 0.25f }, _ => 1f);
+            // fold the tail over the head so the loop point is seamless
+            int n = Mathf.CeilToInt(L * SR), x = b.Length - n;
+            var o = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                o[i] = b[i];
+                if (i < x) { float w = i / (float)x; o[i] = b[i] * w + b[n + i] * (1f - w); }
+            }
+            float m = 1e-6f;
+            foreach (var s in o) m = Mathf.Max(m, Mathf.Abs(s));
+            for (int i = 0; i < n; i++) o[i] *= 0.8f / m;
+            return Write("sfx_dig_loop", o, loop: true);
+        }
     }
 }

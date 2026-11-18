@@ -1,5 +1,41 @@
 # Handoff — Tung Tung Tung Sahur soulslike slice
 
+## 0000000. Boss: Tralalero Tralala
+
+**Start it:** pause menu → **Summon Tralalero** (new entry under Summon Bombardiro), or F1 → row 2. It arrives underground: the dorsal fin circles you once, it erupts, belly-flops and screams on its back sneaker.
+
+A scarred slate shark on three legs in worn, mud-caked blue sneakers (no brand marks: a plain side stripe and a pale toe cap). It's a ground boss. Every attack is announced by the body, with no ground markers.
+
+| Move | Tell → attack | Counterplay / punish |
+|---|---|---|
+| Sprint (run through the arena and bite) | Scuffs its back sneaker twice (squeak, dust), crouches, then sprints at you with limited homing; jaws open as it closes, then a lunge bite. Runs through, skids round, goes again. 2 passes (3 in phase 2). Body contact also hurts. | Roll through the lunge. **Winded** for 1.4 s at the end. |
+| Bite combo | Rears its head, jaws wide, then snaps forward. 2 bites (3 in phase 2). | Roll sideways. |
+| Tail whip | You're on its flank or behind it: it turns away with the tail cocked, then whips round 215°. | Back off or roll toward the head. |
+| Tail slam | You're behind it: the nose dips, the back leg lifts, the tail rises high and crashes down (ring + debris). | Leave the line behind it. |
+| Tralala tornado | You hug it or keep hitting it (pressure builds): it coils with the sneakers squealing, then spins 3.5 turns (5 in phase 2) while drifting at you. Multi-hit. | Run. **Dizzy** for 1.5 s after. |
+| Spin leap | Mid range: a deep crouch, then a spinning leap that belly-slams where you were heading. | Roll out. **Landed** for 0.85 s. |
+| Burrow | Rears up and dives nose first. Only the fin cuts through the dirt (dust trail, dig rumble), circling you, then it cuts in. The fin slips under and **the ground boils** where it will come up (0.78 s, 0.62 in phase 2). It erupts jaws first, nose to the sky, then belly-flops. Twice in phase 2. Can't be hit while underground. | Move off the boiling spot. **Stranded** for 1.5 s after the flop. |
+| Stance break | Flops onto its side with the sneakers pedalling: 3.4 s critical window. | |
+| Phase 2 (≤50%) | Rears up and screams; 20% faster, more passes, bites, spins and eruptions. | |
+
+Stats on the prefab: 2,600 HP, 130 poise, arena radius 15 m. The walls have gaps, so the boss's limit stretches to follow a player who slips outside (up to 2.5× the radius). Otherwise it couldn't reach you and you could wait it out. Felling Tralalero alone doesn't drop the Alligator Mask (that stays Bombardiro's reward); there is no Tralalero reward yet.
+
+**Animation is procedural** (PS1-style rigid segments, no skeleton): a three-beat gait drives **two-bone IK** on each leg (pivot space, knee forward), so the sneakers stay on the ground at any body height; feet stay flat and lift their toes in the swing. The tail swims side to side with speed. Jaw, tail pitch and yaw, body pitch, roll, lift and burrow sink are pose targets that each move sets, smoothed in `LateUpdate`.
+
+**Shared boss base:** `Enemies/BossBase.cs` is what the encounter, boss bar, F1 roster and autopilot use (`DisplayName`, `MaxHealth`, `StateLabel`, `Damaged` / `Felled`…). `BombardiroBoss` now derives from it (its fields are unchanged), and `BossEncounter.bosses` is a `List<BossBase>`. To add a boss: derive from `BossBase` and add it to the list (`PlaceBoss` → `PlaceTralalero` shows how). `HUD.SummonBossRequested` is now `Action<int>` (roster index).
+
+| Piece | Where |
+|---|---|
+| Model (1,928 tris: body 682, jaw, 2 tail segments, thigh/shin/sneaker × 3) | `Tools/Blender/build_tralalero.py -- <abs dir>` (exports straight into `Art/Models/Tralalero`) |
+| AI, gait + IK | `Enemies/Tralalero/TralaleroBoss.cs` |
+| Textures (scarred hide, pale dirty belly, mesh-weave sneaker, tread sole), materials, prefab, hurtboxes on every bone, scene | `Editor/TungSahurBuilder.Tralalero.cs` → `BuildTralalero()` (menu **7b**, part of `BuildAll()` right after `BuildBoss`) |
+| SFX: "tra-la-la" three-syllable gargled roar, sneaker squeak, burrow burst, seamless dig loop | `SfxForge` (Tralalero section), cues `SharkRoar`, `SneakerSqueak`, `Burrow` |
+| Autopilot | `boss Tralalero` spawns it and makes it the focus of `bossmove Sprint/Bite/TailWhip/TailSlam/Spin/Leap/Burrow`, `bosshp`, `lockboss`, `bossaway` and `log` |
+
+Verified in play mode with the autopilot: intro, every move (forced and natural), bite, lunge, spin and eruption hits landing, stance break, phase 2, death, pause-menu summon, the F1 roster, no mask drop on a solo kill. Console: 0 errors, 0 warnings. Shot: `Docs/Screenshots/19_tralalero_stranded.png`.
+
+**Not verified:** how fair it feels with a human on the pad (roll timing against the lunge and the eruption tell). All tells and windows are fields or constants at the top of each move, so they're easy to tune. **Known limits:** like Bombardiro, it runs through arena props. The legs don't splay sideways (IK is in the sagittal plane only), and with three legs the turn-in-place step is a scurry, not a pivot.
+
 ## 000000. Adjustments: grounded roll, two-handed hammer, heavy chain, special camera
 
 - **Roll** now plays the pack's **Roll01** (the in-place version). It used to play Dodge01, a sidestep, while the whole model spun 360° around a pivot 1 m above the ground, which is why it floated. The procedural spin is gone. The character's travel follows the clip's own root motion (`Roll01 [RM]` RootT.z, as a table in `PlayerController.Dodge.cs`): a fast push-off, then the travel stops once the feet are back under the hips. Roll length is 0.8 s and plays the clip from 2% to 80% (`rollClipRange`). I-frames are unchanged. The backstep keeps Dodge01. This applies to both forms.

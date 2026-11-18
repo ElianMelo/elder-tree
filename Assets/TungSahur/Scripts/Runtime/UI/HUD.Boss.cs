@@ -9,11 +9,12 @@ namespace TungSahur.UI
     public partial class HUD
     {
         // ================================================================== boss bar (Elden Ring: bottom centre)
-        public System.Action SummonBossRequested;
+        /// <summary>Pause menu: summon roster boss N (0 = Bombardiro, 1 = Tralalero).</summary>
+        public System.Action<int> SummonBossRequested;
 
         VisualElement bossBox, bossFill, bossChip;
         Label bossName, bossDmg;
-        BombardiroBoss boss;
+        BossBase boss;
         float bossShown = 1f, bossChipV = 1f, bossChipHold, bossAccum, bossAccumAt = -99f, bossAlpha;
         bool bossVisible;
 
@@ -43,12 +44,12 @@ namespace TungSahur.UI
             fadeRoot.style.opacity = 0f;
         }
 
-        public void ShowBossBar(BombardiroBoss b)
+        public void ShowBossBar(BossBase b)
         {
             if (boss != null) boss.Damaged -= OnBossDamaged;
             boss = b;
             boss.Damaged += OnBossDamaged;
-            bossName.text = b.displayName;
+            bossName.text = b.DisplayName;
             bossShown = bossChipV = 1f;
             bossAccum = 0f;
             bossDmg.text = "";
@@ -58,9 +59,9 @@ namespace TungSahur.UI
         public void HideBossBar() => bossVisible = false;
 
         /// <summary>The boss whose bar is on screen (null when none has been shown yet).</summary>
-        public BombardiroBoss BossBarTarget => bossVisible ? boss : null;
+        public BossBase BossBarTarget => bossVisible ? boss : null;
 
-        void OnBossDamaged(BombardiroBoss b, DamageInfo info, bool poiseBroken)
+        void OnBossDamaged(BossBase b, DamageInfo info, bool poiseBroken)
         {
             if (Time.unscaledTime - bossAccumAt > 1.6f) bossAccum = 0f;
             bossAccum += info.damage;
@@ -76,7 +77,7 @@ namespace TungSahur.UI
             bossBox.style.opacity = bossAlpha;
             if (boss != null)
             {
-                float n = boss.Health / boss.maxHealth;
+                float n = boss.Health / boss.MaxHealth;
                 bossShown = Mathf.Lerp(bossShown, n, Ease.Damp(20f, dt));
                 if (n > bossChipV) bossChipV = n;
                 else if (Time.unscaledTime > bossChipHold) bossChipV = Mathf.MoveTowards(bossChipV, n, dt * 0.35f);

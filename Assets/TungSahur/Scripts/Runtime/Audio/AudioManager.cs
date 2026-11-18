@@ -10,7 +10,8 @@ namespace TungSahur.Audio
         LockOn, LockOff, ChargeUp, ChargeRelease, UIMove, UISelect, UIBack, Felled, Guard, Stagger, Title,
         BowDraw, BowRelease, BowNock, ArrowHit, FullDraw,
         Explosion, BombWhistle, BombBeep, CrocRoar, JawSnap, MetalHit, PlayerHurt, Skid, YouDied, GreatEnemyFelled, BombPop,
-        Deflect, RockBreak, CannonFire, MaskOn, MaskScream, Transform, ManaEmpty, MaskReceived
+        Deflect, RockBreak, CannonFire, MaskOn, MaskScream, Transform, ManaEmpty, MaskReceived,
+        SharkRoar, SneakerSqueak, Burrow
     }
 
     /// <summary>Pooled one-shot player with per-cue variation (random clip, pitch, volume).</summary>

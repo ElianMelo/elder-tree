@@ -22,7 +22,7 @@ namespace TungSahur.Enemies
     /// Arrows wear its stance down: break it in the air and it crash-lands, open to a critical blow.
     /// Below half health it flies faster, drops more and charges twice.
     /// </summary>
-    public class BombardiroBoss : MonoBehaviour, IDamageable, IStaggerable
+    public class BombardiroBoss : BossBase
     {
         public enum Mode { Dormant, Flying, Landing, Grounded, Charging, Staggered, Crashing, Dead }
 
@@ -89,17 +89,22 @@ namespace TungSahur.Enemies
         public float staggerTime = 3.4f;
 
         public Mode State { get; private set; } = Mode.Dormant;
-        public bool IsAlive => State != Mode.Dead && State != Mode.Dormant;
-        public bool IsStaggered => State == Mode.Staggered;
-        public bool PhaseTwo { get; private set; }
+        public override bool IsAlive => State != Mode.Dead && State != Mode.Dormant;
+        public override bool IsStaggered => State == Mode.Staggered;
+        public override bool PhaseTwo => phaseTwo;
         public bool Airborne => transform.position.y > 0.5f;
-        public Transform Root => transform;
-        public float Health { get; private set; }
-        public float Poise { get; private set; }
-        public string CurrentMove { get; private set; } = "-";
+        public override float Health => health;
+        public override float Poise => poise;
+        public override string CurrentMove => currentMove;
+        public override string DisplayName => displayName;
+        public override float MaxHealth => maxHealth;
+        public override string StateLabel => State.ToString();
+        public override bool IsDead => State == Mode.Dead;
+        public override Vector3 ArenaCenter => arenaCenter;
 
-        public event System.Action<BombardiroBoss, DamageInfo, bool> Damaged;
-        public event System.Action<BombardiroBoss> Felled;
+        bool phaseTwo;
+        float health, poise;
+        string currentMove = "-";
 
         // kinematics
         Vector3 vel;
@@ -125,8 +130,8 @@ namespace TungSahur.Enemies
         void Awake()
         {
             mpb = new MaterialPropertyBlock();
-            Health = maxHealth;
-            Poise = maxPoise;
+            health = maxHealth;
+            poise = maxPoise;
             CalibrateJaw();
             SetBodyColliders(false);
         }
@@ -153,13 +158,13 @@ namespace TungSahur.Enemies
         Quaternion jawRest;
 
         // ================================================================== encounter API
-        public void BeginFight()
+        public override void BeginFight()
         {
             StopAllCoroutines();
             ClearProjectiles();
-            Health = maxHealth;
-            Poise = maxPoise;
-            PhaseTwo = false;
+            health = maxHealth;
+            poise = maxPoise;
+            phaseTwo = false;
             closePressure = spinCd = hopCd = belchCd = 0f;
             Pose(0f, 0f, 0f, 0f, 3f);
             foreach (var s in engineSmoke) if (s) s.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -169,21 +174,21 @@ namespace TungSahur.Enemies
             brain = StartCoroutine(Brain(true));
         }
 
-        public void ResetBoss()
+        public override void ResetBoss()
         {
             StopAllCoroutines();
             ClearProjectiles();
             State = Mode.Dormant;
-            Health = maxHealth;
-            Poise = maxPoise;
+            health = maxHealth;
+            poise = maxPoise;
             if (engineAudio) engineAudio.Stop();
             SetBodyColliders(false);
             gameObject.SetActive(false);
         }
 
-        public void ForceNextMove(string move) => forcedMove = move;
+        public override void ForceNextMove(string move) => forcedMove = move;
 
-        public void ClearProjectiles()
+        public override void ClearProjectiles()
         {
             foreach (var b in bombPool) if (b) b.Cancel();
             foreach (var l in livingPool) if (l && l.IsAlive) l.Despawn();
@@ -204,7 +209,7 @@ namespace TungSahur.Enemies
                 forcedMove = null;
                 last = move;
                 sinceCharge = move == "Charge" ? 0 : sinceCharge + 1;
-                CurrentMove = move;
+                currentMove = move;
                 switch (move)
                 {
                     case "Carpet": yield return CarpetBombing(); break;
@@ -212,7 +217,7 @@ namespace TungSahur.Enemies
                     case "Living": yield return DeployLivingBombs(); break;
                     case "Charge": yield return GroundCharge(); break;
                 }
-                CurrentMove = "-";
+                currentMove = "-";
             }
         }
 
@@ -357,8 +362,8 @@ namespace TungSahur.Enemies
 
         IEnumerator PhaseShift()
         {
-            PhaseTwo = true;
-            CurrentMove = "Rage";
+            phaseTwo = true;
+            currentMove = "Rage";
             foreach (var s in engineSmoke) if (s) s.Play(true);
             Roar(1.15f);
             CameraDirector.Instance?.Shake(0.5f, Vector3.down);
@@ -535,7 +540,7 @@ namespace TungSahur.Enemies
                 yield return null;
             }
             State = Mode.Landing;
-            CurrentMove = "Charge";
+            currentMove = "Charge";
             propTarget = 1500f;
             yield return FlyPath(S, H, 9f, 0.8f);
 
@@ -748,7 +753,7 @@ namespace TungSahur.Enemies
         IEnumerator Grounded(float duration)
         {
             State = Mode.Grounded;
-            CurrentMove = "Grounded";
+            currentMove = "Grounded";
             SetBodyColliders(true);
             propTarget = 600f;
             float t = 0f, cd = 0.9f;
@@ -777,7 +782,7 @@ namespace TungSahur.Enemies
                         yield return move;
                         t += Time.time - t0;
                         cd = Random.Range(PhaseTwo ? 0.25f : 0.45f, PhaseTwo ? 0.6f : 0.95f);
-                        CurrentMove = "Grounded";
+                        currentMove = "Grounded";
                         continue;
                     }
                 }
@@ -804,7 +809,7 @@ namespace TungSahur.Enemies
             int bites = PhaseTwo ? 3 : 2;
             for (int i = 0; i < bites; i++)
             {
-                CurrentMove = "Bite";
+                currentMove = "Bite";
                 // rear up: head high, jaws wide, weight shifted back; tracks you while it winds up
                 float windup = (i == 0 ? 0.62f : 0.4f) / SpeedMul;
                 AudioManager.Play(Sfx.CrocRoar, transform.position + transform.forward * 5f, 0.45f, 1.7f);
@@ -837,7 +842,7 @@ namespace TungSahur.Enemies
 
         IEnumerator WingSweep(float side)
         {
-            CurrentMove = "WingSweep";
+            currentMove = "WingSweep";
             // turn away from you and cock the near wing up (positive bank lifts the right wing)
             float startYaw = yaw;
             engineRev = 1f;
@@ -875,7 +880,7 @@ namespace TungSahur.Enemies
 
         IEnumerator TailSlam()
         {
-            CurrentMove = "TailSlam";
+            currentMove = "TailSlam";
             // nose into the dirt, tail up high, a rattle of warning
             AudioManager.Play(Sfx.Skid, transform.position, 0.6f, 0.6f);
             AudioManager.Play(Sfx.CrocRoar, transform.position, 0.4f, 1.9f);
@@ -906,7 +911,7 @@ namespace TungSahur.Enemies
 
         IEnumerator PropSpin()
         {
-            CurrentMove = "Spin";
+            currentMove = "Spin";
             closePressure = 0f;
             spinCd = PhaseTwo ? 7f : 10f;
             // crouch, props wind up to a scream: get out
@@ -939,14 +944,14 @@ namespace TungSahur.Enemies
             });
             CameraDirector.Instance?.Shake(0.4f, Vector3.down);
             // dizzy: the punish window
-            CurrentMove = "Dizzy";
+            currentMove = "Dizzy";
             propTarget = 300f;
             yield return Hold(1.15f, (k, dt) => Pose(5f, Mathf.Sin(k * 14f) * 9f * (1f - k), -0.1f, 32f, 5f));
         }
 
         IEnumerator HopSlam()
         {
-            CurrentMove = "HopSlam";
+            currentMove = "HopSlam";
             hopCd = PhaseTwo ? 4f : 6f;
             propTarget = 2400f;
             engineRev = 1f;
@@ -998,7 +1003,7 @@ namespace TungSahur.Enemies
 
         IEnumerator BombBelch()
         {
-            CurrentMove = "Belch";
+            currentMove = "Belch";
             belchCd = PhaseTwo ? 4.5f : 6.5f;
             AudioManager.Play(Sfx.CrocRoar, transform.position + transform.forward * 5f, 0.9f, 0.9f);
             yield return Hold(0.75f / SpeedMul, (k, dt) =>
@@ -1028,7 +1033,7 @@ namespace TungSahur.Enemies
 
         IEnumerator Takeoff()
         {
-            CurrentMove = "Takeoff";
+            currentMove = "Takeoff";
             Pose(0f, 0f, 0f, 0f, 3f);
             State = Mode.Charging;
             SetBodyColliders(false);
@@ -1073,7 +1078,7 @@ namespace TungSahur.Enemies
 
         IEnumerator StaggerRoutine()
         {
-            CurrentMove = "Stagger";
+            currentMove = "Stagger";
             pitchOffset = 0f;
             groundBank = 0f; liftTarget = 0f; poseSharp = 3f; closePressure = 0f;
             SetBodyColliders(false);
@@ -1116,7 +1121,7 @@ namespace TungSahur.Enemies
             }
             pitchOffset = 0f;
             jawTarget = 0f;
-            Poise = maxPoise;
+            poise = maxPoise;
             State = Mode.Grounded;
             yield return Grounded(groundedTime * 0.5f);
             yield return Takeoff();
@@ -1124,22 +1129,22 @@ namespace TungSahur.Enemies
         }
 
         // ================================================================== damage
-        public bool ReceiveHit(in DamageInfo info)
+        public override bool ReceiveHit(in DamageInfo info)
         {
             if (!IsAlive || State == Mode.Crashing) return false;
             lastHitTime = Time.time;
             if (State == Mode.Grounded) closePressure += info.explosive ? 0.12f : 0.2f;
-            Health = Mathf.Max(0f, Health - info.damage);
+            health = Mathf.Max(0f, Health - info.damage);
             bool broke = false;
             if (State != Mode.Staggered && !info.critical)
             {
-                Poise -= info.poiseDamage;
-                if (Poise <= 0f) { Poise = maxPoise; broke = true; }
+                poise -= info.poiseDamage;
+                if (Poise <= 0f) { poise = maxPoise; broke = true; }
             }
             flash = 1f;
             FXManager.Spawn(FXType.HitSpark, info.point, Quaternion.LookRotation(-info.direction + Vector3.up * 0.3f), info.weight == ImpactWeight.Light ? 1f : 1.4f);
             AudioManager.Play(Sfx.MetalHit, info.point, 0.9f, info.weight == ImpactWeight.Light ? 1.05f : 0.85f);
-            Damaged?.Invoke(this, info, broke);
+            RaiseDamaged(info, broke);
             if (Health <= 0f) { Die(); return true; }
             if (broke) OnStanceBreak();
             return true;
@@ -1151,10 +1156,10 @@ namespace TungSahur.Enemies
             brain = null;
             ClearProjectiles();
             State = Mode.Dead;
-            CurrentMove = "Dead";
+            currentMove = "Dead";
             groundBank = 0f; liftTarget = 0f; poseSharp = 3f;
             SetBodyColliders(true);
-            Felled?.Invoke(this);
+            RaiseFelled();
             StartCoroutine(DeathRoutine());
         }
 
@@ -1243,7 +1248,7 @@ namespace TungSahur.Enemies
             if (dt <= 0f || State == Mode.Dormant) return;
 
             if (IsAlive && State != Mode.Staggered && Time.time - lastHitTime > poiseRegenDelay)
-                Poise = Mathf.MoveTowards(Poise, maxPoise, maxPoise * 0.25f * dt);
+                poise = Mathf.MoveTowards(Poise, maxPoise, maxPoise * 0.25f * dt);
 
             // ground poses raise / lower the body on its gear
             if (pivot)

@@ -29,6 +29,7 @@ namespace TungSahur.EditorTools
             log.AppendLine(SetupProject());
             log.AppendLine(BuildAnimator());
             log.AppendLine(BuildBoss());            // boss materials are shared by the mask set
+            log.AppendLine(BuildTralalero());       // reuses the croc mouth / teeth materials
             log.AppendLine(BuildMaskSet());         // data + models the player prefab needs
             log.AppendLine(BuildPrefabs());
             log.AppendLine(BuildAudio());
@@ -94,6 +95,9 @@ namespace TungSahur.EditorTools
                 C(Sfx.Transform, SfxForge.TransformSwap(), 0.8f, 0.95f, 1.05f, 0.3f, 0.06f),
                 C(Sfx.ManaEmpty, SfxForge.ManaEmpty(), 0.6f, 0.97f, 1.03f, 0f, 0.12f),
                 C(Sfx.MaskReceived, SfxForge.MaskReceived(), 0.85f, 1f, 1f, 0f, 1f),
+                C(Sfx.SharkRoar, SfxForge.SharkRoar(), 1f, 0.96f, 1.04f, 0.4f, 0.3f),
+                C(Sfx.SneakerSqueak, SfxForge.SneakerSqueak(), 0.6f, 0.9f, 1.12f, 0.7f, 0.08f),
+                C(Sfx.Burrow, SfxForge.Burrow(), 1f, 0.94f, 1.06f, 0.55f, 0.1f),
             };
             ambience = SfxForge.Ambience();
             return $"Audio built: {cues.Length} cues";
