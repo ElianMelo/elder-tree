@@ -1,5 +1,61 @@
 # Handoff — Tung Tung Tung Sahur soulslike slice
 
+## 0000000000. Long sword pass 2: new left-to-right light, a real iai, blade roll
+
+- **Light 2 (left-to-right)** is now **Light 1 mirrored**: the same Attack2H01 kesa on a humanoid-mirrored animator state (`Sword_L2`, `mirror = true`), so it answers Light 1 stroke for stroke (Light 1 ends low left, Light 2 low right, same heights, same off-hand IK gap of 0.35 m). The mirrored hand turns the blade over, so it uses `bladeRoll` 120° (edge lead 0.56; unrolled it was −0.28). Moveset v5. Chain: kesa right→left, mirrored kesa left→right, thrust, rising right→left. (The dual-wield backhand and the TreeChopping02 cut tried before are gone.)
+- **Iai rebuilt** as a **stance + draw**. The hand settles on the hilt at the left hip with the blade sheathed along the leg (UnsheatheHips01_R held at 0.5). A tap holds it for 0.2 s; holding heavy keeps the stance and charges it (up to ×1.8, with a squash and rumble), and roll cancels it. On release the blade is drawn straight up over the shoulder (a 0.07 s cross-fade) into AttackPolearm02's cut down across with a 2.2 m lunge. The old draw was the pack's everyday unsheathe: upright, arm only, with the blade travelling flat-side first so its curve bent sideways (edge lead 0.13).
+- **Heavy chain:** Iai → **Helm-splitter** (Attack2H02, straight overhead cleave) → Kesa from the upper right → Spirit Roundslash.
+- **Blade roll per swing:** `AttackData.bladeRoll` turns the sword about its own axis during that swing (blended in over the wind-up) so the edge leads the cut. Values were measured on the rig by sweeping the roll: mirrored Light 2 +120° (0.56), helm-splitter 180° (0.99; that slam swings spine-first), upper-right kesa +10° (0.89), the iai cut and run attack 0° (0.99).
+- New AttackData fields: `bladeRoll`, and the stance block `stanceState`, `stanceNorm`, `stanceTime`, `drawFade` (any attack can use them). `SharkSwordMoveset` is v3. `PreviewRenderer.RenderFormSheet` gains `weaponRoll`.
+
+**Verified:** front renders on the shark rig with the rolls applied; in play mode the heavy chain ran Iai (held, CHARGED 125) → Helm → Kesa R → Roundslash and the light chain ran 1 → 2 → 3 → 4. 0 errors after `BuildAll()`. **Not verified by hand:** the feel of the stance timing and the charge on a pad.
+
+## 000000000. Shark Mask adjustments: head, sword edge, katana moveset, spin variety, lock-on while aiming
+
+- **Head rebuilt** (`build_shark_form.py`): one tapered great-white head that flows out of the neck (no neck step), a closed conical snout, slate on top and pale underneath (the old countershading ran side to side), an underslung jaw hanging about 10° open with a dark mouth, two rows of big triangular teeth (larger toward the front), small flush eyes, nostril slits. The horn-like brow spikes are gone. Body is 2,042 tris.
+- **Sword:** the cutting edge (pale steel) now faces out and leads every cut. Measured on the shark rig inside each hit window, edge-vs-motion is 0.89 to 0.98 for the kesa, backhand, rising slash, right kesa, roundslash and run attack (the thrust leads with the point). The dorsal-fin hook near the tip is removed. The spine teeth are 10% bigger.
+- **Light combo alternates direction:** kesa right→left (Attack2H01), **backhand left→right** (AttackDW02, one-handed), thrust (AttackPolearm01), rising right→left (Attack2H03), then loop.
+- **Heavy combo is katana work, with no hammer clips:**
+  1. **Iai draw-cut** (UnsheatheHips01_R): the hand drops to the hilt with the blade sheathed back along the left hip, then the sword is drawn low and out to the right while lunging in. **Hold heavy to stay in the stance and charge** (up to ×1.8). One-handed: the off hand stays at the hip.
+  2. **Kesa from the upper left** (TreeChopping02).
+  3. **Kesa from the upper right** (TreeChopping01): the two cuts cross in an X.
+  4. **Spirit Roundslash** (AttackPolearm04): a crouched wheel of the blade while the body turns 360° clockwise with the cut. A spirited hit raises the gauge level.
+  `SharkSwordMoveset` is now v2 (the builder upgrades older assets once; later edits survive). New `AttackData.oneHanded` lets the off hand leave the grip for a swing.
+- **Tralala Tornado varies through the spin:** turn 1 low (blade at the knees), turn 2 rising (blade at the waist, body lifts 14 cm), turn 3 airborne (blade overhead, 50 cm off the ground, leaning in), turn 4 crashes down (landing dust and squash) into the wide finisher. Each turn leaves its own ring of slash at its height. Tune it in `PlayerController.spinTurns` (pose state, frame, lift, lean per turn).
+- **Lock-on while aiming:** raising any ranged weapon (bow, cannon, crossbow) drops the lock so you aim freely with the crosshair. Lowering it re-locks the same target if it's still valid and in range. Pressing lock-on while aiming cancels the re-lock.
+- Tools: `PreviewRenderer.RenderFormSheet(file, clip, modelPath, weaponPath, …)` renders any form with its weapon and the two-hand IK (`SpawnForm`). The alligator's `RenderCrocSheet` / `SpawnCroc` now call it.
+
+**Verified:** close renders of the head and of each new move on the shark rig; in play mode the heavy chain runs Iai → Kesa L → Kesa R → Roundslash → Iai (the roundslash raised the spirit level), the light chain runs Light1 → backhand → thrust, the spin changes pose, height and lean per turn, and the lock goes off when LT is raised and comes back on release. Console: 0 errors. **Not verified:** how the iai charge and the crossing kesa cuts feel on a pad. The iai draw and the upper-left kesa travel partly flat-side first (edge-vs-motion 0.13 and 0.57), as the pack clips swing them.
+
+## 00000000. Shark Mask (Tralalero reward)
+
+**Reward:** felling Tralalero Tralala drops the **Shark Mask** beside the wreck (only if you don't own it yet). The first pickup plays the same Majora's Mask cinematic as the Alligator Mask, with deep-sea vortex colours and Tralalero's "tra-la-la" roar, then the **SHARK MASK** card. Afterwards it's **slot 2 / D-pad →**. Rewards are now per boss: `BossBase.rewardMask` (Tralalero = Shark Mask; Bombardiro still uses `BossEncounter.rewardMask`). If several bosses fall in one fight, each drops its own mask.
+
+| Shark form | What it does |
+|---|---|
+| Body | `SharkForm.fbx`, humanoid shark, 1,960 tris, **same skeleton as the Elder Tree** (all pack clips work). Countershaded slate hide and pale belly, tall swept dorsal fin, gill slits, blunt head with an underslung grin of serrated teeth, pectoral fins sweeping off the forearms, crescent caudal fin, a shark-jaw pauldron, and Tralalero's worn blue running shoes (plain stripe, no brand). 4% faster, 5% longer roll, no damage reduction. |
+| **Tralala Long Sword** (Monster Hunter long sword) | Two-handed nodachi: rayskin grip, jaw-bone guard ringed with teeth, tooth pommel, curved blade with a saw of shark teeth on the spine. Long reach (hitbox to 1.58 m). Every swing leaves a **crescent slash** that hangs in the air and drifts out as it fades (`FX/SlashArc.cs`), and hits throw cut streaks. **Light:** overhead slash → thrust → rising slash (loops). **Heavy:** Spirit Blade I → II → III → **Spirit Roundslash** (the body turns a full 360°). **Run attack:** lunging thrust. **Roll attack:** fade slash (cuts while stepping back). |
+| **Spirit gauge** | Shown under stamina when the sword is out. Hits fill it. Heavy (spirit) attacks spend 22 for ×1.25 damage and a red-tinted slash. A **spirited roundslash that lands raises the gauge level** (white ×1.05 → yellow ×1.1 → red ×1.2, shown by the pips and the bar colour). Each level lasts 45 s, then drops one. The gauge drains if you stop hitting for 3 s. |
+| **Cuts vines** | Blade hits carry `cutPower`. Vines (`World/Cuttable.cs`) are cut at the height the blade meets them: the free part drops and tumbles, hanging stubs snap back up, leaves burst. Once 55-60% of the strands are gone the blocking collider opens. Club, hammer, arrows, bolts and explosions only rustle them. |
+| **Tralala Crossbow** | Crescent tail-fin prod, hide-wrapped stock, a shark jaw around the bolt exit, side crank, fin sight. Hangs on the right thigh (the dorsal fin owns the back) and the sword goes to the left hip while aiming. LT raises it (Rifle aim clip), RT fires **at once** (no draw), then the string is cranked back with the Rifle reload clip: **1.45 s per bolt** (the bow cycles in about 0.6 s). Bolts: 88 m/s, flat flight, **92 damage / 32 poise every shot** (the bow tops out at 50 at full draw), 12 mana. The loaded bolt is visible in the groove only once it's cranked in. |
+| **Tralala Tornado** (RB + RT) | Coil, then 4 turns in 1.25 s with the blade held level, drifting with the stick or toward the lock target. Each turn cuts everything within 3.3 m once (36 dmg) and leaves a ring of slash. The last turn is a 4.1 m finishing cut (95 dmg, short slow-mo). It also clears vines. 40 mana, hyper armour. |
+
+**Vines in the arena:** a **vine curtain** hangs from a mossy lintel in the second gap of the wall ring (the one opposite the cracked wall), and three **bramble thickets** grow in the yard. F1 → "Restore breakables + vines" regrows them.
+
+**All tuning is in ScriptableObjects** (created only when missing, so your edits survive rebuilds): `Forms/Form_Shark`, `Equipment/Melee_TralalaLongSword` (slash colours, cut width, spirit gauge numbers), `Equipment/Crossbow_Tralala`, `Equipment/Special_TralalaTornado`, `Masks/Mask_Shark`, `SharkSwordMoveset` (attack timings, `spinDegrees`, `levelsSpirit`). New data types: `CrossbowData`, `SpinSlashData`, and `SpecialData` (shared base of the specials, `SpecialAttackData` now derives from it). `FormData` gained `crossbow`, `roar` / `roarPitch`.
+
+**Debug:** F1 lists a pickup row for each boss's mask (Alligator, Shark). Autopilot: `wear shark|alligator|none` (instant form swap), `spirit <level>` (fills the gauge).
+
+**Code map:** `Player/PlayerController.Shark.cs` (spirit gauge, slash colours, crossbow fire/reload, spin special), `PlayerController.Form.cs` (shouldered ranged path now serves cannon and crossbow; special dispatch by type), `FX/SlashArc.cs`, `World/Cuttable.cs`, `CannonRig` (optional `loadedRound`, eases off the aim lock while reloading), `Editor/TungSahurBuilder.Shark.cs` (menu **8b**, part of `BuildAll()` right after the Alligator set). Models: `Tools/Blender/build_shark_form.py -- <abs Art/Models/Shark dir>` (body, sword, crossbow with LoadedBolt + Muzzle, bolt, mask, vine segments, lintel, root mound). New animator states (all Human Mega pack): `Sword_L1-3`, `Sword_H1-4`, `Sword_Run`, `Sword_Dodge`, `Sword_Spin` (2H / Polearm clips), `CrossbowAim/Shoot/Reload` (Rifle clips). New SFX: blade whoosh / hit, vine cut / rustle, crossbow fire / crank, spin whirl. New FX: `SlashHit`, `LeafBurst`.
+
+**Verified in play mode** (autopilot, god mode): sword light chain (135 dmg on a dummy) and spirit chain into the roundslash (518 dmg, gauge reached level 1), crescents visible on every swing, spin special (246 dmg on one dummy, level horizontal rings), two crossbow bolts (186 dmg) with the reload animation between them; light slash + heavy + spin cut all 25 strands of the curtain and the shark walked out through the gap; Tralalero killed → Shark Mask rose by the wreck → full cinematic → shark form worn, slot 2 owned; spirit HUD bar and pips. Console after `BuildAll()`: 0 errors, 0 warnings.
+
+**Not verified:** feel on a real pad (timings, crossbow reload length, spin drift), the keyboard path, the thickets (only the curtain was cut in the test), and close-up hand placement on the crossbow during the reload clip. Sword hit windows reuse the alligator's measured 2H / Polearm windows (same clips, same skeleton), not a fresh `AnalyzeCrocSwing` pass on the sword.
+
+**Questions:**
+1. The spirit gauge levels up only on a spirited roundslash that lands (as in Monster Hunter). Do you want a Foresight Slash (counter) too?
+2. The vortex in the cinematic still goes magenta at its peak (the hue-shift effect runs over the mask's colours). Do you want it to stay in the deep-sea blues for the shark?
+
 ## 0000000. Boss: Tralalero Tralala
 
 **Start it:** pause menu → **Summon Tralalero** (new entry under Summon Bombardiro), or F1 → row 2. It arrives underground: the dorsal fin circles you once, it erupts, belly-flops and screams on its back sneaker.
@@ -18,7 +74,7 @@ A scarred slate shark on three legs in worn, mud-caked blue sneakers (no brand m
 | Stance break | Flops onto its side with the sneakers pedalling: 3.4 s critical window. | |
 | Phase 2 (≤50%) | Rears up and screams; 20% faster, more passes, bites, spins and eruptions. | |
 
-Stats on the prefab: 2,600 HP, 130 poise, arena radius 15 m. The walls have gaps, so the boss's limit stretches to follow a player who slips outside (up to 2.5× the radius). Otherwise it couldn't reach you and you could wait it out. Felling Tralalero alone doesn't drop the Alligator Mask (that stays Bombardiro's reward); there is no Tralalero reward yet.
+Stats on the prefab: 2,600 HP, 130 poise, arena radius 15 m. The walls have gaps, so the boss's limit stretches to follow a player who slips outside (up to 2.5× the radius). Otherwise it couldn't reach you and you could wait it out. Felling Tralalero alone doesn't drop the Alligator Mask (that stays Bombardiro's reward); it drops the Shark Mask (§00000000).
 
 **Animation is procedural** (PS1-style rigid segments, no skeleton): a three-beat gait drives **two-bone IK** on each leg (pivot space, knee forward), so the sneakers stay on the ground at any body height; feet stay flat and lift their toes in the swing. The tail swims side to side with speed. Jaw, tail pitch and yaw, body pitch, roll, lift and burrow sink are pose targets that each move sets, smoothed in `LateUpdate`.
 

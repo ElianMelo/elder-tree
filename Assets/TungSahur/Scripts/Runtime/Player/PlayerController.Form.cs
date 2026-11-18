@@ -86,13 +86,17 @@ namespace TungSahur.Player
             animator = rig.animator;
             weapon = rig.weapon;
             if (weapon) weapon.OnHit = OnWeaponHit;
+            CaptureWeaponRest();
             clubTip = rig.weaponTip;
             clubRenderer = rig.weaponRenderer;
             trail = rig.trail;
+            slashArc = rig.slash;
             bowRig = rig.bowRig;
             cannonRig = rig.cannonRig;
             twoHand = rig.twoHandGrip;
             twoHandW = twoHandArmsW = 0f;
+            ResetSpirit();
+            spinMode = false;
             moveset = form.moveset != null ? form.moveset : (baseForm != null ? baseForm.moveset : moveset);
             walkSpeed = baseWalk * form.moveSpeedMultiplier;
             runSpeed = baseRun * form.moveSpeedMultiplier;
@@ -130,10 +134,11 @@ namespace TungSahur.Player
                 case PlayerState.Locomotion:
                 case PlayerState.Air:
                 case PlayerState.Landing:
-                case PlayerState.Attack:
                     return true;
+                case PlayerState.Attack:
+                    return attack == null || !attack.oneHanded;
                 case PlayerState.Special:
-                    return spPhase == SpecialPhase.Crouch || spPhase == SpecialPhase.Rise;
+                    return spinMode || spPhase == SpecialPhase.Crouch || spPhase == SpecialPhase.Rise;
                 default:
                     return false;   // roll, hits, death, cannon (hammer on the back), throw, transformations
             }
@@ -180,12 +185,27 @@ namespace TungSahur.Player
                 TryWeaponBlast(hit.point + Vector3.up * 0.05f, null);
         }
 
-        // ================================================================== ranged: cannon
+        // ================================================================== ranged: cannon / crossbow (shouldered)
         CannonData Cannon => CurrentForm != null ? CurrentForm.cannon : null;
+        CrossbowData Crossbow => CurrentForm != null ? CurrentForm.crossbow : null;
+        /// <summary>The raised shouldered weapon is the crossbow (otherwise the cannon).</summary>
+        bool UsingCrossbow => CurrentForm != null && CurrentForm.rangedKind == RangedKind.Crossbow && Crossbow != null;
+        /// <summary>A round is in the weapon (the crossbow shows its bolt in the groove late in the crank).</summary>
+        public bool RangedLoaded => !UsingCrossbow || Time.time >= cannonReadyAt - Crossbow.reloadTime * 0.3f;
+        /// <summary>The crossbow string is being cranked back (the rig lets the reload clip move the weapon).</summary>
+        public bool RangedReloading => State == PlayerState.Aim && cannonMode && UsingCrossbow &&
+                                       Time.time > cannonShootAt + CrossbowReloadDelay && Time.time < cannonReadyAt - 0.12f;
+        const float CrossbowReloadDelay = 0.2f;
+        bool crossbowReloadPlaying;
+
+        float ShoulderedInterval => UsingCrossbow ? Crossbow.reloadTime : Cannon.fireInterval;
+        float ShoulderedRaise => UsingCrossbow ? Crossbow.raiseTime : Cannon.raiseTime;
+        float ShoulderedMoveSpeed => UsingCrossbow ? Crossbow.aimMoveSpeed : Cannon.aimMoveSpeed;
 
         bool TryEnterCannonAim()
         {
-            if (!input.GameplayEnabled || !input.AimHeld || Cannon == null || cannonRig == null || shellPrefab == null) return false;
+            if (!input.GameplayEnabled || !input.AimHeld || cannonRig == null) return false;
+            if (UsingCrossbow ? boltPrefab == null : (Cannon == null || shellPrefab == null)) return false;
             EndSwing();
             SetState(PlayerState.Aim);
             cannonMode = true;
@@ -197,31 +217,39 @@ namespace TungSahur.Player
             input.ClearFire();
             input.ClearAttackBuffers();
             animator.SetFloat(HActionSpeed, 1f);
-            animator.CrossFadeInFixedTime("CannonAim", 0.22f);
-            AudioManager.Play(Sfx.MetalHit, transform.position + Vector3.up * 1.4f, 0.45f, 0.7f);
+            crossbowReloadPlaying = false;
+            animator.CrossFadeInFixedTime(UsingCrossbow ? (RangedLoaded ? "CrossbowAim" : "CrossbowReload") : "CannonAim", 0.22f);
+            if (UsingCrossbow && !RangedLoaded) { crossbowReloadPlaying = true; animator.SetFloat(HActionSpeed, CrossbowReloadSpeed()); }
+            AudioManager.Play(Sfx.MetalHit, transform.position + Vector3.up * 1.4f, 0.45f, UsingCrossbow ? 1.1f : 0.7f);
             UpdateAimPoint();
             return true;
         }
 
         void UpdateCannonAim(float dt)
         {
-            var c = Cannon;
-            if (!AimCommon(dt, c.aimMoveSpeed, cannonStanceYaw)) return;
+            bool xbow = UsingCrossbow;
+            float interval = ShoulderedInterval;
+            if (!AimCommon(dt, ShoulderedMoveSpeed, xbow ? crossbowStanceYaw : cannonStanceYaw)) return;
             if (fireQueued && fireQueuedAt < 0f) fireQueuedAt = Time.time;
-            BowPhaseProgress = Mathf.MoveTowards(BowPhaseProgress, 1f, dt / Mathf.Max(0.01f, c.raiseTime));
-            float ready = Time.time >= cannonReadyAt ? 1f : 1f - (cannonReadyAt - Time.time) / Mathf.Max(0.01f, c.fireInterval);
+            BowPhaseProgress = Mathf.MoveTowards(BowPhaseProgress, 1f, dt / Mathf.Max(0.01f, ShoulderedRaise));
+            float ready = Time.time >= cannonReadyAt ? 1f : 1f - (cannonReadyAt - Time.time) / Mathf.Max(0.01f, interval);
             BowDraw = BowPhaseProgress >= 1f ? Mathf.Clamp01(ready) : 0f;
             bool isReady = BowDraw >= 0.999f;
-            if (isReady && !cannonWasReady && Time.time - cannonShootAt < c.fireInterval + 0.1f)
+            if (isReady && !cannonWasReady && Time.time - cannonShootAt < interval + 0.1f)
             {
-                AudioManager.Play(Sfx.BowNock, transform.position + Vector3.up * 1.4f, 0.5f, 0.6f);   // breech clunk: reloaded
+                // reloaded: the cannon's breech clunks; the crossbow's latch is in the crank sound
+                if (!xbow) AudioManager.Play(Sfx.BowNock, transform.position + Vector3.up * 1.4f, 0.5f, 0.6f);
                 FullDrawReached?.Invoke();
             }
             cannonWasReady = isReady;
             // a press while reloading is kept briefly, then dropped (no surprise shots seconds later)
             if (fireQueued && !isReady && Time.time - fireQueuedAt > 0.35f) { fireQueued = false; fireQueuedAt = -9f; }
-            if (fireQueued && isReady) FireCannon();
-            if (Time.time - cannonShootAt > 0.55f && Time.time - cannonShootAt < 0.6f + dt)
+            if (fireQueued && isReady)
+            {
+                if (xbow) FireCrossbow(); else FireCannon();
+            }
+            if (xbow) UpdateCrossbowReloadAnim();
+            else if (Time.time - cannonShootAt > 0.55f && Time.time - cannonShootAt < 0.6f + dt)
                 animator.CrossFadeInFixedTime("CannonAim", 0.3f);
         }
 
@@ -275,8 +303,10 @@ namespace TungSahur.Player
         /// <summary>Light + heavy together: the form's special, or the moveset's skill attack for the base form.</summary>
         bool TryStartSpecial()
         {
-            var s = CurrentForm != null ? CurrentForm.special : null;
-            if (s == null) return moveset.skill != null && StartAttack(moveset.skill);
+            var special = CurrentForm != null ? CurrentForm.special : null;
+            if (special == null) return moveset.skill != null && StartAttack(moveset.skill);
+            if (special is SpinSlashData spin) return TryStartSpin(spin);
+            if (!(special is SpecialAttackData s)) return false;
             if (weapon == null || HammerThrown) return false;
             if (!stats.HasMana(s.manaCost))
             {
@@ -289,6 +319,7 @@ namespace TungSahur.Player
             EndSwing();
             if (State == PlayerState.Aim) ExitAim();
             sp = s;
+            spinMode = false;
             SetState(PlayerState.Special);
             IsSprinting = false;
             spPhase = SpecialPhase.Crouch;
@@ -321,6 +352,7 @@ namespace TungSahur.Player
 
         void UpdateSpecial(float dt)
         {
+            if (spinMode) { UpdateSpin(dt); return; }
             spT += dt;
             motor.SetDesiredPlanarVelocity(Vector3.zero, 12f, dt);
             switch (spPhase)
@@ -543,7 +575,7 @@ namespace TungSahur.Player
                 ApplyForm(transformTo);
                 animator.SetFloat(HActionSpeed, 1.2f);
                 animator.CrossFadeInFixedTime(transformTo != baseForm ? "MaskRoar" : "Locomotion", 0.08f, 0, transformTo != baseForm ? 0.2f : 0f);
-                if (transformTo != baseForm) AudioManager.Play(Sfx.CrocRoar, c, 0.55f, 1.35f);
+                if (transformTo != baseForm && transformTo != null) AudioManager.Play(transformTo.roar, c, 0.55f, transformTo.roarPitch);
                 squash = 0.14f;
             }
             if (stateTime >= transformTime)
@@ -563,6 +595,7 @@ namespace TungSahur.Player
             if (State == PlayerState.Aim) ExitAim();
             EndSwing();
             ReturnHammer(true);
+            spinMode = false;
             IsSprinting = false;
             Invulnerable = true;
             if (lockOn.Current != null) lockOn.Toggle();

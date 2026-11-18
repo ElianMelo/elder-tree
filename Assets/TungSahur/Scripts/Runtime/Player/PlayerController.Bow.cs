@@ -55,7 +55,9 @@ namespace TungSahur.Player
         public int ArrowsLoosed { get; private set; }
         /// <summary>Mana one shot of the raised ranged weapon costs.</summary>
         public float RangedManaCost => CurrentForm != null && CurrentForm.rangedKind == RangedKind.Cannon && CurrentForm.cannon != null
-            ? CurrentForm.cannon.manaPerShot : (Bow != null ? Bow.manaPerShot : 0f);
+            ? CurrentForm.cannon.manaPerShot
+            : CurrentForm != null && CurrentForm.rangedKind == RangedKind.Crossbow && CurrentForm.crossbow != null
+                ? CurrentForm.crossbow.manaPerShot : (Bow != null ? Bow.manaPerShot : 0f);
         public event System.Action<ArrowProjectile> ArrowFired;
         public event System.Action FullDrawReached;
 
@@ -90,7 +92,7 @@ namespace TungSahur.Player
 
         bool TryEnterAim()
         {
-            if (CurrentForm != null && CurrentForm.rangedKind == RangedKind.Cannon) return TryEnterCannonAim();
+            if (CurrentForm != null && (CurrentForm.rangedKind == RangedKind.Cannon || CurrentForm.rangedKind == RangedKind.Crossbow)) return TryEnterCannonAim();
             if (!input.GameplayEnabled || !input.AimHeld || arrowPrefab == null || bowRig == null || Bow == null) return false;
             EndSwing();
             SetState(PlayerState.Aim);
@@ -274,7 +276,7 @@ namespace TungSahur.Player
 
         void UpdateAimPoint()
         {
-            float openSky = Bow != null ? Bow.openSkyDistance : 60f;
+            float openSky = UsingCrossbow ? Crossbow.openSkyDistance : Bow != null ? Bow.openSkyDistance : 60f;
             if (cam == null) { AimPoint = transform.position + transform.forward * openSky; AimOnTarget = false; return; }
             Vector3 origin = cam.transform.position;
             Vector3 fwd = cam.transform.forward;

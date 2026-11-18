@@ -7,6 +7,9 @@ namespace TungSahur.Player
     /// the cannon rides on the back and the hammer sits in the fist; raising the cannon swaps them
     /// (cannon to the shoulder grip, hammer to the back). While aiming, the spine and chest pitch the
     /// Bazooka pose onto the crosshair, and each shot kicks the chest back.
+    /// The shark's crossbow uses the same rig: on the back at rest, raised on the Rifle aim pose, with
+    /// the loaded bolt shown only while one is in the groove, and the aim lock eased off while reloading
+    /// (the reload clip moves the weapon).
     /// </summary>
     [DefaultExecutionOrder(50)]
     public class CannonRig : MonoBehaviour
@@ -18,6 +21,8 @@ namespace TungSahur.Player
         public Transform cannonHandSocket;
         public Transform cannonBackSocket;
         public Transform muzzle;
+        [Tooltip("Shown while a round is loaded (the crossbow's bolt in the groove). Optional.")]
+        public GameObject loadedRound;
         public Transform hammer;
         public Transform hammerBackSocket;
         [Range(0f, 1f)] public float spinePitchShare = 0.4f;
@@ -31,7 +36,7 @@ namespace TungSahur.Player
         Transform spine, chest, hand, hammerHandParent;
         Vector3 hammerLocalPos; Quaternion hammerLocalRot;
         bool cannonInHand, hammerOnBack;
-        float weight, pitch, kick;
+        float weight, pitch, kick, hold = 1f;
 
         void Awake()
         {
@@ -97,6 +102,8 @@ namespace TungSahur.Player
             if (wantHand != hammerOnBack && !player.HammerThrown) SetHammerOnBack(wantHand);
 
             kick = Mathf.MoveTowards(kick, 0f, dt * 4f);
+            if (loadedRound != null && loadedRound.activeSelf != player.RangedLoaded) loadedRound.SetActive(player.RangedLoaded);
+            hold = Mathf.MoveTowards(hold, player.RangedReloading ? 0f : 1f, dt / 0.18f);
             if (weight <= 0.001f && kick <= 0f) return;
 
             // pitch the upper body onto the aim point (the Bazooka clip aims level)
@@ -104,7 +111,7 @@ namespace TungSahur.Player
             Vector3 d = player.AimPoint - from;
             float target = -Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
             pitch = Mathf.Lerp(pitch, Mathf.Clamp(target, -maxPitch, maxPitch), Ease.Damp(14f, dt));
-            float total = pitch * weight - kick * kick * kickDegrees;
+            float total = (pitch * weight - kick * kick * kickDegrees) * Mathf.Lerp(0.35f, 1f, hold);
             Vector3 axis = player.transform.right;
             if (spine) spine.rotation = Quaternion.AngleAxis(total * spinePitchShare, axis) * spine.rotation;
             if (chest) chest.rotation = Quaternion.AngleAxis(total * (1f - spinePitchShare), axis) * chest.rotation;
@@ -117,7 +124,16 @@ namespace TungSahur.Player
                 Vector3 aim = player.AimPoint - grip;
                 if (aim.sqrMagnitude < 0.25f) aim = player.transform.forward;
                 Quaternion look = Quaternion.LookRotation(aim.normalized, Vector3.up) * Quaternion.Euler(-kick * kick * 18f, 0f, 0f);
-                cannon.SetPositionAndRotation(grip - look * Vector3.forward * kick * 0.12f, look);
+                Vector3 pos = grip - look * Vector3.forward * kick * 0.12f;
+                if (hold >= 0.999f) cannon.SetPositionAndRotation(pos, look);
+                else
+                {
+                    // reloading: the weapon rides the hand socket (the clip works the string), easing back to the aim
+                    Vector3 hp = cannonHandSocket != null ? cannonHandSocket.position : pos;
+                    Quaternion hr = cannonHandSocket != null ? cannonHandSocket.rotation : look;
+                    float h = Ease.InOutCubic(hold);
+                    cannon.SetPositionAndRotation(Vector3.Lerp(hp, pos, h), Quaternion.Slerp(hr, look, h));
+                }
             }
         }
     }

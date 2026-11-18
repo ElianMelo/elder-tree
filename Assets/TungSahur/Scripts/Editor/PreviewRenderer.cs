@@ -224,28 +224,39 @@ namespace TungSahur.EditorTools
 
         // ------------------------------------------------------------------ alligator + two-handed hammer
         /// <summary>The alligator body with the bomb hammer in the calibrated two-handed grip.</summary>
-        public static GameObject SpawnCroc(out Animator anim, out TungSahur.Player.TwoHandGrip grip, out Transform hammer)
+        public static GameObject SpawnCroc(out Animator anim, out TungSahur.Player.TwoHandGrip grip, out Transform hammer) =>
+            SpawnForm(TungSahurBuilder.CrocModelPath, TungSahurBuilder.HammerPath, out anim, out grip, out hammer);
+
+        /// <summary>Any two-handed form body with its weapon gripped like at runtime (alligator + hammer, shark + long sword).</summary>
+        public static GameObject SpawnForm(string modelPath, string weaponPath, out Animator anim, out TungSahur.Player.TwoHandGrip grip, out Transform hammer)
         {
-            var go = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TungSahurBuilder.CrocModelPath));
+            var go = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(modelPath));
             go.hideFlags = HideFlags.DontSave;
             anim = go.GetComponent<Animator>() ?? go.AddComponent<Animator>();
-            anim.avatar = AssetDatabase.LoadAllAssetsAtPath(TungSahurBuilder.CrocModelPath).OfType<Avatar>().First();
+            anim.avatar = AssetDatabase.LoadAllAssetsAtPath(modelPath).OfType<Avatar>().First();
             anim.applyRootMotion = false;
             var hand = anim.GetBoneTransform(HumanBodyBones.RightHand);
-            hammer = ((GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TungSahurBuilder.HammerPath), hand)).transform;
-            hammer.name = "Hammer";
+            hammer = ((GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(weaponPath), hand)).transform;
+            hammer.name = "Weapon";
             grip = go.AddComponent<TungSahur.Player.TwoHandGrip>();
             grip.animator = anim;
             grip.weapon = hammer;
-            TungSahurBuilder.CalibrateHammerGrip(hammer, grip);
+            TungSahurBuilder.CalibrateHammerGrip(hammer, grip, modelPath);
             return go;
         }
 
         /// <summary>Contact sheet of the alligator (two-hand IK applied per frame, like at runtime).</summary>
-        public static string RenderCrocSheet(string file, string clipPath, int frames = 8, float yaw = 210f, float camDist = 4.6f, bool ik = true, float from = 0f, float to = 1f)
+        public static string RenderCrocSheet(string file, string clipPath, int frames = 8, float yaw = 210f, float camDist = 4.6f, bool ik = true, float from = 0f, float to = 1f) =>
+            RenderFormSheet(file, clipPath, TungSahurBuilder.CrocModelPath, TungSahurBuilder.HammerPath, frames, yaw, camDist, ik, from, to);
+
+        /// <summary>Contact sheet of a form body + weapon over part of a clip (lookY: camera target height).</summary>
+        public static string RenderFormSheet(string file, string clipPath, string modelPath, string weaponPath, int frames = 8, float yaw = 210f,
+            float camDist = 4.6f, bool ik = true, float from = 0f, float to = 1f, float lookY = 1.0f, float weaponRoll = 0f)
         {
             Directory.CreateDirectory(OutDir);
-            var go = SpawnCroc(out _, out var grip, out _);
+            var go = SpawnForm(modelPath, weaponPath, out _, out var grip, out var weapon);
+            // roll the weapon about its own axis (AttackData.bladeRoll)
+            weapon.localRotation *= Quaternion.AngleAxis(weaponRoll, Vector3.up);
             var clip = LoadClip(clipPath);
             var (cam, light, rt, floor) = Rig(300, 420);
             var sheet = new Texture2D(300 * frames, 420, TextureFormat.RGB24, false);
@@ -253,8 +264,8 @@ namespace TungSahur.EditorTools
             var o = new Vector3(600f, 0f, 600f);
             floor.transform.position = o;
             var dir = Quaternion.Euler(0, yaw, 0) * Vector3.forward;
-            cam.transform.position = o + new Vector3(0, 1.3f, 0) - dir * camDist;
-            cam.transform.LookAt(o + new Vector3(0, 1.0f, 0));
+            cam.transform.position = o + new Vector3(0, lookY + 0.3f, 0) - dir * camDist;
+            cam.transform.LookAt(o + new Vector3(0, lookY, 0));
             for (int i = 0; i < frames; i++)
             {
                 float t = clip.length * Mathf.Lerp(from, to, i / (float)Mathf.Max(1, frames - 1));

@@ -28,6 +28,34 @@ namespace TungSahur.Equipment
         public bool explodeOnGround = true;
         public float explosionFxScale = 0.75f;
 
+        [Header("Slashing (blades)")]
+        [Tooltip("A cutting edge: draws a crescent slash with every swing and cuts through vines and other cuttables.")]
+        public bool slashing;
+        [Tooltip("Cuttables need at least their requiredCut (0 = blunt, cuts nothing).")]
+        public int cutPower;
+        [Tooltip("Width of the cut across a vine curtain from the blade's contact point (metres).")]
+        public float cutWidth = 2.2f;
+        public Color slashColor = new Color(0.78f, 0.93f, 1f, 0.9f);
+        public Color slashEdgeColor = new Color(0.25f, 0.62f, 0.78f, 0.6f);
+        [Tooltip("Crescent width (from the blade's inner third to past the tip).")]
+        public float slashArcWidth = 1f;
+
+        [Header("Spirit gauge (long sword)")]
+        [Tooltip("Hits fill the gauge; heavy (spirit) attacks spend it for extra damage, and a spirited roundslash raises the gauge level.")]
+        public bool spiritGauge;
+        public float spiritPerHit = 14f;
+        public float spiritPerHeavyHit = 6f;
+        [Tooltip("Gauge each spirit (heavy) attack spends. Without enough, it still swings, just without the bonus.")]
+        public float spiritAttackCost = 22f;
+        public float spiritDamageBonus = 1.25f;
+        [Tooltip("Damage multiplier per gauge level (white, yellow, red).")]
+        public float[] spiritLevelDamage = { 1.05f, 1.1f, 1.2f };
+        [Tooltip("Seconds a gauge level lasts before dropping one.")]
+        public float spiritLevelDuration = 45f;
+        [Tooltip("Gauge drains this much per second after a few seconds without hitting.")]
+        public float spiritDrainPerSec = 3f;
+        public Color[] spiritLevelColors = { new Color(0.92f, 0.95f, 1f, 0.95f), new Color(1f, 0.82f, 0.32f, 0.95f), new Color(1f, 0.28f, 0.2f, 0.95f) };
+
         [Header("Obstacles")]
         [Tooltip("Breakable rocks and cracked walls need at least their requiredPower to break.")]
         public int breakPower;

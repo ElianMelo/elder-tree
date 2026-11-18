@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76b16c8836c85024aa7c27f927fe9a41, type: 3}
+  m_Name: Special_TralalaTornado
+  m_EditorClassIdentifier: TungSahur.Runtime::TungSahur.Equipment.SpinSlashData
+  displayName: Tralala Tornado
+  manaCost: 40
+  staminaCost: 30
+  windupTime: 0.32
+  turns: 4
+  spinTime: 1.25
+  radius: 3.3
+  damagePerPass: 36
+  poisePerPass: 11
+  driftSpeed: 3.4
+  driftSharpness: 5
+  finisherRadius: 4.1
+  finisherDamage: 95
+  finisherPoise: 40
+  cutPower: 1
+  recoverTime: 0.5
+  hyperArmour: 1
+  shakePerPass: 0.22
+  finisherShake: 0.8
+  fovKick: 4

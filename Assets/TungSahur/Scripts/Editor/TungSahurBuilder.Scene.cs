@@ -31,6 +31,7 @@ namespace TungSahur.EditorTools
             log.AppendLine(BuildBoss());            // boss materials are shared by the mask set
             log.AppendLine(BuildTralalero());       // reuses the croc mouth / teeth materials
             log.AppendLine(BuildMaskSet());         // data + models the player prefab needs
+            log.AppendLine(BuildSharkSet());        // Tralalero's reward: shark body, long sword, crossbow, vines
             log.AppendLine(BuildPrefabs());
             log.AppendLine(BuildAudio());
             log.AppendLine(RenderClubIcon());
@@ -96,6 +97,13 @@ namespace TungSahur.EditorTools
                 C(Sfx.ManaEmpty, SfxForge.ManaEmpty(), 0.6f, 0.97f, 1.03f, 0f, 0.12f),
                 C(Sfx.MaskReceived, SfxForge.MaskReceived(), 0.85f, 1f, 1f, 0f, 1f),
                 C(Sfx.SharkRoar, SfxForge.SharkRoar(), 1f, 0.96f, 1.04f, 0.4f, 0.3f),
+                C(Sfx.BladeWhoosh, SfxForge.BladeWhoosh(), 0.6f, 0.92f, 1.08f),
+                C(Sfx.BladeHit, SfxForge.BladeHit(), 0.9f, 0.92f, 1.08f),
+                C(Sfx.VineCut, SfxForge.VineCut(), 0.75f, 0.9f, 1.1f, 0.65f, 0.04f),
+                C(Sfx.VineRustle, SfxForge.VineRustle(), 0.6f, 0.9f, 1.1f, 0.65f, 0.1f),
+                C(Sfx.CrossbowFire, SfxForge.CrossbowFire(), 0.9f, 0.95f, 1.05f),
+                C(Sfx.CrossbowReload, SfxForge.CrossbowReload(), 0.55f, 0.97f, 1.03f),
+                C(Sfx.SpinWhirl, SfxForge.SpinWhirl(), 0.7f, 0.9f, 1.12f, 0.6f, 0.05f),
                 C(Sfx.SneakerSqueak, SfxForge.SneakerSqueak(), 0.6f, 0.9f, 1.12f, 0.7f, 0.08f),
                 C(Sfx.Burrow, SfxForge.Burrow(), 1f, 0.94f, 1.06f, 0.55f, 0.1f),
             };
@@ -416,7 +424,8 @@ namespace TungSahur.EditorTools
                 E(FXType.HitSpark, "FX_HitSpark", 4), E(FXType.WoodChips, "FX_WoodChips", 4), E(FXType.StrawBurst, "FX_StrawBurst", 4),
                 E(FXType.Dust, "FX_Dust", 2), E(FXType.DustSmall, "FX_DustSmall", 8), E(FXType.SlamRing, "FX_SlamRing", 2),
                 E(FXType.SlamDebris, "FX_SlamDebris", 2), E(FXType.LandDust, "FX_LandDust", 2), E(FXType.ChargeFlash, "FX_ChargeFlash", 2),
-                E(FXType.Explosion, "FX_Explosion", 6), E(FXType.BombPop, "FX_BombPop", 3), E(FXType.Smoke, "FX_Smoke", 2)
+                E(FXType.Explosion, "FX_Explosion", 6), E(FXType.BombPop, "FX_BombPop", 3), E(FXType.Smoke, "FX_Smoke", 2),
+                E(FXType.SlashHit, "FX_SlashHit", 4), E(FXType.LeafBurst, "FX_LeafBurst", 4)
             };
             var audioGo = new GameObject("Audio");
             audioGo.transform.SetParent(sysRoot);
@@ -441,6 +450,7 @@ namespace TungSahur.EditorTools
             boot.player = pc; boot.hud = hud; boot.spawnPoint = spawn;
             PlaceBoss(actorRoot, sys, pc, hud, spawn);
             PlaceMaskSet(envRoot, sys, pc, hud);
+            PlaceSharkSet(envRoot, sys);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             // set as the only build scene + open by default

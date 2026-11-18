@@ -8,13 +8,9 @@ namespace TungSahur.Equipment
     /// Triggered by light + heavy pressed together, paid with mana.
     /// </summary>
     [CreateAssetMenu(menuName = "Tung Sahur/Equipment/Special Attack (Sky Bombardment)", fileName = "Special_")]
-    public class SpecialAttackData : ScriptableObject
+    public class SpecialAttackData : SpecialData
     {
-        public string displayName = "Sky Bombardment";
-
-        [Header("Cost")]
-        public float manaCost = 45f;
-        public float staminaCost = 25f;
+        void Reset() { displayName = "Sky Bombardment"; manaCost = 45f; staminaCost = 25f; }
 
         [Header("Rise")]
         public float crouchTime = 0.22f;

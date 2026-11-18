@@ -117,7 +117,13 @@ namespace TungSahur.Player
             if (cam == null) cam = Camera.main;
             ReadMovementInput();
 
-            if (input.GameplayEnabled && !IsDead)
+            if (input.GameplayEnabled && !IsDead && State == PlayerState.Aim)
+            {
+                // no lock-on while a ranged weapon is up; pressing it cancels the lock that would come back
+                if (input.ConsumeLockOn()) aimSuspendedLock = null;
+                input.ConsumeSwitchTarget();
+            }
+            else if (input.GameplayEnabled && !IsDead)
             {
                 if (input.ConsumeLockOn())
                 {
@@ -153,6 +159,7 @@ namespace TungSahur.Player
             if (motor.Grounded) lastGroundedTime = Time.time;
             UpdateGuardLayer(dt);
             UpdateTwoHand(dt);
+            UpdateSpirit(dt);
             UpdateBowAnimator(dt);
             UpdateLean(dt);
             stats.Guarding = IsGuarding;
@@ -169,9 +176,30 @@ namespace TungSahur.Player
 
         void LateUpdate()
         {
-            // bones are posed now: sweep the weapon
+            // bones are posed now: turn the blade for this cut, then sweep the weapon
+            UpdateBladeRoll(Time.deltaTime);
             if (weapon && !HammerThrown) weapon.Tick();
+            if (weapon) slashPrevTip = weapon.TipWorld;
             UpdateVisualRoll();
+        }
+
+        // ------------------------------------------------------------------ lock-on while aiming
+        Targetable aimSuspendedLock;
+
+        void SuspendLockForAim()
+        {
+            aimSuspendedLock = null;
+            if (lockOn == null || lockOn.Current == null) return;
+            aimSuspendedLock = lockOn.Current;
+            lockOn.ForceRelease();
+        }
+
+        void ResumeLockAfterAim(bool resume)
+        {
+            var t = aimSuspendedLock;
+            aimSuspendedLock = null;
+            if (!resume || lockOn == null || lockOn.Current != null || !lockOn.CanHold(t)) return;
+            lockOn.ForceLock(t);
         }
 
         void ReadMovementInput()
@@ -191,6 +219,10 @@ namespace TungSahur.Player
         {
             // a special cut short (hit, death) gives the camera back; after a blast its own release stands
             if (State == PlayerState.Special && s != PlayerState.Special) CameraDirector.Instance?.ReleaseFocus(0.35f);
+            if (State == PlayerState.Special && s != PlayerState.Special && spinMode) AbortSpin();
+            // raising a ranged weapon drops the lock (free crosshair aim); lowering it picks the target back up
+            if (s == PlayerState.Aim && State != PlayerState.Aim) SuspendLockForAim();
+            else if (State == PlayerState.Aim && s != PlayerState.Aim) ResumeLockAfterAim(s != PlayerState.Dead);
             State = s;
             stateTime = 0f;
         }
@@ -450,8 +482,8 @@ namespace TungSahur.Player
         void UpdateVisualRoll()
         {
             // lean around the feet (the dodge roll is the pack's Roll01 clip, not a procedural spin)
-            visualRoot.localRotation = Quaternion.Euler(leanPitch, 0, leanRoll);
-            visualRoot.localPosition = Vector3.zero;
+            visualRoot.localRotation = Quaternion.Euler(leanPitch, 0, leanRoll + SpinVisualLean);
+            visualRoot.localPosition = SpinVisualLift;
             float s = squash;
             visualRoot.localScale = new Vector3(1f + s * 0.6f, 1f - s, 1f + s * 0.6f);
         }

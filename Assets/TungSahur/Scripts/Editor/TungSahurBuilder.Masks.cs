@@ -622,7 +622,8 @@ namespace TungSahur.EditorTools
             model.SetActive(false);
 
             // ---- controller + mask system
-            pc.rigs = new[] { elder, croc };
+            var shark = AttachSharkForm(visual, pc);
+            pc.rigs = shark != null ? new[] { elder, croc, shark } : new[] { elder, croc };
             pc.baseForm = AssetDatabase.LoadAssetAtPath<FormData>(FormElderPath);
             pc.bowData = AssetDatabase.LoadAssetAtPath<BowData>(BowDataPath);
             pc.shellPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShellPrefabPath)?.GetComponent<CannonShell>();
@@ -631,6 +632,7 @@ namespace TungSahur.EditorTools
             ms.player = pc;
             ms.slots = new MaskData[4];
             ms.slots[0] = AssetDatabase.LoadAssetAtPath<MaskData>(MaskAlligatorPath);
+            ms.slots[1] = AssetDatabase.LoadAssetAtPath<MaskData>(MaskSharkPath);
         }
 
         /// <summary>
@@ -638,16 +640,19 @@ namespace TungSahur.EditorTools
         /// place the cannon at the right fist with the barrel straight down the character's forward (so the
         /// shells leave along the aim), and store that pose relative to the hand.
         /// </summary>
-        static void CalibrateCannonGrip(Transform handSocket)
+        static void CalibrateCannonGrip(Transform handSocket) => CalibrateCannonGrip(handSocket, CrocModelPath, "Combat/Bazooka/HumanM@Bazooka_Aim01");
+
+        /// <summary>Shouldered-weapon grip on any form model, sampled on the given aim clip (cannon: Bazooka, crossbow: Rifle).</summary>
+        static void CalibrateCannonGrip(Transform handSocket, string modelPath, string aimClip)
         {
-            var src = AssetDatabase.LoadAssetAtPath<GameObject>(CrocModelPath);
+            var src = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
             var tmp = (GameObject)Object.Instantiate(src);
             tmp.hideFlags = HideFlags.DontSave;
             try
             {
                 var a = tmp.GetComponent<Animator>() ?? tmp.AddComponent<Animator>();
-                a.avatar = AssetDatabase.LoadAllAssetsAtPath(CrocModelPath).OfType<Avatar>().First();
-                var clip = K("Combat/Bazooka/HumanM@Bazooka_Aim01");
+                a.avatar = AssetDatabase.LoadAllAssetsAtPath(modelPath).OfType<Avatar>().First();
+                var clip = K(aimClip);
                 clip.SampleAnimation(tmp, clip.length * 0.5f);
                 var rh = a.GetBoneTransform(HumanBodyBones.RightHand);
                 var lh = a.GetBoneTransform(HumanBodyBones.LeftHand);
@@ -658,7 +663,7 @@ namespace TungSahur.EditorTools
                 Quaternion want = Quaternion.LookRotation(fwd, Vector3.up);
                 handSocket.localPosition = rh.InverseTransformPoint(gripPos);
                 handSocket.localRotation = Quaternion.Inverse(rh.rotation) * want;
-                Debug.Log($"[TungSahur] Cannon grip calibrated: hand->left hand {toLeft:F2}, local {handSocket.localPosition:F3} / {handSocket.localEulerAngles:F1}");
+                Debug.Log($"[TungSahur] Shouldered grip ({System.IO.Path.GetFileNameWithoutExtension(modelPath)}) calibrated: hand->left hand {toLeft:F2}, local {handSocket.localPosition:F3} / {handSocket.localEulerAngles:F1}");
             }
             finally { Object.DestroyImmediate(tmp); }
         }
@@ -680,15 +685,17 @@ namespace TungSahur.EditorTools
         /// alligator's right hand, and measure where the left fist and its grip axis sit, for TwoHandGrip.
         /// The alligator's wider shoulders leave its left fist ~35 cm off the shaft, so the IK does the rest.
         /// </summary>
-        public static void CalibrateHammerGrip(Transform hammer, TwoHandGrip grip)
+        public static void CalibrateHammerGrip(Transform hammer, TwoHandGrip grip) => CalibrateHammerGrip(hammer, grip, CrocModelPath);
+
+        public static void CalibrateHammerGrip(Transform hammer, TwoHandGrip grip, string modelPath)
         {
-            var croc = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(CrocModelPath));
+            var croc = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(modelPath));
             var human = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PreviewRenderer.ReferenceModelPath));
             croc.hideFlags = human.hideFlags = HideFlags.DontSave;
             try
             {
                 var ca = croc.GetComponent<Animator>() ?? croc.AddComponent<Animator>();
-                ca.avatar = AssetDatabase.LoadAllAssetsAtPath(CrocModelPath).OfType<Avatar>().First();
+                ca.avatar = AssetDatabase.LoadAllAssetsAtPath(modelPath).OfType<Avatar>().First();
                 var ha = human.GetComponent<Animator>();
                 var prop = human.GetComponentsInChildren<Transform>(true).First(t => t.name == "B-handProp.R");
                 var clip = K("Combat/2H/HumanM@CombatIdle2H01");

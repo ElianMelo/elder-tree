@@ -937,5 +937,121 @@ namespace TungSahur.EditorTools
             for (int i = 0; i < n; i++) o[i] *= 0.8f / m;
             return Write("sfx_dig_loop", o, loop: true);
         }
+
+        // ================================================================== Shark Mask set
+        /// <summary>Long blade cutting air: a thin, high band of noise that sweeps up fast, with a ring of steel.</summary>
+        public static AudioClip[] BladeWhoosh()
+        {
+            var a = new AudioClip[3];
+            for (int v = 0; v < 3; v++)
+            {
+                var b = Buf(0.5f);
+                Whoosh(b, 0.42f, 1f, 900f + v * 120, 4800f, 0.38f, 1300 + v, 0.35f);
+                Whoosh(b, 0.42f, 0.35f, 300f, 900f, 0.45f, 1310 + v, 0.6f);                         // body of the swing
+                Modal(b, 0.14f, new[] { (2350f + v * 90, 0.06f, 0.18f), (3720f, 0.04f, 0.12f) });   // faint ring of the edge
+                a[v] = Write($"sfx_blade_whoosh_{v}", Normalize(b, 0.8f));
+            }
+            return a;
+        }
+
+        /// <summary>Edge biting in: a sharp "shk" of hiss, a wet thud under it and a short steel ring.</summary>
+        public static AudioClip[] BladeHit()
+        {
+            var a = new AudioClip[3];
+            for (int v = 0; v < 3; v++)
+            {
+                var b = Buf(0.6f);
+                NoiseBurst(b, 0f, 0.09f, 1f, 9000f, 3200f, 0.5f, 1320 + v, mode: "high", curve: 1.6f);   // slice
+                NoiseBurst(b, 0f, 0.14f, 0.8f, 900f, 180f, 0.7f, 1330 + v, curve: 2f);                   // flesh thud
+                Modal(b, 0.005f, new[] { (1870f + v * 60, 0.25f, 0.16f), (2960f, 0.16f, 0.09f), (4410f, 0.1f, 0.05f) });
+                a[v] = Write($"sfx_blade_hit_{v}", Normalize(b, 0.85f));
+            }
+            return a;
+        }
+
+        /// <summary>Vines parting: a fibrous snap then a leafy swish.</summary>
+        public static AudioClip[] VineCut()
+        {
+            var a = new AudioClip[3];
+            for (int v = 0; v < 3; v++)
+            {
+                var b = Buf(0.7f);
+                var r = new Rng(1340 + v);
+                for (int k = 0; k < 5; k++)
+                {
+                    float at = k * 0.012f + Mathf.Abs(r.Next()) * 0.01f;
+                    NoiseBurst(b, at, 0.02f, 0.8f - k * 0.1f, 5200f, 2600f, 0.5f, 1350 + k + v * 10, mode: "band", curve: 2f);   // fibres snapping
+                }
+                Modal(b, 0f, new[] { (310f + v * 30, 0.45f, 0.05f), (720f, 0.25f, 0.03f) });                                   // green stalk pop
+                NoiseBurst(b, 0.05f, 0.5f, 0.45f, 6500f, 1800f, 0.4f, 1360 + v, mode: "band", curve: 1.5f);                     // leaves swish
+                a[v] = Write($"sfx_vine_cut_{v}", Normalize(b, 0.75f));
+            }
+            return a;
+        }
+
+        /// <summary>A blunt blow into a curtain of vines: leaves thrash, nothing gives.</summary>
+        public static AudioClip[] VineRustle()
+        {
+            var a = new AudioClip[2];
+            for (int v = 0; v < 2; v++)
+            {
+                var b = Buf(0.7f);
+                NoiseBurst(b, 0f, 0.6f, 0.8f, 5200f, 1500f, 0.45f, 1370 + v, mode: "band", attack: 0.02f, curve: 1.4f);
+                NoiseBurst(b, 0f, 0.1f, 0.6f, 600f, 160f, 0.7f, 1380 + v, curve: 2f);
+                a[v] = Write($"sfx_vine_rustle_{v}", Normalize(b, 0.65f));
+            }
+            return a;
+        }
+
+        /// <summary>Crossbow loosing: a hard prod slap, the string's thrum, the bolt hissing away.</summary>
+        public static AudioClip[] CrossbowFire()
+        {
+            var a = new AudioClip[2];
+            for (int v = 0; v < 2; v++)
+            {
+                var b = Buf(0.8f);
+                NoiseBurst(b, 0f, 0.03f, 1f, 6000f, 2000f, 0.4f, 1390 + v, mode: "band");                 // trigger snap
+                Modal(b, 0f, new[] { (78f + v * 6, 1f, 0.16f), (157f, 0.6f, 0.1f), (236f, 0.35f, 0.07f), (520f, 0.2f, 0.03f) },
+                    pitchDrop: 0.4f, dropTime: 0.01f);                                                      // prod slap + string
+                NoiseBurst(b, 0f, 0.08f, 0.8f, 800f, 140f, 0.6f, 1400 + v);                               // stock thump into the shoulder
+                var w = Buf(0.8f);
+                Whoosh(w, 0.36f, 0.7f, 2200f, 6200f, 0.1f, 1410 + v, 0.4f);
+                for (int i = 0; i < b.Length; i++) b[i] += w[i];
+                a[v] = Write($"sfx_crossbow_fire_{v}", Normalize(b, 0.85f));
+            }
+            return a;
+        }
+
+        /// <summary>Cranking the string back: ratchet clicks speeding up, then the latch catching.</summary>
+        public static AudioClip[] CrossbowReload()
+        {
+            var a = new AudioClip[1];
+            var b = Buf(1.1f);
+            float at = 0.05f;
+            for (int k = 0; k < 9; k++)
+            {
+                Modal(b, at, new[] { (1650f + (k % 2) * 140f, 0.35f, 0.012f), (3100f, 0.2f, 0.008f) });
+                NoiseBurst(b, at, 0.012f, 0.4f, 7000f, 4000f, 0.5f, 1420 + k, mode: "band");
+                at += Mathf.Lerp(0.1f, 0.06f, k / 8f);
+            }
+            Modal(b, at + 0.04f, new[] { (420f, 0.8f, 0.06f), (1290f, 0.5f, 0.04f), (2650f, 0.3f, 0.03f) });   // latch clack
+            NoiseBurst(b, at + 0.04f, 0.04f, 0.6f, 5000f, 2000f, 0.5f, 1440, mode: "band");
+            a[0] = Write("sfx_crossbow_reload_0", Normalize(b, 0.7f));
+            return a;
+        }
+
+        /// <summary>One turn of the spin: a deep swirling whoosh with a whistle riding on top.</summary>
+        public static AudioClip[] SpinWhirl()
+        {
+            var a = new AudioClip[2];
+            for (int v = 0; v < 2; v++)
+            {
+                var b = Buf(0.5f);
+                Whoosh(b, 0.45f, 1f, 260f + v * 30, 1900f, 0.5f, 1450 + v, 0.45f);
+                Whoosh(b, 0.45f, 0.4f, 1800f, 3600f, 0.55f, 1460 + v, 0.25f);
+                a[v] = Write($"sfx_spin_whirl_{v}", Normalize(b, 0.8f));
+            }
+            return a;
+        }
     }
 }

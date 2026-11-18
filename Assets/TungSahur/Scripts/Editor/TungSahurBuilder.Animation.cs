@@ -161,6 +161,30 @@ namespace TungSahur.EditorTools
             Act("Hammer_H3", K("Combat/2H/HumanM@Attack2H04"));
             Act("Hammer_Run", K("Combat/Polearm/HumanM@AttackPolearm02"));
             Act("Hammer_Dodge", K("Combat/Polearm/HumanM@AttackPolearm01"));
+            // Shark Mask long sword (Monster Hunter style). Light alternates the cut direction: kesa right-to-left,
+            // the same kesa mirrored (left-to-right), thrust, rising right-to-left. Heavy is
+            // katana work with none of the hammer's heavies: iai (stance with the hand on the hilt at the hip, then the
+            // blade is drawn up and cut down across with a deep lunge), helm-splitter, kesa from the upper right, roundslash.
+            // Sweep directions and edge leads measured on the shark rig.
+            Act("Sword_L1", K("Combat/2H/HumanM@Attack2H01"));
+            Act("Sword_L2", K("Combat/2H/HumanM@Attack2H01")).mirror = true;   // Light 1 mirrored: the same kesa, left to right
+            Act("Sword_L3", K("Combat/Polearm/HumanM@AttackPolearm01"));
+            Act("Sword_L4", K("Combat/2H/HumanM@Attack2H03"));
+            Act("Sword_IaiStance", K("Misc/Unsheathe/HumanM@UnsheatheHips01_R"));
+            Act("Sword_H1", K("Combat/Polearm/HumanM@AttackPolearm02"));
+            Act("Sword_H2", K("Combat/2H/HumanM@Attack2H02"));
+            Act("Sword_H3", K("Work/Chopping/HumanM@TreeChopping01 - Loop"));
+            Act("Sword_H4", K("Combat/Polearm/HumanM@AttackPolearm04"));
+            Act("Sword_Run", K("Combat/Polearm/HumanM@AttackPolearm02"));
+            Act("Sword_Dodge", K("Combat/2H/HumanM@Attack2H03"));
+            // spin special: held poses per turn (blade low / at the waist / overhead)
+            Act("Sword_Spin", K("Combat/2H/HumanM@Attack2H03"));
+            Act("Sword_SpinMid", K("Combat/Polearm/HumanM@AttackPolearm04"));
+            Act("Sword_SpinHigh", K("Combat/Polearm/HumanM@AttackPolearm04"));
+            // Shark Mask crossbow: shouldered like a rifle, cranked between bolts
+            Act("CrossbowAim", K("Combat/Rifle/HumanM@Rifle_Aim01"));
+            Act("CrossbowShoot", K("Combat/Rifle/HumanM@Rifle_Aim01_Shoot01"));
+            Act("CrossbowReload", K("Combat/Rifle/HumanM@Rifle_Reload01"));
             // Alligator Mask: Sky Bombardment (two-handed overhead hurl), the shoulder cannon, transformations
             Act("SpecialHold", K("Combat/Thrown/Rock/HumanM@ThrowBigRock01 - Hold"));
             Act("SpecialThrow", K("Combat/Thrown/Rock/HumanM@ThrowBigRock01"));

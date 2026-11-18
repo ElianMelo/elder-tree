@@ -1,4 +1,5 @@
 using TungSahur.Combat;
+using TungSahur.Equipment;
 using UnityEngine;
 
 namespace TungSahur.Enemies
@@ -24,6 +25,10 @@ namespace TungSahur.Enemies
         public abstract bool IsAlive { get; }
         public abstract bool IsStaggered { get; }
         public Transform Root => transform;
+
+        [Header("Reward")]
+        [Tooltip("Mask that rises from the wreck when this boss is felled, unless the player already owns it.")]
+        public MaskData rewardMask;
 
         public event System.Action<BossBase, DamageInfo, bool> Damaged;
         public event System.Action<BossBase> Felled;

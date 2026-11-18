@@ -728,3 +728,10 @@
     font-size: 15px;
     color: rgb(216, 180, 106);
 }
+
+/* long sword spirit gauge (Shark Mask) */
+.bar--spirit { padding: 1px; }
+.bar--spirit .bar__fill { background-color: rgb(158, 199, 219); }
+.bar--spirit .bar__chip { background-color: rgb(220, 236, 244); }
+.spirit__pips { position: absolute; right: -40px; top: 0px; flex-direction: row; }
+.spirit__pip { width: 8px; height: 8px; margin-left: 3px; border-width: 1px; border-color: rgba(216, 178, 107, 0.6); rotate: 45deg; background-color: rgba(26, 26, 30, 0.8); }

@@ -17,6 +17,10 @@ namespace TungSahur.Combat
         public int breakPower;
         /// <summary>Damage came from an explosion (no per-swing hit-stop, splash feedback).</summary>
         public bool explosive;
+        /// <summary>Cuts cuttables (vines...) whose requiredCut is at most this (0 = blunt).</summary>
+        public int cutPower;
+        /// <summary>How wide the cut is across a cuttable from <see cref="point"/> (metres, horizontal).</summary>
+        public float cutWidth;
         public GameObject source;
     }
 

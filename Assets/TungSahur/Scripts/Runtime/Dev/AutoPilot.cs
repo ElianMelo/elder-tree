@@ -147,6 +147,17 @@ namespace TungSahur.Dev
                         break;
                     }
                     case "god": PlayerController.DevNoDamage = F(1, 1) > 0.5f; break;
+                    case "wear":
+                    {
+                        // "wear shark" / "wear alligator" / "wear none": instant form swap (no ownership needed)
+                        var ms = Masks.MaskSystem.Instance;
+                        if (ms == null) break;
+                        Equipment.MaskData m = null;
+                        foreach (var sm in ms.slots) if (sm != null && p.Length > 1 && sm.id == p[1]) m = sm;
+                        ms.SetWorn(m, true);
+                        break;
+                    }
+                    case "spirit": PlayerController.Instance?.DevFillSpirit(p.Length > 1 ? (int)F(1, 0) : -1); break;
                     case "hurt":
                     {
                         var t = PlayerController.Instance != null ? PlayerController.Instance.lockOn.Current : null;

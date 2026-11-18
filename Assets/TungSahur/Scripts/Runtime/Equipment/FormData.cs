@@ -1,9 +1,10 @@
+using TungSahur.Audio;
 using TungSahur.Combat;
 using UnityEngine;
 
 namespace TungSahur.Equipment
 {
-    public enum RangedKind { Bow, Cannon }
+    public enum RangedKind { Bow, Cannon, Crossbow }
 
     /// <summary>
     /// A body the player can be: the Elder Tree (base) or a mask form. Holds the loadout (moveset,
@@ -23,8 +24,9 @@ namespace TungSahur.Equipment
         public RangedKind rangedKind = RangedKind.Bow;
         public BowData bow;
         public CannonData cannon;
-        [Tooltip("Light + heavy together. Empty = the moveset's skill attack.")]
-        public SpecialAttackData special;
+        public CrossbowData crossbow;
+        [Tooltip("Light + heavy together (Sky Bombardment, Spin Slash...). Empty = the moveset's skill attack.")]
+        public SpecialData special;
 
         [Header("Body")]
         public float moveSpeedMultiplier = 1f;
@@ -32,5 +34,10 @@ namespace TungSahur.Equipment
         [Range(0.2f, 1.5f)] public float damageTakenMultiplier = 1f;
         [Tooltip("Light blows don't make this body flinch (it still takes the damage).")]
         public bool ignoreLightFlinch;
+
+        [Header("Voice")]
+        [Tooltip("Roar when this body appears (transformations, the end of the mask cinematic).")]
+        public Sfx roar = Sfx.CrocRoar;
+        public float roarPitch = 1.35f;
     }
 }

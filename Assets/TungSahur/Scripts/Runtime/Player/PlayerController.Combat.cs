@@ -21,7 +21,9 @@ namespace TungSahur.Player
         bool charging, chargeLocked;
         bool windowOpen, slamDone;
         Queued queued;
-        float prevLunge, lungeScale = 1f;
+        float prevLunge, lungeScale = 1f, prevSpin;
+        bool inStance;
+        float stanceT;
         int hitsThisSwing;
 
         public event System.Action<AttackData> AttackStarted;
@@ -55,6 +57,8 @@ namespace TungSahur.Player
             hitsThisSwing = 0;
             blastDone = false;
             prevLunge = LungeCurve(a, attackT);
+            prevSpin = SpinCurve(a, attackT);
+            spiritedSwing = IsHeavy(a) && TrySpendSpirit();
 
             // pick a direction: lock-on snaps to the target, otherwise the stick decides
             if (lockOn.Current != null) FaceInstant(lockOn.Current.transform.position - transform.position);
@@ -62,7 +66,7 @@ namespace TungSahur.Player
 
             // don't lunge through a target that's already in our face
             lungeScale = 1f;
-            var near = NearestTargetAhead(3.5f);
+            var near = a.lungeDistance > 0f ? NearestTargetAhead(3.5f) : null;   // stepping back (fade slash): never clamped
             if (near != null)
             {
                 float d = FlatDistance(near.position, transform.position);
@@ -70,15 +74,31 @@ namespace TungSahur.Player
             }
 
             motor.SetPlanarVelocityImmediate(fromRun && a == moveset.runningAttack ? motor.PlanarVelocity * 0.5f : Vector3.zero);
-            float fade = a.startOffset > 0f ? 0.12f : 0.07f;
-            animator.CrossFadeInFixedTime(a.state, fade, 0, a.startOffset * a.clipLength);
-            animator.SetFloat(HActionSpeed, a.windupSpeed);
+            inStance = !string.IsNullOrEmpty(a.stanceState);
+            stanceT = 0f;
+            if (inStance)
+            {
+                // settle into the stance pose and hold it; the swing is drawn from it (UpdateStance)
+                chargeLocked = true;
+                animator.CrossFadeInFixedTime(a.stanceState, 0.1f, 0, a.stanceNorm);
+                animator.SetFloat(HActionSpeed, 0f);
+            }
+            else
+            {
+                float fade = a.startOffset > 0f ? 0.12f : 0.07f;
+                animator.CrossFadeInFixedTime(a.state, fade, 0, a.startOffset * a.clipLength);
+                animator.SetFloat(HActionSpeed, a.windupSpeed);
+            }
             AttackStarted?.Invoke(a);
             return true;
         }
 
         static float LungeCurve(AttackData a, float t) =>
             Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(a.lungeStart, a.lungeEnd, t));
+
+        /// <summary>0..1 share of a roundslash turn done at normalized time t (eases in and out around the hit window).</summary>
+        static float SpinCurve(AttackData a, float t) =>
+            a.spinDegrees == 0f ? 0f : Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(a.hitStart - 0.08f, a.hitEnd + 0.06f, t));
 
         static float FlatDistance(Vector3 a, Vector3 b) { a.y = 0; b.y = 0; return Vector3.Distance(a, b); }
 
@@ -97,9 +117,57 @@ namespace TungSahur.Player
             return best;
         }
 
+        /// <summary>
+        /// Iai stance: the pose holds (hand on the hilt) for stanceTime; holding heavy keeps it and charges. On
+        /// release the blade is drawn: a fast cross-fade straight into the swing.
+        /// </summary>
+        void UpdateStance(AttackData a, float dt)
+        {
+            stanceT += dt;
+            animator.SetFloat(HActionSpeed, 0f);
+            motor.SetDesiredPlanarVelocity(Vector3.zero, 12f, dt);
+            if (lockOn.Current != null) FaceTowards(lockOn.Current.transform.position, a.trackTurnSpeed, dt);
+            else if (moveInputMag > 0.2f) RotateTowards(moveInputWorld, a.trackTurnSpeed * 0.6f, dt);
+            if (input.GameplayEnabled && input.ConsumeDodge())
+            {
+                inStance = false;
+                EndSwing();
+                if (TryDodgeDirect()) return;
+            }
+            bool hold = a.chargeable && input.HeavyHeld && chargeTime < a.chargeMaxTime;
+            if (stanceT >= a.stanceTime && hold)
+            {
+                if (!charging)
+                {
+                    charging = true;
+                    AudioManager.Play(Sfx.ChargeUp, transform.position, 0.7f, 1.15f);
+                }
+                chargeTime += dt;
+                squash = Mathf.Max(squash, 0.05f * ChargeNormalized);
+                if (Random.value < dt * 20f) input.Rumble(0.05f, 0.18f * ChargeNormalized, 0.06f);
+                return;
+            }
+            if (stanceT < a.stanceTime) return;
+
+            // draw!
+            inStance = false;
+            if (charging)
+            {
+                charging = false;
+                AudioManager.Play(Sfx.ChargeRelease, transform.position, 0.6f + 0.4f * ChargeNormalized, 1.1f);
+                CameraDirector.Instance?.FovKick(-2.5f * ChargeNormalized);
+                input.Rumble(0.4f * ChargeNormalized, 0.6f, 0.1f);
+            }
+            animator.CrossFadeInFixedTime(a.state, a.drawFade, 0, a.startOffset * a.clipLength);
+            animator.SetFloat(HActionSpeed, a.windupSpeed);
+            AudioManager.Play(Sfx.BladeWhoosh, clubTip.position, 0.7f, 1.3f);
+            stateTime = 0f;
+        }
+
         void UpdateAttack(float dt)
         {
             var a = attack;
+            if (inStance) { UpdateStance(a, dt); return; }
             float speed = attackT < a.hitStart ? a.windupSpeed : attackT < a.hitEnd ? a.activeSpeed : a.recoverySpeed;
 
             // ---- charge: hold the heavy button at the top of the swing
@@ -152,6 +220,14 @@ namespace TungSahur.Player
                 else if (moveInputMag > 0.2f) RotateTowards(moveInputWorld, a.trackTurnSpeed * 0.6f, dt);
             }
 
+            // ---- roundslash: the body turns through the swing
+            if (a.spinDegrees != 0f)
+            {
+                float sc = SpinCurve(a, attackT);
+                transform.rotation = Quaternion.AngleAxis((sc - prevSpin) * a.spinDegrees, Vector3.up) * transform.rotation;
+                prevSpin = sc;
+            }
+
             // ---- lunge
             float lc = LungeCurve(a, attackT);
             motor.AddDisplacement(transform.forward * (lc - prevLunge) * a.lungeDistance * lungeScale);
@@ -165,13 +241,19 @@ namespace TungSahur.Player
                 weapon.Begin();
                 if (trail) trail.Emitting = true;
                 bool heavy = a.weight != ImpactWeight.Light;
-                AudioManager.Play(heavy ? Sfx.WhooshHeavy : Sfx.WhooshLight, clubTip.position, heavy ? 0.9f : 0.75f, charging ? 0.9f : 1f);
+                if (Melee != null && Melee.slashing)
+                {
+                    BeginSlash();
+                    AudioManager.Play(Sfx.BladeWhoosh, clubTip.position, heavy ? 1f : 0.85f, heavy ? 0.85f : 1f);
+                }
+                else AudioManager.Play(heavy ? Sfx.WhooshHeavy : Sfx.WhooshLight, clubTip.position, heavy ? 0.9f : 0.75f, charging ? 0.9f : 1f);
             }
             if (windowOpen && weapon.Active) CheckGroundBlast();
             if (windowOpen && weapon.Active && attackT >= a.hitEnd)
             {
                 weapon.End();
                 if (trail) trail.Emitting = false;
+                if (slashArc) slashArc.End();
             }
             if (a.slamRadius > 0f && !slamDone && attackT >= a.hitEnd - 0.03f && motor.Grounded)
             {
@@ -242,8 +324,10 @@ namespace TungSahur.Player
 
         void EndSwing()
         {
+            inStance = false;
             if (weapon) weapon.End();
             if (trail) trail.Emitting = false;
+            if (slashArc) slashArc.End();
             motor.GravityScale = 1f;
             charging = false;
         }
@@ -258,7 +342,7 @@ namespace TungSahur.Player
             var melee = Melee;
             bool charged = chargeTime > 0.05f;
             bool critical = target is IStaggerable st && st.IsStaggered;
-            float dmgMul = melee != null ? melee.damageMultiplier : 1f;
+            float dmgMul = (melee != null ? melee.damageMultiplier : 1f) * SpiritDamageMultiplier;
             float poiseMul = melee != null ? melee.poiseMultiplier : 1f;
             Vector3 dir = target.Root.position - transform.position;
             dir.y = 0;
@@ -269,6 +353,8 @@ namespace TungSahur.Player
                 critical = critical,
                 poiseDamage = attack.poiseDamage * poiseMul * ChargeMultiplier,
                 breakPower = melee != null ? melee.breakPower : 0,
+                cutPower = melee != null && melee.slashing ? melee.cutPower : 0,
+                cutWidth = melee != null ? melee.cutWidth : 0f,
                 point = point,
                 direction = dir,
                 weight = attack.weight,
@@ -285,7 +371,15 @@ namespace TungSahur.Player
                 }
                 return;
             }
+            if (target is World.Cuttable)
+            {
+                // vines part under the edge: a small bite of hit-stop, no spirit for cutting plants
+                TimeDirector.HitStop(0.035f);
+                input.Rumble(0.15f, 0.3f, 0.06f);
+                return;
+            }
             hitsThisSwing++;
+            GainSpirit(attack, IsHeavy(attack));
             HitLanded?.Invoke(info, target);
             TryWeaponBlast(point, target);
 
@@ -302,9 +396,21 @@ namespace TungSahur.Player
             input.Rumble(attack.rumbleLow * k, attack.rumbleHigh * k, 0.08f + attack.hitStop);
 
             Vector3 swing = weapon.TipWorld - weapon.BaseWorld;
-            FXManager.Spawn(FXType.HitSpark, point, Quaternion.LookRotation(-dir + Vector3.up * 0.3f), attack.weight == ImpactWeight.Light ? 0.8f : 1.2f);
-            FXManager.Spawn(FXType.WoodChips, point, Quaternion.LookRotation(dir + swing.normalized * 0.3f + Vector3.up * 0.4f));
-            AudioManager.Play(Sfx.Knock, point, 1f, attack.weight == ImpactWeight.Light ? 1.05f : 0.85f);
+            if (melee != null && melee.slashing)
+            {
+                // the edge bites: a streak of sparks along the cut instead of wood chips
+                Vector3 cutDir = weapon.TipWorld - slashPrevTip;
+                if (cutDir.sqrMagnitude < 1e-4f) cutDir = transform.right;
+                FXManager.Spawn(FXType.SlashHit, point, Quaternion.LookRotation(cutDir.normalized, -dir), attack.weight == ImpactWeight.Light ? 0.9f : 1.25f);
+                FXManager.Spawn(FXType.HitSpark, point, Quaternion.LookRotation(-dir + Vector3.up * 0.3f), 0.6f);
+                AudioManager.Play(Sfx.BladeHit, point, 1f, attack.weight == ImpactWeight.Light ? 1.05f : 0.9f);
+            }
+            else
+            {
+                FXManager.Spawn(FXType.HitSpark, point, Quaternion.LookRotation(-dir + Vector3.up * 0.3f), attack.weight == ImpactWeight.Light ? 0.8f : 1.2f);
+                FXManager.Spawn(FXType.WoodChips, point, Quaternion.LookRotation(dir + swing.normalized * 0.3f + Vector3.up * 0.4f));
+                AudioManager.Play(Sfx.Knock, point, 1f, attack.weight == ImpactWeight.Light ? 1.05f : 0.85f);
+            }
             if (attack.weight != ImpactWeight.Light || charged) AudioManager.Play(Sfx.ImpactHeavy, point, 0.9f);
         }
 

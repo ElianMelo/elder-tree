@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d199ce37171a12044956d441b3dacce4, type: 3}
+  m_Name: Melee_TralalaLongSword
+  m_EditorClassIdentifier: TungSahur.Runtime::TungSahur.Equipment.MeleeWeaponData
+  displayName: Tralala Long Sword
+  icon: {fileID: 2800000, guid: 880213e19c2ff244784a286219917374, type: 3}
+  damageMultiplier: 1
+  poiseMultiplier: 1
+  hitStopMultiplier: 0.85
+  shakeMultiplier: 1
+  explodeOnHit: 0
+  explosionRadius: 2.2
+  explosionDamage: 40
+  explosionPoise: 18
+  heavyExplosionScale: 1.35
+  explodeOnGround: 1
+  explosionFxScale: 0.75
+  slashing: 1
+  cutPower: 1
+  cutWidth: 2.4
+  slashColor: {r: 0.78, g: 0.93, b: 1, a: 0.9}
+  slashEdgeColor: {r: 0.25, g: 0.62, b: 0.78, a: 0.6}
+  slashArcWidth: 1
+  spiritGauge: 1
+  spiritPerHit: 14
+  spiritPerHeavyHit: 6
+  spiritAttackCost: 22
+  spiritDamageBonus: 1.25
+  spiritLevelDamage:
+  - 1.05
+  - 1.1
+  - 1.2
+  spiritLevelDuration: 45
+  spiritDrainPerSec: 3
+  spiritLevelColors:
+  - {r: 0.92, g: 0.95, b: 1, a: 0.95}
+  - {r: 1, g: 0.82, b: 0.32, a: 0.95}
+  - {r: 1, g: 0.28, b: 0.2, a: 0.95}
+  breakPower: 0

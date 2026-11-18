@@ -31,6 +31,8 @@ namespace TungSahur.Masks
         public float skipAfter = 2.5f;
 
         public bool Playing { get; private set; }
+        /// <summary>The new body's voice (alligator roar, shark tra-la-la...).</summary>
+        Sfx Roar => mask != null && mask.form != null ? mask.form.roar : Sfx.CrocRoar;
 
         Camera cam;
         CinemachineBrain brain;
@@ -198,7 +200,7 @@ namespace TungSahur.Masks
                 SetVisible(true, false);
                 hud?.Flash(0.6f);
                 AudioManager.Play2D(Sfx.MaskScream, 1f);
-                AudioManager.Play(Sfx.CrocRoar, headPos(), 0.5f, 0.6f);
+                AudioManager.Play(Roar, headPos(), 0.5f, 0.6f);
                 const float agony = 3.2f;
                 t = 0f;
                 int shot = -1;
@@ -281,7 +283,7 @@ namespace TungSahur.Masks
             if (!skip)
             {
                 yield return Wait(0.25f);
-                AudioManager.Play(Sfx.CrocRoar, P + Vector3.up * 1.6f, 1f, 0.95f);
+                AudioManager.Play(Roar, P + Vector3.up * 1.6f, 1f, 0.95f);
                 CameraDirector.Instance?.Shake(0.5f, Vector3.down);
                 t = 0f;
                 bool card = false;

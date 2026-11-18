@@ -66,6 +66,31 @@ namespace TungSahur.Combat
         public float slamRadius;
         public float slamDamageScale = 0.6f;
 
+        [Header("Spin (roundslash)")]
+        [Tooltip("Degrees the body turns through the swing (0 = none). The turn runs from just before hitStart to just after hitEnd.")]
+        public float spinDegrees;
+
+        [Header("Grip")]
+        [Tooltip("Two-handed weapons: the off hand lets go of the handle for this swing.")]
+        public bool oneHanded;
+        [Tooltip("Degrees the weapon rolls about its own axis for this swing (blended in during the wind-up), so a " +
+                 "single-edged blade leads the cut with its edge. Measured per clip on the rig.")]
+        public float bladeRoll;
+
+        [Header("Stance (iai)")]
+        [Tooltip("Optional pose held before the swing (e.g. hand on the hilt at the hip). Empty = no stance.")]
+        public string stanceState = "";
+        [Tooltip("Normalized time of the stance clip that is held.")]
+        public float stanceNorm;
+        [Tooltip("Seconds the stance holds on a tap. Holding heavy keeps it (charging, if chargeable) up to chargeMaxTime.")]
+        public float stanceTime = 0.2f;
+        [Tooltip("Cross-fade from the stance into the swing: short = an explosive draw.")]
+        public float drawFade = 0.07f;
+
+        [Header("Spirit gauge (long sword)")]
+        [Tooltip("A spirited hit with this attack raises the spirit gauge level (the roundslash).")]
+        public bool levelsSpirit;
+
         [Header("Chain")]
         public string next = "";
     }

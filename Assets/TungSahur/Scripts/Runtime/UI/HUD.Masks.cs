@@ -87,6 +87,7 @@ namespace TungSahur.UI
             var f = player.CurrentForm;
             Texture2D meleeIcon = f != null && f.melee != null && f.melee.icon != null ? f.melee.icon : clubIcon;
             Texture2D rangedIcon = f != null && f.rangedKind == RangedKind.Cannon && f.cannon != null && f.cannon.icon != null ? f.cannon.icon
+                : f != null && f.rangedKind == RangedKind.Crossbow && f.crossbow != null && f.crossbow.icon != null ? f.crossbow.icon
                 : f != null && f.bow != null && f.bow.icon != null ? f.bow.icon : bowIcon;
             var ci = clubSlot?.Q(className: "equip__icon");
             if (ci != null) ci.style.backgroundImage = meleeIcon;
@@ -102,6 +103,7 @@ namespace TungSahur.UI
             {
                 var f = player != null ? player.CurrentForm : null;
                 if (f != null && f.rangedKind == RangedKind.Cannon && f.cannon != null) return f.cannon.displayName;
+                if (f != null && f.rangedKind == RangedKind.Crossbow && f.crossbow != null) return f.crossbow.displayName;
                 if (f != null && f.bow != null) return f.bow.displayName;
                 return "Sahur Bow";
             }

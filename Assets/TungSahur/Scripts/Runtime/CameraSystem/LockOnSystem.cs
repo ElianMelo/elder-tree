@@ -72,6 +72,10 @@ namespace TungSahur.CameraSystem
 
         public void ForceRelease() => Set(null);
 
+        /// <summary>Could this target be held right now (alive, targetable, inside the break range)?</summary>
+        public bool CanHold(Targetable t) =>
+            t != null && t.CanBeTargeted && eye != null && Vector3.Distance(eye.position, t.LockPosition) <= breakRange * t.rangeScale;
+
         void Set(Targetable t)
         {
             if (Current == t) return;

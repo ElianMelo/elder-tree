@@ -19,8 +19,11 @@ MonoBehaviour:
   rangedKind: 0
   bow: {fileID: 11400000, guid: 8d56d5ce9eb73864fa390afe11a2e549, type: 2}
   cannon: {fileID: 0}
+  crossbow: {fileID: 0}
   special: {fileID: 0}
   moveSpeedMultiplier: 1
   rollDistanceMultiplier: 1
   damageTakenMultiplier: 1
   ignoreLightFlinch: 0
+  roar: 29
+  roarPitch: 1.35

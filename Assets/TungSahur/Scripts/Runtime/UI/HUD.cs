@@ -34,7 +34,10 @@ namespace TungSahur.UI
         public bool TitleShowing { get; private set; }
 
         VisualElement root;
-        Bar hp, fp, st;
+        Bar hp, fp, st, spirit;
+        VisualElement spiritPips;
+        float spiritFlash;
+        int spiritLevelShown = -1;
         VisualElement reticle, statusBox, equipBox, equipName;
         Label hintsTitle;
         VisualElement hintsBox, hintsList;
@@ -132,6 +135,35 @@ namespace TungSahur.UI
             hp = MakeBar(statusBox, "bar--hp", stats.maxHealth * 0.62f, 19);
             fp = MakeBar(statusBox, "bar--fp", stats.maxMana * 2.2f, 13);
             st = MakeBar(statusBox, "bar--st", stats.maxStamina * 2.6f, 13);
+            // long sword spirit gauge: only shown while the current weapon has one
+            spirit = MakeBar(statusBox, "bar--spirit", stats.maxStamina * 1.9f, 11);
+            spiritPips = El("spirit__pips", spirit.frame);
+            for (int i = 0; i < 3; i++) El("spirit__pip", spiritPips);
+            spirit.frame.style.display = DisplayStyle.None;
+        }
+
+        void TickSpirit(float dt)
+        {
+            bool on = player != null && player.HasSpiritGauge;
+            spirit.frame.style.display = on ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!on) return;
+            TickBar(spirit, player.Spirit / 100f, dt);
+            int lvl = player.SpiritLevel;
+            if (lvl != spiritLevelShown)
+            {
+                if (lvl > spiritLevelShown && spiritLevelShown >= 0) spiritFlash = 1f;
+                spiritLevelShown = lvl;
+                var m = player.Melee;
+                Color c = lvl > 0 && m != null && m.spiritLevelColors.Length > 0 ? m.spiritLevelColors[Mathf.Min(lvl, m.spiritLevelColors.Length) - 1] : new Color(0.62f, 0.78f, 0.86f);
+                spirit.fill.style.backgroundColor = new Color(c.r, c.g, c.b, 1f);
+                for (int i = 0; i < spiritPips.childCount; i++)
+                    spiritPips[i].style.backgroundColor = i < lvl ? new Color(c.r, c.g, c.b, 1f) : new Color(0.1f, 0.1f, 0.12f, 0.8f);
+            }
+            spiritFlash = Mathf.MoveTowards(spiritFlash, 0f, dt * 2f);
+            // the current level's time drains along the frame
+            float k = player.SpiritLevelTime01;
+            spirit.frame.style.borderBottomColor = Color.Lerp(new Color(0.85f, 0.7f, 0.42f, 0.55f), Color.white, spiritFlash);
+            spiritPips.style.opacity = player.SpiritLevel > 0 ? 0.55f + 0.45f * k : 0.6f;
         }
 
         Bar MakeBar(VisualElement parent, string mod, float widthPx, float heightPx)
@@ -202,6 +234,7 @@ namespace TungSahur.UI
                 TickBar(hp, stats.Health / stats.maxHealth, dt);
                 TickBar(fp, stats.Mana / stats.maxMana, dt);
                 TickBar(st, Mathf.Max(0f, stats.Stamina) / stats.maxStamina, dt);
+                TickSpirit(dt);
             }
 
             // reticle

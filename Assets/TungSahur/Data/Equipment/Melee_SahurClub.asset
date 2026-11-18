@@ -25,4 +25,25 @@ MonoBehaviour:
   heavyExplosionScale: 1.35
   explodeOnGround: 1
   explosionFxScale: 0.75
+  slashing: 0
+  cutPower: 0
+  cutWidth: 2.2
+  slashColor: {r: 0.78, g: 0.93, b: 1, a: 0.9}
+  slashEdgeColor: {r: 0.25, g: 0.62, b: 0.78, a: 0.6}
+  slashArcWidth: 1
+  spiritGauge: 0
+  spiritPerHit: 14
+  spiritPerHeavyHit: 6
+  spiritAttackCost: 22
+  spiritDamageBonus: 1.25
+  spiritLevelDamage:
+  - 1.05
+  - 1.1
+  - 1.2
+  spiritLevelDuration: 45
+  spiritDrainPerSec: 3
+  spiritLevelColors:
+  - {r: 0.92, g: 0.95, b: 1, a: 0.95}
+  - {r: 1, g: 0.82, b: 0.32, a: 0.95}
+  - {r: 1, g: 0.28, b: 0.2, a: 0.95}
   breakPower: 0

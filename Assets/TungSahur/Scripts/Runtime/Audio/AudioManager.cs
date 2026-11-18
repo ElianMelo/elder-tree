@@ -11,7 +11,8 @@ namespace TungSahur.Audio
         BowDraw, BowRelease, BowNock, ArrowHit, FullDraw,
         Explosion, BombWhistle, BombBeep, CrocRoar, JawSnap, MetalHit, PlayerHurt, Skid, YouDied, GreatEnemyFelled, BombPop,
         Deflect, RockBreak, CannonFire, MaskOn, MaskScream, Transform, ManaEmpty, MaskReceived,
-        SharkRoar, SneakerSqueak, Burrow
+        SharkRoar, SneakerSqueak, Burrow,
+        BladeWhoosh, BladeHit, VineCut, VineRustle, CrossbowFire, CrossbowReload, SpinWhirl
     }
 
     /// <summary>Pooled one-shot player with per-cue variation (random clip, pitch, volume).</summary>

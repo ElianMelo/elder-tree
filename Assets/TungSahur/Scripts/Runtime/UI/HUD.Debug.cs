@@ -77,19 +77,28 @@ namespace TungSahur.UI
                 debugRows.Add(r);
             }
             var masks = Masks.MaskSystem.Instance;
-            if (enc != null && enc.rewardMask != null)
+            bool anyMask = false;
+            if (enc != null)
             {
-                var mk = enc.rewardMask;
-                Tool($"{mk.displayName} (pickup)", "Spawn", () => enc.SpawnMaskForTest(),
-                    () => masks != null && masks.Owns(mk) ? "Owned: putting it on is a quick transformation" : "Not owned: picking it up plays the cinematic");
+                foreach (var reward in enc.AllRewards())
+                {
+                    var mk = reward;
+                    anyMask = true;
+                    Tool($"{mk.displayName} (pickup)", "Spawn", () => enc.SpawnMaskForTest(mk),
+                        () => masks != null && masks.Owns(mk) ? "Owned: putting it on is a quick transformation" : "Not owned: picking it up plays the cinematic");
+                }
+            }
+            if (anyMask)
+            {
                 Tool("Forget all masks", "Forget", () => masks?.ForgetAll(),
                     () => masks != null && masks.Worn != null ? $"Wearing {masks.Worn.displayName}" : "Elder Tree form");
             }
-            Tool("Restore breakables", "Restore", World.Breakable.RestoreAll, () =>
+            Tool("Restore breakables + vines", "Restore", () => { World.Breakable.RestoreAll(); World.Cuttable.RestoreAll(); }, () =>
             {
-                int broken = 0;
+                int broken = 0, cut = 0;
                 foreach (var b in World.Breakable.All) if (b != null && b.Broken) broken++;
-                return $"{broken} / {World.Breakable.All.Count} broken";
+                foreach (var c in World.Cuttable.All) if (c != null && c.Cleared) cut++;
+                return $"{broken} / {World.Breakable.All.Count} broken, {cut} / {World.Cuttable.All.Count} vines cleared";
             });
 
             var all = new DebugRow { row = El("dbg__row dbg__row--all", debugList) };

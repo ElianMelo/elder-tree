@@ -28,7 +28,8 @@ namespace TungSahur.Enemies
         public HUD hud;
         public Transform spawnPoint;
         [Header("Reward")]
-        [Tooltip("Dropped where the primary boss falls, unless the player already owns it.")]
+        [Tooltip("Dropped where the primary boss falls (when it has no reward of its own), unless the player already owns it. " +
+                 "Other bosses drop their own BossBase.rewardMask.")]
         public MaskData rewardMask;
         public MaskPickup pickupPrefab;
 
@@ -38,6 +39,7 @@ namespace TungSahur.Enemies
         readonly List<TrainingDummy> dummies = new();
         Coroutine ending;
         bool primaryFelled;
+        readonly List<BossBase> felled = new();
 
         void Awake()
         {
@@ -94,7 +96,7 @@ namespace TungSahur.Enemies
             if (b == null) return;
             if (player != null && player.IsDead) return;
             if (ending != null) { StopCoroutine(ending); ending = null; }
-            if (!Active) primaryFelled = false;
+            if (!Active) { primaryFelled = false; felled.Clear(); }
             Active = true;
             SetDummies(false);
             b.BeginFight();
@@ -151,6 +153,7 @@ namespace TungSahur.Enemies
         {
             if (!Active) return;
             if (b == boss) primaryFelled = true;
+            if (!felled.Contains(b)) felled.Add(b);
             // others still in the air: keep fighting, move the bar to the next one
             var next = NextLivingBoss();
             if (next != null) { if (hud != null && hud.BossBarTarget == b) hud.ShowBossBar(next); return; }
@@ -163,10 +166,16 @@ namespace TungSahur.Enemies
             AudioManager.Play2D(Sfx.GreatEnemyFelled, 1f);
             hud?.ShowBanner("GREAT ENEMY FELLED");
             yield return new WaitForSeconds(2.2f);
-            // the mask rises out of the wreck (only the first time: you can't win it twice)
+            // each felled boss's mask rises out of its wreck (only the first time: you can't win it twice)
             var ms = MaskSystem.Instance;
-            if (primaryFelled && rewardMask != null && pickupPrefab != null && (ms == null || !ms.Owns(rewardMask)))
-                MaskPickup.Spawn(pickupPrefab, rewardMask, RewardPoint(boss != null ? boss.transform.position : Vector3.zero));
+            foreach (var b in felled)
+            {
+                var reward = RewardOf(b);
+                if (reward == null || pickupPrefab == null || (ms != null && ms.Owns(reward))) continue;
+                MaskPickup.Spawn(pickupPrefab, reward, RewardPoint(b));
+                yield return new WaitForSeconds(0.35f);
+            }
+            felled.Clear();
             yield return new WaitForSeconds(0.8f);
             hud?.HideBossBar();
             Active = false;
@@ -175,21 +184,40 @@ namespace TungSahur.Enemies
             ending = null;
         }
 
+        /// <summary>The mask a boss drops: its own, or the encounter's reward for the primary boss.</summary>
+        public MaskData RewardOf(BossBase b) => b == null ? null : b.rewardMask != null ? b.rewardMask : b == boss ? rewardMask : null;
+
         /// <summary>A clear spot beside the wreck, on the arena side, where the player can walk.</summary>
-        Vector3 RewardPoint(Vector3 wreck)
+        Vector3 RewardPoint(BossBase b)
         {
-            Vector3 c = boss != null ? boss.ArenaCenter : Vector3.zero;
+            Vector3 wreck = b != null ? b.transform.position : Vector3.zero;
+            Vector3 c = b != null ? b.ArenaCenter : Vector3.zero;
             Vector3 to = c - wreck; to.y = 0f;
             Vector3 p = wreck + (to.sqrMagnitude > 1f ? to.normalized : Vector3.forward) * 6.5f;
             return Blast.Floor(p);
         }
 
         /// <summary>Debug (F1): drop the reward mask a few steps in front of the player.</summary>
-        public void SpawnMaskForTest()
+        public void SpawnMaskForTest() => SpawnMaskForTest(rewardMask);
+
+        /// <summary>Debug (F1): drop a given mask a few steps in front of the player.</summary>
+        public void SpawnMaskForTest(MaskData m)
         {
-            if (rewardMask == null || pickupPrefab == null || player == null) return;
+            if (m == null || pickupPrefab == null || player == null) return;
             Vector3 p = player.transform.position + player.transform.forward * 3f;
-            MaskPickup.Spawn(pickupPrefab, rewardMask, Blast.Floor(p));
+            MaskPickup.Spawn(pickupPrefab, m, Blast.Floor(p));
+        }
+
+        /// <summary>Every mask a boss in the roster can drop (debug menu).</summary>
+        public IEnumerable<MaskData> AllRewards()
+        {
+            var seen = new HashSet<MaskData>();
+            if (rewardMask != null && seen.Add(rewardMask)) yield return rewardMask;
+            foreach (var b in bosses)
+            {
+                var r = RewardOf(b);
+                if (r != null && seen.Add(r)) yield return r;
+            }
         }
 
         void OnPlayerDied()
