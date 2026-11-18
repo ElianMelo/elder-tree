@@ -73,6 +73,9 @@ namespace TungSahur.Combat
     [CreateAssetMenu(menuName = "Tung Sahur/Moveset")]
     public class Moveset : ScriptableObject
     {
+        [Tooltip("Data revision written by the builder. A builder upgrade only rewrites the combos when this is older.")]
+        public int version;
+
         public AttackData[] lightCombo = Array.Empty<AttackData>();
         public AttackData[] heavyCombo = Array.Empty<AttackData>();
         public AttackData runningAttack;

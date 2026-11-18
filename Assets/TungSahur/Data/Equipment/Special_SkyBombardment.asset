@@ -33,3 +33,8 @@ MonoBehaviour:
   fallGravityScale: 2.2
   landRecovery: 0.55
   weaponReturnTime: 0.45
+  cameraFocus: 1
+  cameraZoomOut: 2.6
+  cameraPitch: 24
+  cameraAimBlend: 0.6
+  cameraHoldAfterBlast: 0.9

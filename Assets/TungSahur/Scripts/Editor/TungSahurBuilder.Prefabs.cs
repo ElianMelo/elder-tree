@@ -142,6 +142,7 @@ namespace TungSahur.EditorTools
             pc.weapon = hitbox; pc.lockOn = lockOn; pc.clubTip = clubTip; pc.clubRenderer = clubRenderer; pc.trail = trail;
             pc.hurtboxMask = 1 << LayerHurtbox; pc.groundMask = 1;
             pc.dodgeClipLength = StateClipLength("Dodge");
+            pc.backstepClipLength = StateClipLength("Backstep");
             AttachBow(root, animator, pc, club.transform);
 
             var steps = root.AddComponent<FootstepFX>();

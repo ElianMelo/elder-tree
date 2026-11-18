@@ -42,5 +42,16 @@ namespace TungSahur.Equipment
         public float fallGravityScale = 2.2f;
         public float landRecovery = 0.55f;
         public float weaponReturnTime = 0.45f;
+
+        [Header("Camera (takes over from the hang until after the blast)")]
+        public bool cameraFocus = true;
+        [Tooltip("Extra orbit distance (metres): the view pulls back to show the whole blast.")]
+        public float cameraZoomOut = 2.6f;
+        [Tooltip("Orbit pitch (degrees) while framing the blast: a little higher to see the ring of pops.")]
+        public float cameraPitch = 24f;
+        [Tooltip("0 = look at the player, 1 = look at the impact point.")]
+        [Range(0f, 1f)] public float cameraAimBlend = 0.6f;
+        [Tooltip("Seconds the camera stays on the blast after it goes off before control returns.")]
+        public float cameraHoldAfterBlast = 0.9f;
     }
 }

@@ -23,8 +23,6 @@ namespace TungSahur.Player
         Queued queued;
         float prevLunge, lungeScale = 1f;
         int hitsThisSwing;
-        static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
-        MaterialPropertyBlock mpb;
 
         public event System.Action<AttackData> AttackStarted;
         public event System.Action<DamageInfo, IDamageable> HitLanded;
@@ -128,13 +126,12 @@ namespace TungSahur.Player
                         {
                             charging = false;
                             AudioManager.Play(Sfx.ChargeRelease, transform.position, 0.6f + 0.4f * ChargeNormalized);
-                            FXManager.Spawn(FXType.ChargeFlash, clubTip.position, Quaternion.identity, 0.6f + ChargeNormalized * 0.6f);
                             CameraDirector.Instance?.FovKick(-2.5f * ChargeNormalized);
+                            input.Rumble(0.4f * ChargeNormalized, 0.5f, 0.08f);
                         }
                     }
                 }
             }
-            SetClubGlow(charging ? ChargeNormalized : Mathf.MoveTowards(currentGlow, 0f, dt * 4f));
 
             // ---- jump attack hangs at the top until we land
             bool airHold = a == moveset.jumpAttack && !motor.Grounded && attackT >= a.hitStart - 0.02f;
@@ -352,19 +349,6 @@ namespace TungSahur.Player
                     AudioManager.Play(Sfx.Knock, info.point, 0.8f, 0.8f);
                 }
             }
-        }
-
-        float currentGlow;
-
-        void SetClubGlow(float k)
-        {
-            if (clubRenderer == null || Mathf.Approximately(k, currentGlow)) return;
-            currentGlow = k;
-            mpb ??= new MaterialPropertyBlock();
-            clubRenderer.GetPropertyBlock(mpb);
-            float pulse = 0.75f + 0.25f * Mathf.Sin(Time.time * 30f);
-            mpb.SetColor(EmissionId, Palette.Lantern * (k * k * 3.5f * pulse));
-            clubRenderer.SetPropertyBlock(mpb);
         }
     }
 }

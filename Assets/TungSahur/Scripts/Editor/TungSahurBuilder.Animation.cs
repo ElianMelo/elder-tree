@@ -13,6 +13,8 @@ namespace TungSahur.EditorTools
         public const string AnimDir = Root + "/Animation";
         public const string ControllerPath = AnimDir + "/TungSahur.controller";
         public const string MovesetPath = Root + "/Data/TungMoveset.asset";
+        /// <summary>The alligator's controller: the shared one with the pack's 2H idle and 2H guard swapped in.</summary>
+        public const string CrocControllerPath = AnimDir + "/TungSahur_Croc.overrideController";
 
         // Human Mega Animations Pack (Kevin Iglesias) is the single source of truth for player motion:
         // locomotion, air, melee, guard, hit/knockdown/death and the archer set all come from it, so
@@ -37,6 +39,11 @@ namespace TungSahur.EditorTools
         static AvatarMask LegsMask() => Mask("M_Legs", p =>
             p == AvatarMaskBodyPart.LeftLeg || p == AvatarMaskBodyPart.RightLeg ||
             p == AvatarMaskBodyPart.LeftFootIK || p == AvatarMaskBodyPart.RightFootIK);
+
+        /// <summary>Arms and fingers only: the 2H guard hold rides on top of walk/run legs and torso.</summary>
+        static AvatarMask ArmsMask() => Mask("M_Arms", p =>
+            p == AvatarMaskBodyPart.LeftArm || p == AvatarMaskBodyPart.RightArm ||
+            p == AvatarMaskBodyPart.LeftFingers || p == AvatarMaskBodyPart.RightFingers);
 
         static AvatarMask Mask(string name, System.Func<AvatarMaskBodyPart, bool> on)
         {
@@ -122,7 +129,7 @@ namespace TungSahur.EditorTools
                 y += 60;
                 return s;
             }
-            Act("Dodge", K("Combat/HumanM@Dodge01"));
+            Act("Dodge", K("Movement/HumanM@Roll01"));          // grounded forward roll (in place; travel from Roll01 [RM])
             Act("Backstep", K("Combat/HumanM@Dodge01"));
             Act("HitLight", K("Combat/HumanM@CombatDamage01"));
             Act("HitHeavy", K("Combat/HumanM@CombatDamage02"));
@@ -144,6 +151,16 @@ namespace TungSahur.EditorTools
             Act("JumpAttack", K("Combat/2H/HumanM@Attack2H02"));
             Act("DodgeAttack", K("Combat/1H/HumanM@Attack1H01_R"));
             Act("Skill", K("Combat/2H/HumanM@Attack2H04"));
+            // Alligator bomb hammer, both hands on the shaft. Light: quick sweeps (2H). Heavy: overhead
+            // ground strikes (Mining overhead, Polearm slam) into the leaping 2H finisher.
+            Act("Hammer_L1", K("Combat/2H/HumanM@Attack2H03"));
+            Act("Hammer_L2", K("Combat/2H/HumanM@Attack2H01"));
+            Act("Hammer_L3", K("Combat/2H/HumanM@Attack2H02"));
+            Act("Hammer_H1", K("Work/Mining/HumanM@Mining01 - Loop Ground"));
+            Act("Hammer_H2", K("Combat/Polearm/HumanM@AttackPolearm03"));
+            Act("Hammer_H3", K("Combat/2H/HumanM@Attack2H04"));
+            Act("Hammer_Run", K("Combat/Polearm/HumanM@AttackPolearm02"));
+            Act("Hammer_Dodge", K("Combat/Polearm/HumanM@AttackPolearm01"));
             // Alligator Mask: Sky Bombardment (two-handed overhead hurl), the shoulder cannon, transformations
             Act("SpecialHold", K("Combat/Thrown/Rock/HumanM@ThrowBigRock01 - Hold"));
             Act("SpecialThrow", K("Combat/Thrown/Rock/HumanM@ThrowBigRock01"));
@@ -210,15 +227,61 @@ namespace TungSahur.EditorTools
             walk.speedParameterActive = true;
             lsm.defaultState = walk;
 
+            // ---------------- Two-hand hold (arms only): the 2H guard pose on the arms while the legs walk,
+            // run or jump. Weighted by code for two-handed forms; TwoHandGrip then pins the left fist.
+            var armsLayer = new AnimatorControllerLayer
+            {
+                name = "TwoHandArms",
+                defaultWeight = 0f,
+                avatarMask = ArmsMask(),
+                blendingMode = AnimatorLayerBlendingMode.Override,
+                stateMachine = new AnimatorStateMachine { name = "TwoHandArms", hideFlags = HideFlags.HideInHierarchy }
+            };
+            AssetDatabase.AddObjectToAsset(armsLayer.stateMachine, ac);
+            ac.AddLayer(armsLayer);
+            var asm = ac.layers[3].stateMachine;
+            var hold2H = asm.AddState("Hold2H", new Vector3(300, 0));
+            hold2H.motion = K("Combat/2H/HumanM@CombatIdle2H01");
+            asm.defaultState = hold2H;
+
             // IK pass on the base layer: the bow places both hands on the aim line (BowRig.OnAnimatorIK)
             var layers = ac.layers;
             layers[0].iKPass = true;
             ac.layers = layers;
 
             EditorUtility.SetDirty(ac);
+            BuildCrocOverride(ac);
             BuildMoveset();
             AssetDatabase.SaveAssets();
             return $"Animator built: {ac.layers.Length} layers, {sm.states.Length} states";
+        }
+
+        /// <summary>
+        /// The alligator holds its hammer in both hands even at rest: same controller and state names,
+        /// with the pack's 2H idle under locomotion and the 2H parry for the guard layer.
+        /// </summary>
+        static void BuildCrocOverride(AnimatorController ac)
+        {
+            var oc = AssetDatabase.LoadAssetAtPath<AnimatorOverrideController>(CrocControllerPath);
+            if (oc == null)
+            {
+                oc = new AnimatorOverrideController(ac);
+                AssetDatabase.CreateAsset(oc, CrocControllerPath);
+            }
+            oc.runtimeAnimatorController = ac;
+            var swaps = new Dictionary<string, AnimationClip>
+            {
+                { "HumanM@CombatIdle1H01", K("Combat/2H/HumanM@CombatIdle2H01") },
+                { "HumanM@Parry1H01_R - Loop", K("Combat/2H/HumanM@Parry2H01 - Loop") },
+                { "HumanM@Parry1H01_R - Hit", K("Combat/2H/HumanM@Parry2H01 - Hit") },
+            };
+            var pairs = new List<KeyValuePair<AnimationClip, AnimationClip>>();
+            oc.GetOverrides(pairs);
+            for (int i = 0; i < pairs.Count; i++)
+                pairs[i] = new KeyValuePair<AnimationClip, AnimationClip>(pairs[i].Key,
+                    swaps.TryGetValue(pairs[i].Key.name, out var to) ? to : null);
+            oc.ApplyOverrides(pairs);
+            EditorUtility.SetDirty(oc);
         }
 
         static AnimatorState Add(AnimatorStateMachine sm, string name, Motion m, Vector3 pos)

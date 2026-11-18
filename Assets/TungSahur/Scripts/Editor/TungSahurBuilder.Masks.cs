@@ -213,65 +213,92 @@ namespace TungSahur.EditorTools
         }
 
         // ------------------------------------------------------------------ hammer moveset
-        /// <summary>Two-handed bomb hammer: slow, heavy, every connecting swing explodes (MeleeWeaponData).
-        /// Uses the pack's 2H clips (states shared with the club's heavies, measured windows).</summary>
+        /// <summary>Bump to push a new hammer moveset into an existing CrocHammerMoveset.asset (once).</summary>
+        public const int CrocMovesetVersion = 2;
+
+        /// <summary>
+        /// Two-handed bomb hammer: every connecting swing explodes (MeleeWeaponData). Both hands stay on the
+        /// shaft (TwoHandGrip). Light: three quick 2H sweeps, opening fast. Heavy: two chargeable ground
+        /// strikes into a leaping finisher. Windows from PreviewRenderer.AnalyzeCrocSwing (head speed and
+        /// ground contact on the alligator with the calibrated grip). Created once; v2 replaced the v1
+        /// combos (which reused the club's heavy states, so the hammer had no heavy chain of its own).
+        /// </summary>
         static void BuildCrocMoveset()
         {
             var ms = AssetDatabase.LoadAssetAtPath<Moveset>(CrocMovesetPath);
-            if (ms == null)
+            bool create = ms == null;
+            if (create) ms = ScriptableObject.CreateInstance<Moveset>();
+            if (create || ms.version < CrocMovesetVersion)
             {
-                ms = ScriptableObject.CreateInstance<Moveset>();
-                ms.lightCombo = new[]
-                {
-                    new AttackData { id = "H_Light1", state = "Heavy1", damage = 46, poiseDamage = 22, staminaCost = 20, weight = ImpactWeight.Heavy,
-                        hitStart = 0.38f, hitEnd = 0.50f, comboOpen = 0.60f, cancelOpen = 0.64f, exitTime = 0.84f, trackUntil = 0.34f,
-                        windupSpeed = 0.82f, activeSpeed = 1.3f, recoverySpeed = 1.12f, lungeDistance = 0.8f, lungeStart = 0.30f, lungeEnd = 0.48f,
-                        hitStop = 0.09f, shake = 0.7f, rumbleLow = 0.6f, rumbleHigh = 0.5f, next = "H_Light2" },
-                    new AttackData { id = "H_Light2", state = "Heavy2", damage = 50, poiseDamage = 24, staminaCost = 21, weight = ImpactWeight.Heavy,
-                        hitStart = 0.27f, hitEnd = 0.44f, comboOpen = 0.60f, cancelOpen = 0.62f, exitTime = 0.82f, trackUntil = 0.25f,
-                        windupSpeed = 0.85f, activeSpeed = 1.3f, recoverySpeed = 1.12f, lungeDistance = 0.9f, lungeStart = 0.22f, lungeEnd = 0.42f,
-                        hitStop = 0.09f, shake = 0.7f, rumbleLow = 0.6f, rumbleHigh = 0.6f, next = "H_Light3" },
-                    new AttackData { id = "H_Light3", state = "RunAttack", damage = 62, poiseDamage = 30, staminaCost = 24, weight = ImpactWeight.Heavy,
-                        hitStart = 0.14f, hitEnd = 0.30f, comboOpen = 0.58f, cancelOpen = 0.58f, exitTime = 0.76f, trackUntil = 0.12f,
-                        windupSpeed = 0.75f, activeSpeed = 1.15f, recoverySpeed = 1.1f, lungeDistance = 1.4f, lungeStart = 0.0f, lungeEnd = 0.30f,
-                        hitStop = 0.11f, shake = 0.8f, rumbleLow = 0.7f, rumbleHigh = 0.6f, next = "H_Light1" },
-                };
-                ms.heavyCombo = new[]
-                {
-                    new AttackData { id = "H_Heavy1", state = "Skill", damage = 92, poiseDamage = 50, staminaCost = 30, weight = ImpactWeight.Slam,
-                        hitStart = 0.32f, hitEnd = 0.45f, comboOpen = 0.70f, cancelOpen = 0.70f, exitTime = 0.86f, trackUntil = 0.30f,
-                        windupSpeed = 0.8f, activeSpeed = 1.2f, recoverySpeed = 1.1f, chargeable = true, chargeHold = 0.26f, chargeMaxTime = 1.0f,
-                        chargeDamageMultiplier = 1.7f, lungeDistance = 1.6f, lungeStart = 0.05f, lungeEnd = 0.36f, hitStop = 0.14f, shake = 1.1f,
-                        rumbleLow = 1f, rumbleHigh = 0.7f, slamRadius = 2.2f, slamDamageScale = 0.5f, next = "H_Heavy2" },
-                    new AttackData { id = "H_Heavy2", state = "Heavy1", damage = 96, poiseDamage = 52, staminaCost = 30, weight = ImpactWeight.Slam,
-                        hitStart = 0.38f, hitEnd = 0.50f, comboOpen = 0.66f, cancelOpen = 0.68f, exitTime = 0.86f, trackUntil = 0.34f,
-                        windupSpeed = 0.78f, activeSpeed = 1.3f, recoverySpeed = 1.1f, chargeable = true, chargeHold = 0.30f, chargeMaxTime = 1.0f,
-                        chargeDamageMultiplier = 1.7f, lungeDistance = 1.0f, lungeStart = 0.30f, lungeEnd = 0.48f, hitStop = 0.14f, shake = 1.1f,
-                        rumbleLow = 1f, rumbleHigh = 0.7f, slamRadius = 2.0f, slamDamageScale = 0.5f, next = "H_Heavy1" },
-                };
-                ms.runningAttack = new AttackData { id = "H_Run", state = "RunAttack", damage = 70, poiseDamage = 34, staminaCost = 24,
-                    weight = ImpactWeight.Heavy, hitStart = 0.14f, hitEnd = 0.30f, comboOpen = 0.58f, cancelOpen = 0.58f, exitTime = 0.76f,
-                    trackUntil = 0.12f, windupSpeed = 1.0f, activeSpeed = 1.15f, recoverySpeed = 1.15f, lungeDistance = 2.6f, lungeStart = 0.0f,
-                    lungeEnd = 0.30f, hitStop = 0.11f, shake = 0.8f, next = "H_Light2" };
-                ms.jumpAttack = new AttackData { id = "H_Jump", state = "JumpAttack", startOffset = 0.30f, damage = 88, poiseDamage = 48,
-                    staminaCost = 24, weight = ImpactWeight.Slam, hitStart = 0.40f, hitEnd = 0.52f, comboOpen = 0.66f, cancelOpen = 0.66f,
-                    exitTime = 0.84f, trackUntil = 0.36f, windupSpeed = 1.05f, activeSpeed = 1.3f, recoverySpeed = 1.15f, lungeDistance = 0.4f,
-                    lungeStart = 0.3f, lungeEnd = 0.45f, hitStop = 0.13f, shake = 1.0f, rumbleLow = 0.9f, rumbleHigh = 0.6f, slamRadius = 2.2f,
-                    next = "H_Light1" };
-                ms.dodgeAttack = new AttackData { id = "H_Dodge", state = "DodgeAttack", damage = 40, poiseDamage = 16, staminaCost = 18,
-                    weight = ImpactWeight.Heavy, hitStart = 0.16f, hitEnd = 0.32f, comboOpen = 0.55f, cancelOpen = 0.55f, exitTime = 0.74f,
-                    trackUntil = 0.16f, windupSpeed = 1.05f, activeSpeed = 1.2f, recoverySpeed = 1.2f, lungeDistance = 1.2f, lungeStart = 0.0f,
-                    lungeEnd = 0.3f, hitStop = 0.08f, shake = 0.5f, next = "H_Light2" };
-                ms.skill = new AttackData { id = "H_Skill", state = "Skill", damage = 110, poiseDamage = 60, staminaCost = 30, weight = ImpactWeight.Slam,
-                    hitStart = 0.32f, hitEnd = 0.45f, comboOpen = 0.7f, cancelOpen = 0.7f, exitTime = 0.86f, trackUntil = 0.30f, windupSpeed = 0.9f,
-                    activeSpeed = 1.2f, recoverySpeed = 1.15f, lungeDistance = 2.0f, lungeStart = 0.05f, lungeEnd = 0.36f, hitStop = 0.16f, shake = 1.3f,
-                    slamRadius = 3f, slamDamageScale = 0.7f, next = "" };
-                AssetDatabase.CreateAsset(ms, CrocMovesetPath);
+                if (!create) Debug.Log($"[TungSahur] CrocHammerMoveset upgraded v{ms.version} -> v{CrocMovesetVersion} (two-handed light + heavy chains)");
+                FillCrocMoveset(ms);
+                ms.version = CrocMovesetVersion;
             }
+            if (create) AssetDatabase.CreateAsset(ms, CrocMovesetPath);
             // clip lengths always follow the controller (they are measured, not tuned)
             foreach (var a in ms.lightCombo.Concat(ms.heavyCombo).Concat(new[] { ms.runningAttack, ms.jumpAttack, ms.dodgeAttack, ms.skill }))
                 if (a != null) a.clipLength = StateClipLength(a.state);
             EditorUtility.SetDirty(ms);
+        }
+
+        static void FillCrocMoveset(Moveset ms)
+        {
+            ms.lightCombo = new[]
+            {
+                // Attack2H03: low sweep straight out of the guard; the head is moving by 0.17
+                new AttackData { id = "H_Light1", state = "Hammer_L1", startOffset = 0.03f, damage = 42, poiseDamage = 18, staminaCost = 17,
+                    weight = ImpactWeight.Light, hitStart = 0.15f, hitEnd = 0.29f, comboOpen = 0.40f, cancelOpen = 0.44f, exitTime = 0.64f,
+                    trackUntil = 0.13f, windupSpeed = 1.15f, activeSpeed = 1.2f, recoverySpeed = 1.3f, lungeDistance = 0.7f, lungeStart = 0.05f,
+                    lungeEnd = 0.26f, hitStop = 0.08f, shake = 0.55f, rumbleLow = 0.5f, rumbleHigh = 0.5f, next = "H_Light2" },
+                // Attack2H01: high diagonal down to the hip
+                new AttackData { id = "H_Light2", state = "Hammer_L2", damage = 48, poiseDamage = 22, staminaCost = 19, weight = ImpactWeight.Heavy,
+                    hitStart = 0.29f, hitEnd = 0.44f, comboOpen = 0.55f, cancelOpen = 0.58f, exitTime = 0.78f, trackUntil = 0.26f,
+                    windupSpeed = 1.05f, activeSpeed = 1.25f, recoverySpeed = 1.2f, lungeDistance = 0.8f, lungeStart = 0.18f, lungeEnd = 0.40f,
+                    hitStop = 0.09f, shake = 0.7f, rumbleLow = 0.6f, rumbleHigh = 0.55f, next = "H_Light3" },
+                // Attack2H02: wind round and slam the head into the ground
+                new AttackData { id = "H_Light3", state = "Hammer_L3", damage = 58, poiseDamage = 28, staminaCost = 22, weight = ImpactWeight.Heavy,
+                    hitStart = 0.39f, hitEnd = 0.52f, comboOpen = 0.66f, cancelOpen = 0.68f, exitTime = 0.84f, trackUntil = 0.36f,
+                    windupSpeed = 1.0f, activeSpeed = 1.25f, recoverySpeed = 1.15f, lungeDistance = 1.0f, lungeStart = 0.28f, lungeEnd = 0.48f,
+                    hitStop = 0.11f, shake = 0.85f, rumbleLow = 0.7f, rumbleHigh = 0.6f, slamRadius = 1.8f, slamDamageScale = 0.45f, next = "H_Light1" },
+            };
+            ms.heavyCombo = new[]
+            {
+                // Mining01 overhead: hammer high over the head (charge hold), then straight down in front
+                new AttackData { id = "H_Heavy1", state = "Hammer_H1", startOffset = 0.12f, damage = 90, poiseDamage = 48, staminaCost = 28,
+                    weight = ImpactWeight.Slam, hitStart = 0.46f, hitEnd = 0.58f, comboOpen = 0.70f, cancelOpen = 0.72f, exitTime = 0.88f,
+                    trackUntil = 0.40f, windupSpeed = 1.15f, activeSpeed = 1.3f, recoverySpeed = 1.15f, chargeable = true, chargeHold = 0.42f,
+                    chargeMaxTime = 1.0f, chargeDamageMultiplier = 1.7f, lungeDistance = 0.9f, lungeStart = 0.40f, lungeEnd = 0.56f,
+                    hitStop = 0.13f, shake = 1.0f, rumbleLow = 0.9f, rumbleHigh = 0.6f, slamRadius = 2.0f, slamDamageScale = 0.5f, next = "H_Heavy2" },
+                // AttackPolearm03: step in, hammer up, crash down low
+                new AttackData { id = "H_Heavy2", state = "Hammer_H2", damage = 96, poiseDamage = 52, staminaCost = 30, weight = ImpactWeight.Slam,
+                    hitStart = 0.34f, hitEnd = 0.46f, comboOpen = 0.68f, cancelOpen = 0.70f, exitTime = 0.86f, trackUntil = 0.30f,
+                    windupSpeed = 1.0f, activeSpeed = 1.3f, recoverySpeed = 1.15f, chargeable = true, chargeHold = 0.30f, chargeMaxTime = 1.0f,
+                    chargeDamageMultiplier = 1.7f, lungeDistance = 1.2f, lungeStart = 0.26f, lungeEnd = 0.44f, hitStop = 0.14f, shake = 1.1f,
+                    rumbleLow = 1f, rumbleHigh = 0.7f, slamRadius = 2.2f, slamDamageScale = 0.5f, next = "H_Heavy3" },
+                // Attack2H04: leap and drive the bomb into the ground (finisher; no charge while airborne)
+                new AttackData { id = "H_Heavy3", state = "Hammer_H3", damage = 120, poiseDamage = 64, staminaCost = 34, weight = ImpactWeight.Slam,
+                    hitStart = 0.31f, hitEnd = 0.44f, comboOpen = 0.74f, cancelOpen = 0.74f, exitTime = 0.88f, trackUntil = 0.28f,
+                    windupSpeed = 1.0f, activeSpeed = 1.25f, recoverySpeed = 1.1f, lungeDistance = 2.0f, lungeStart = 0.05f, lungeEnd = 0.36f,
+                    hitStop = 0.16f, shake = 1.3f, rumbleLow = 1f, rumbleHigh = 0.8f, slamRadius = 3.0f, slamDamageScale = 0.6f, next = "H_Heavy1" },
+            };
+            ms.runningAttack = new AttackData { id = "H_Run", state = "Hammer_Run", damage = 70, poiseDamage = 34, staminaCost = 24,
+                weight = ImpactWeight.Heavy, hitStart = 0.24f, hitEnd = 0.37f, comboOpen = 0.60f, cancelOpen = 0.60f, exitTime = 0.78f,
+                trackUntil = 0.20f, windupSpeed = 1.05f, activeSpeed = 1.2f, recoverySpeed = 1.2f, lungeDistance = 2.6f, lungeStart = 0.0f,
+                lungeEnd = 0.34f, hitStop = 0.11f, shake = 0.8f, next = "H_Light2" };
+            ms.jumpAttack = new AttackData { id = "H_Jump", state = "JumpAttack", startOffset = 0.30f, damage = 88, poiseDamage = 48,
+                staminaCost = 24, weight = ImpactWeight.Slam, hitStart = 0.40f, hitEnd = 0.52f, comboOpen = 0.66f, cancelOpen = 0.66f,
+                exitTime = 0.84f, trackUntil = 0.36f, windupSpeed = 1.05f, activeSpeed = 1.3f, recoverySpeed = 1.15f, lungeDistance = 0.4f,
+                lungeStart = 0.3f, lungeEnd = 0.45f, hitStop = 0.13f, shake = 1.0f, rumbleLow = 0.9f, rumbleHigh = 0.6f, slamRadius = 2.2f,
+                next = "H_Light1" };
+            ms.dodgeAttack = new AttackData { id = "H_Dodge", state = "Hammer_Dodge", damage = 40, poiseDamage = 16, staminaCost = 18,
+                weight = ImpactWeight.Heavy, hitStart = 0.24f, hitEnd = 0.35f, comboOpen = 0.55f, cancelOpen = 0.55f, exitTime = 0.72f,
+                trackUntil = 0.20f, windupSpeed = 1.1f, activeSpeed = 1.2f, recoverySpeed = 1.2f, lungeDistance = 1.2f, lungeStart = 0.0f,
+                lungeEnd = 0.3f, hitStop = 0.08f, shake = 0.5f, next = "H_Light2" };
+            // unused while the form has a special (light + heavy = Sky Bombardment)
+            ms.skill = new AttackData { id = "H_Skill", state = "Hammer_H3", damage = 110, poiseDamage = 60, staminaCost = 30, weight = ImpactWeight.Slam,
+                hitStart = 0.31f, hitEnd = 0.44f, comboOpen = 0.74f, cancelOpen = 0.74f, exitTime = 0.88f, trackUntil = 0.28f, windupSpeed = 1.0f,
+                activeSpeed = 1.25f, recoverySpeed = 1.1f, lungeDistance = 2.0f, lungeStart = 0.05f, lungeEnd = 0.36f, hitStop = 0.16f, shake = 1.3f,
+                slamRadius = 3f, slamDamageScale = 0.7f, next = "" };
         }
 
         // ------------------------------------------------------------------ data assets (create once, then hands off)
@@ -528,7 +555,8 @@ namespace TungSahur.EditorTools
             model.name = "CrocForm";
             model.transform.SetParent(visual, false);
             var anim = model.GetComponent<Animator>() ?? model.AddComponent<Animator>();
-            anim.runtimeAnimatorController = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
+            var crocCtrl = AssetDatabase.LoadAssetAtPath<AnimatorOverrideController>(CrocControllerPath);
+            anim.runtimeAnimatorController = crocCtrl != null ? crocCtrl : AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
             anim.avatar = AssetDatabase.LoadAllAssetsAtPath(CrocModelPath).OfType<Avatar>().First();
             anim.applyRootMotion = false;
             anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
@@ -538,12 +566,15 @@ namespace TungSahur.EditorTools
                 smr.shadowCastingMode = ShadowCastingMode.On;
             }
 
-            // bomb hammer in the right fist (same grip as the club: shaft along +Y from the grip)
+            // bomb hammer: two-handed, gripped like the pack's 2H weapons (prop bone, shaft along +Y)
             var hand = anim.GetBoneTransform(HumanBodyBones.RightHand);
             var hammer = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(HammerPath));
             hammer.name = "Hammer";
             hammer.transform.SetParent(hand, false);
-            ApplyClubGrip(hammer.transform);
+            var grip = model.AddComponent<TwoHandGrip>();
+            grip.animator = anim;
+            grip.weapon = hammer.transform;
+            CalibrateHammerGrip(hammer.transform, grip);
             var hBase = new GameObject("HammerBase").transform; hBase.SetParent(hammer.transform, false); hBase.localPosition = new Vector3(0, 0.5f, 0);
             var hTip = new GameObject("HammerTip").transform; hTip.SetParent(hammer.transform, false); hTip.localPosition = new Vector3(0, 1.12f, 0);
             var hb = hammer.AddComponent<WeaponHitbox>();
@@ -586,6 +617,7 @@ namespace TungSahur.EditorTools
             croc.animator = anim;
             croc.weapon = hb; croc.weaponTip = hTip; croc.weaponRenderer = hRenderer; croc.trail = ht;
             croc.cannonRig = rig;
+            croc.twoHandGrip = grip;
             croc.faceSocket = Socket("FaceSocket", anim.GetBoneTransform(HumanBodyBones.Head), new Vector3(0, 1.68f, 0.3f), Quaternion.identity);
             model.SetActive(false);
 
@@ -629,6 +661,52 @@ namespace TungSahur.EditorTools
                 Debug.Log($"[TungSahur] Cannon grip calibrated: hand->left hand {toLeft:F2}, local {handSocket.localPosition:F3} / {handSocket.localEulerAngles:F1}");
             }
             finally { Object.DestroyImmediate(tmp); }
+        }
+
+        /// <summary>Fist centre: between the wrist and the knuckles (index / middle / ring proximals).</summary>
+        static Vector3 FistCentre(Animator a, bool left)
+        {
+            var idx = a.GetBoneTransform(left ? HumanBodyBones.LeftIndexProximal : HumanBodyBones.RightIndexProximal);
+            var mid = a.GetBoneTransform(left ? HumanBodyBones.LeftMiddleProximal : HumanBodyBones.RightMiddleProximal);
+            var ring = a.GetBoneTransform(left ? HumanBodyBones.LeftRingProximal : HumanBodyBones.RightRingProximal);
+            var hand = a.GetBoneTransform(left ? HumanBodyBones.LeftHand : HumanBodyBones.RightHand);
+            return (idx.position + mid.position + ring.position) / 3f * 0.6f + hand.position * 0.4f;
+        }
+
+        /// <summary>
+        /// Two-handed grip, taken from the pack itself: the pack's HumanM carries 2H weapons on its
+        /// B-handProp.R bone (shaft along +Y). Sample CombatIdle2H01 on HumanM and on the alligator at the
+        /// same frame (humanoid retargeting keeps hand orientations), re-express the prop frame on the
+        /// alligator's right hand, and measure where the left fist and its grip axis sit, for TwoHandGrip.
+        /// The alligator's wider shoulders leave its left fist ~35 cm off the shaft, so the IK does the rest.
+        /// </summary>
+        public static void CalibrateHammerGrip(Transform hammer, TwoHandGrip grip)
+        {
+            var croc = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(CrocModelPath));
+            var human = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PreviewRenderer.ReferenceModelPath));
+            croc.hideFlags = human.hideFlags = HideFlags.DontSave;
+            try
+            {
+                var ca = croc.GetComponent<Animator>() ?? croc.AddComponent<Animator>();
+                ca.avatar = AssetDatabase.LoadAllAssetsAtPath(CrocModelPath).OfType<Avatar>().First();
+                var ha = human.GetComponent<Animator>();
+                var prop = human.GetComponentsInChildren<Transform>(true).First(t => t.name == "B-handProp.R");
+                var clip = K("Combat/2H/HumanM@CombatIdle2H01");
+                clip.SampleAnimation(croc, 0f); croc.transform.position = Vector3.zero;
+                clip.SampleAnimation(human, 0f); human.transform.position = Vector3.zero;
+                var rh = ca.GetBoneTransform(HumanBodyBones.RightHand);
+                var lh = ca.GetBoneTransform(HumanBodyBones.LeftHand);
+                hammer.localRotation = Quaternion.Inverse(rh.rotation) * prop.rotation;
+                hammer.localPosition = rh.InverseTransformPoint(FistCentre(ca, false));
+                hammer.localScale = Vector3.one;
+                grip.leftFistLocal = lh.InverseTransformPoint(FistCentre(ca, true));
+                grip.leftGripAxisLocal = (Quaternion.Inverse(lh.rotation) * prop.up).normalized;
+                // where HumanM's left fist rides on its weapon = the rest hold
+                grip.restGrip = Mathf.Clamp(Vector3.Dot(FistCentre(ha, true) - prop.position, prop.up), -0.24f, -0.06f);
+                Debug.Log($"[TungSahur] Hammer 2H grip: local {hammer.localPosition:F3} / {hammer.localEulerAngles:F1}, " +
+                          $"left fist {grip.leftFistLocal:F3}, axis {grip.leftGripAxisLocal:F2}, rest {grip.restGrip:F2}");
+            }
+            finally { Object.DestroyImmediate(croc); Object.DestroyImmediate(human); }
         }
 
         // ------------------------------------------------------------------ scene

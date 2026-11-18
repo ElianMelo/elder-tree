@@ -222,6 +222,86 @@ namespace TungSahur.EditorTools
         }
 
 
+        // ------------------------------------------------------------------ alligator + two-handed hammer
+        /// <summary>The alligator body with the bomb hammer in the calibrated two-handed grip.</summary>
+        public static GameObject SpawnCroc(out Animator anim, out TungSahur.Player.TwoHandGrip grip, out Transform hammer)
+        {
+            var go = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TungSahurBuilder.CrocModelPath));
+            go.hideFlags = HideFlags.DontSave;
+            anim = go.GetComponent<Animator>() ?? go.AddComponent<Animator>();
+            anim.avatar = AssetDatabase.LoadAllAssetsAtPath(TungSahurBuilder.CrocModelPath).OfType<Avatar>().First();
+            anim.applyRootMotion = false;
+            var hand = anim.GetBoneTransform(HumanBodyBones.RightHand);
+            hammer = ((GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TungSahurBuilder.HammerPath), hand)).transform;
+            hammer.name = "Hammer";
+            grip = go.AddComponent<TungSahur.Player.TwoHandGrip>();
+            grip.animator = anim;
+            grip.weapon = hammer;
+            TungSahurBuilder.CalibrateHammerGrip(hammer, grip);
+            return go;
+        }
+
+        /// <summary>Contact sheet of the alligator (two-hand IK applied per frame, like at runtime).</summary>
+        public static string RenderCrocSheet(string file, string clipPath, int frames = 8, float yaw = 210f, float camDist = 4.6f, bool ik = true, float from = 0f, float to = 1f)
+        {
+            Directory.CreateDirectory(OutDir);
+            var go = SpawnCroc(out _, out var grip, out _);
+            var clip = LoadClip(clipPath);
+            var (cam, light, rt, floor) = Rig(300, 420);
+            var sheet = new Texture2D(300 * frames, 420, TextureFormat.RGB24, false);
+            // away from the open scene's props
+            var o = new Vector3(600f, 0f, 600f);
+            floor.transform.position = o;
+            var dir = Quaternion.Euler(0, yaw, 0) * Vector3.forward;
+            cam.transform.position = o + new Vector3(0, 1.3f, 0) - dir * camDist;
+            cam.transform.LookAt(o + new Vector3(0, 1.0f, 0));
+            for (int i = 0; i < frames; i++)
+            {
+                float t = clip.length * Mathf.Lerp(from, to, i / (float)Mathf.Max(1, frames - 1));
+                clip.SampleAnimation(go, t);
+                go.transform.position = o;
+                if (ik) grip.Apply(1f);
+                var tex = Grab(cam, rt);
+                sheet.SetPixels(i * 300, 0, 300, 420, tex.GetPixels());
+                Object.DestroyImmediate(tex);
+            }
+            string path = Path.Combine(OutDir, file);
+            File.WriteAllBytes(path, sheet.EncodeToPNG());
+            Cleanup(go, cam, light, rt, floor);
+            Object.DestroyImmediate(sheet);
+            return path;
+        }
+
+        /// <summary>Hammer head speed / height over a clip on the alligator, plus the off-hand gap the IK closes.</summary>
+        public static string AnalyzeCrocSwing(string clipPath, int samples = 60)
+        {
+            var go = SpawnCroc(out _, out var grip, out var hammer);
+            var clip = LoadClip(clipPath);
+            var sb = new StringBuilder();
+            Vector3 prev = Vector3.zero;
+            var rows = new List<(float t, float v, float y, float gap)>();
+            for (int i = 0; i <= samples; i++)
+            {
+                float t = clip.length * i / samples;
+                clip.SampleAnimation(go, t);
+                go.transform.position = Vector3.zero;
+                grip.Apply(1f);
+                var head = hammer.TransformPoint(new Vector3(0, 0.95f, 0));
+                float low = Mathf.Min(hammer.TransformPoint(new Vector3(0, 0.6f, 0)).y, hammer.TransformPoint(new Vector3(0, 1.2f, 0)).y);
+                if (i > 0) rows.Add((t / clip.length, (head - prev).magnitude / (clip.length / samples), low, grip.LastGap));
+                prev = head;
+            }
+            float max = rows.Max(r => r.v);
+            var fast = rows.Where(r => r.v > max * 0.5f).ToList();
+            var ground = rows.Where(r => r.y < 0.3f).ToList();
+            sb.Append($"{Path.GetFileNameWithoutExtension(clipPath)} len={clip.length:F2} peak={max:F1}@{rows.First(r => r.v == max).t:F2} " +
+                      $"fast={fast.First().t:F2}-{fast.Last().t:F2} ground={(ground.Count > 0 ? $"{ground.First().t:F2}-{ground.Last().t:F2}" : "none")} " +
+                      $"gapMax={rows.Max(r => r.gap):F2} | ");
+            for (int i = 0; i < rows.Count; i += 3) sb.Append($"{rows[i].t:F2}:{rows[i].v:F1}/y{rows[i].y:F1} ");
+            Object.DestroyImmediate(go);
+            return sb.ToString();
+        }
+
         public static AnimationClip LoadClip(string path) =>
             AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().First(c => !c.name.StartsWith("__preview"));
 

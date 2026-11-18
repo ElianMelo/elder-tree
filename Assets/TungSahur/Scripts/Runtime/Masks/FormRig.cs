@@ -18,6 +18,8 @@ namespace TungSahur.Masks
         public Transform weaponTip;
         public Renderer weaponRenderer;
         public WeaponTrail trail;
+        [Tooltip("Two-handed weapons: keeps the off hand on the shaft (null = one-handed).")]
+        public TwoHandGrip twoHandGrip;
         [Header("Ranged")]
         public BowRig bowRig;
         public CannonRig cannonRig;

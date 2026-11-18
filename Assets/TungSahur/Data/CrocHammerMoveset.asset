@@ -12,176 +12,210 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 636c6e78794697f41b52e23a27633fe1, type: 3}
   m_Name: CrocHammerMoveset
   m_EditorClassIdentifier: TungSahur.Runtime::TungSahur.Combat.Moveset
+  version: 2
   lightCombo:
   - id: H_Light1
-    state: Heavy1
-    startOffset: 0
-    clipLength: 1.5666667
-    damage: 46
-    poiseDamage: 22
-    staminaCost: 20
+    state: Hammer_L1
+    startOffset: 0.03
+    clipLength: 1.5333334
+    damage: 42
+    poiseDamage: 18
+    staminaCost: 17
     manaCost: 0
-    weight: 1
-    hitStart: 0.38
-    hitEnd: 0.5
-    comboOpen: 0.6
-    cancelOpen: 0.64
-    exitTime: 0.84
-    trackUntil: 0.34
+    weight: 0
+    hitStart: 0.15
+    hitEnd: 0.29
+    comboOpen: 0.4
+    cancelOpen: 0.44
+    exitTime: 0.64
+    trackUntil: 0.13
     trackTurnSpeed: 540
-    windupSpeed: 0.82
-    activeSpeed: 1.3
-    recoverySpeed: 1.12
+    windupSpeed: 1.15
+    activeSpeed: 1.2
+    recoverySpeed: 1.3
     chargeable: 0
     chargeHold: 0.3
     chargeMaxTime: 0.9
     chargeDamageMultiplier: 1.6
-    lungeDistance: 0.8
-    lungeStart: 0.3
-    lungeEnd: 0.48
-    hitStop: 0.09
-    shake: 0.7
-    rumbleLow: 0.6
+    lungeDistance: 0.7
+    lungeStart: 0.05
+    lungeEnd: 0.26
+    hitStop: 0.08
+    shake: 0.55
+    rumbleLow: 0.5
     rumbleHigh: 0.5
     slamRadius: 0
     slamDamageScale: 0.6
     next: H_Light2
   - id: H_Light2
-    state: Heavy2
+    state: Hammer_L2
     startOffset: 0
     clipLength: 1.6000001
-    damage: 50
-    poiseDamage: 24
-    staminaCost: 21
+    damage: 48
+    poiseDamage: 22
+    staminaCost: 19
     manaCost: 0
     weight: 1
-    hitStart: 0.27
+    hitStart: 0.29
     hitEnd: 0.44
-    comboOpen: 0.6
-    cancelOpen: 0.62
-    exitTime: 0.82
-    trackUntil: 0.25
+    comboOpen: 0.55
+    cancelOpen: 0.58
+    exitTime: 0.78
+    trackUntil: 0.26
     trackTurnSpeed: 540
-    windupSpeed: 0.85
-    activeSpeed: 1.3
-    recoverySpeed: 1.12
+    windupSpeed: 1.05
+    activeSpeed: 1.25
+    recoverySpeed: 1.2
     chargeable: 0
     chargeHold: 0.3
     chargeMaxTime: 0.9
     chargeDamageMultiplier: 1.6
-    lungeDistance: 0.9
-    lungeStart: 0.22
-    lungeEnd: 0.42
+    lungeDistance: 0.8
+    lungeStart: 0.18
+    lungeEnd: 0.4
     hitStop: 0.09
     shake: 0.7
     rumbleLow: 0.6
-    rumbleHigh: 0.6
+    rumbleHigh: 0.55
     slamRadius: 0
     slamDamageScale: 0.6
     next: H_Light3
   - id: H_Light3
-    state: RunAttack
+    state: Hammer_L3
     startOffset: 0
-    clipLength: 1.5333334
-    damage: 62
-    poiseDamage: 30
-    staminaCost: 24
+    clipLength: 1.5666667
+    damage: 58
+    poiseDamage: 28
+    staminaCost: 22
     manaCost: 0
     weight: 1
-    hitStart: 0.14
-    hitEnd: 0.3
-    comboOpen: 0.58
-    cancelOpen: 0.58
-    exitTime: 0.76
-    trackUntil: 0.12
+    hitStart: 0.39
+    hitEnd: 0.52
+    comboOpen: 0.66
+    cancelOpen: 0.68
+    exitTime: 0.84
+    trackUntil: 0.36
     trackTurnSpeed: 540
-    windupSpeed: 0.75
-    activeSpeed: 1.15
-    recoverySpeed: 1.1
+    windupSpeed: 1
+    activeSpeed: 1.25
+    recoverySpeed: 1.15
     chargeable: 0
     chargeHold: 0.3
     chargeMaxTime: 0.9
     chargeDamageMultiplier: 1.6
-    lungeDistance: 1.4
-    lungeStart: 0
-    lungeEnd: 0.3
+    lungeDistance: 1
+    lungeStart: 0.28
+    lungeEnd: 0.48
     hitStop: 0.11
-    shake: 0.8
+    shake: 0.85
     rumbleLow: 0.7
     rumbleHigh: 0.6
-    slamRadius: 0
-    slamDamageScale: 0.6
+    slamRadius: 1.8
+    slamDamageScale: 0.45
     next: H_Light1
   heavyCombo:
   - id: H_Heavy1
-    state: Skill
+    state: Hammer_H1
+    startOffset: 0.12
+    clipLength: 1.6666667
+    damage: 90
+    poiseDamage: 48
+    staminaCost: 28
+    manaCost: 0
+    weight: 2
+    hitStart: 0.46
+    hitEnd: 0.58
+    comboOpen: 0.7
+    cancelOpen: 0.72
+    exitTime: 0.88
+    trackUntil: 0.4
+    trackTurnSpeed: 540
+    windupSpeed: 1.15
+    activeSpeed: 1.3
+    recoverySpeed: 1.15
+    chargeable: 1
+    chargeHold: 0.42
+    chargeMaxTime: 1
+    chargeDamageMultiplier: 1.7
+    lungeDistance: 0.9
+    lungeStart: 0.4
+    lungeEnd: 0.56
+    hitStop: 0.13
+    shake: 1
+    rumbleLow: 0.9
+    rumbleHigh: 0.6
+    slamRadius: 2
+    slamDamageScale: 0.5
+    next: H_Heavy2
+  - id: H_Heavy2
+    state: Hammer_H2
     startOffset: 0
-    clipLength: 1.4000001
-    damage: 92
-    poiseDamage: 50
+    clipLength: 1.3666668
+    damage: 96
+    poiseDamage: 52
     staminaCost: 30
     manaCost: 0
     weight: 2
-    hitStart: 0.32
-    hitEnd: 0.45
-    comboOpen: 0.7
+    hitStart: 0.34
+    hitEnd: 0.46
+    comboOpen: 0.68
     cancelOpen: 0.7
     exitTime: 0.86
     trackUntil: 0.3
     trackTurnSpeed: 540
-    windupSpeed: 0.8
-    activeSpeed: 1.2
-    recoverySpeed: 1.1
+    windupSpeed: 1
+    activeSpeed: 1.3
+    recoverySpeed: 1.15
     chargeable: 1
-    chargeHold: 0.26
+    chargeHold: 0.3
     chargeMaxTime: 1
     chargeDamageMultiplier: 1.7
-    lungeDistance: 1.6
-    lungeStart: 0.05
-    lungeEnd: 0.36
+    lungeDistance: 1.2
+    lungeStart: 0.26
+    lungeEnd: 0.44
     hitStop: 0.14
     shake: 1.1
     rumbleLow: 1
     rumbleHigh: 0.7
     slamRadius: 2.2
     slamDamageScale: 0.5
-    next: H_Heavy2
-  - id: H_Heavy2
-    state: Heavy1
+    next: H_Heavy3
+  - id: H_Heavy3
+    state: Hammer_H3
     startOffset: 0
-    clipLength: 1.5666667
-    damage: 96
-    poiseDamage: 52
-    staminaCost: 30
+    clipLength: 1.4000001
+    damage: 120
+    poiseDamage: 64
+    staminaCost: 34
     manaCost: 0
     weight: 2
-    hitStart: 0.38
-    hitEnd: 0.5
-    comboOpen: 0.66
-    cancelOpen: 0.68
-    exitTime: 0.86
-    trackUntil: 0.34
+    hitStart: 0.31
+    hitEnd: 0.44
+    comboOpen: 0.74
+    cancelOpen: 0.74
+    exitTime: 0.88
+    trackUntil: 0.28
     trackTurnSpeed: 540
-    windupSpeed: 0.78
-    activeSpeed: 1.3
+    windupSpeed: 1
+    activeSpeed: 1.25
     recoverySpeed: 1.1
-    chargeable: 1
+    chargeable: 0
     chargeHold: 0.3
-    chargeMaxTime: 1
-    chargeDamageMultiplier: 1.7
-    lungeDistance: 1
-    lungeStart: 0.3
-    lungeEnd: 0.48
-    hitStop: 0.14
-    shake: 1.1
+    chargeMaxTime: 0.9
+    chargeDamageMultiplier: 1.6
+    lungeDistance: 2
+    lungeStart: 0.05
+    lungeEnd: 0.36
+    hitStop: 0.16
+    shake: 1.3
     rumbleLow: 1
-    rumbleHigh: 0.7
-    slamRadius: 2
-    slamDamageScale: 0.5
+    rumbleHigh: 0.8
+    slamRadius: 3
+    slamDamageScale: 0.6
     next: H_Heavy1
   runningAttack:
     id: H_Run
-    state: RunAttack
+    state: Hammer_Run
     startOffset: 0
     clipLength: 1.5333334
     damage: 70
@@ -189,23 +223,23 @@ MonoBehaviour:
     staminaCost: 24
     manaCost: 0
     weight: 1
-    hitStart: 0.14
-    hitEnd: 0.3
-    comboOpen: 0.58
-    cancelOpen: 0.58
-    exitTime: 0.76
-    trackUntil: 0.12
+    hitStart: 0.24
+    hitEnd: 0.37
+    comboOpen: 0.6
+    cancelOpen: 0.6
+    exitTime: 0.78
+    trackUntil: 0.2
     trackTurnSpeed: 540
-    windupSpeed: 1
-    activeSpeed: 1.15
-    recoverySpeed: 1.15
+    windupSpeed: 1.05
+    activeSpeed: 1.2
+    recoverySpeed: 1.2
     chargeable: 0
     chargeHold: 0.3
     chargeMaxTime: 0.9
     chargeDamageMultiplier: 1.6
     lungeDistance: 2.6
     lungeStart: 0
-    lungeEnd: 0.3
+    lungeEnd: 0.34
     hitStop: 0.11
     shake: 0.8
     rumbleLow: 0.25
@@ -249,22 +283,22 @@ MonoBehaviour:
     next: H_Light1
   dodgeAttack:
     id: H_Dodge
-    state: DodgeAttack
+    state: Hammer_Dodge
     startOffset: 0
-    clipLength: 1.1
+    clipLength: 1.3666668
     damage: 40
     poiseDamage: 16
     staminaCost: 18
     manaCost: 0
     weight: 1
-    hitStart: 0.16
-    hitEnd: 0.32
+    hitStart: 0.24
+    hitEnd: 0.35
     comboOpen: 0.55
     cancelOpen: 0.55
-    exitTime: 0.74
-    trackUntil: 0.16
+    exitTime: 0.72
+    trackUntil: 0.2
     trackTurnSpeed: 540
-    windupSpeed: 1.05
+    windupSpeed: 1.1
     activeSpeed: 1.2
     recoverySpeed: 1.2
     chargeable: 0
@@ -283,7 +317,7 @@ MonoBehaviour:
     next: H_Light2
   skill:
     id: H_Skill
-    state: Skill
+    state: Hammer_H3
     startOffset: 0
     clipLength: 1.4000001
     damage: 110
@@ -291,16 +325,16 @@ MonoBehaviour:
     staminaCost: 30
     manaCost: 0
     weight: 2
-    hitStart: 0.32
-    hitEnd: 0.45
-    comboOpen: 0.7
-    cancelOpen: 0.7
-    exitTime: 0.86
-    trackUntil: 0.3
+    hitStart: 0.31
+    hitEnd: 0.44
+    comboOpen: 0.74
+    cancelOpen: 0.74
+    exitTime: 0.88
+    trackUntil: 0.28
     trackTurnSpeed: 540
-    windupSpeed: 0.9
-    activeSpeed: 1.2
-    recoverySpeed: 1.15
+    windupSpeed: 1
+    activeSpeed: 1.25
+    recoverySpeed: 1.1
     chargeable: 0
     chargeHold: 0.3
     chargeMaxTime: 0.9

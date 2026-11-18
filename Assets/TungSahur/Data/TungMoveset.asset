@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 636c6e78794697f41b52e23a27633fe1, type: 3}
   m_Name: TungMoveset
   m_EditorClassIdentifier: TungSahur.Runtime::TungSahur.Combat.Moveset
+  version: 0
   lightCombo:
   - id: Light1
     state: Light1

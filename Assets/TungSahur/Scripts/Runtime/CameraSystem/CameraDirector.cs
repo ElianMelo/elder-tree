@@ -92,6 +92,7 @@ namespace TungSahur.CameraSystem
             if (player) pivotBase = player.position + Vector3.up * pivotHeight;
             if (followPivot && player) followPivot.position = player.position + Vector3.up * pivotHeight;
             if (aimPoint && player) aimPoint.position = player.position + Vector3.up * pivotHeight;
+            if (aimPoint) aimSmoothed = aimPoint.position;
             if (orbit && player) orbit.HorizontalAxis.Value = player.eulerAngles.y;
         }
 
@@ -113,6 +114,56 @@ namespace TungSahur.CameraSystem
 
         public void FovKick(float amount) => fovKick += amount;
 
+        // ------------------------------------------------------------------ cinematic focus
+        // A short takeover (Sky Bombardment): pull back, rise and turn to frame a point, then give the
+        // stick back. Look input is ignored while the focus holds; on release the steering fades out
+        // and the free/lock camera carries on from wherever the shot ended (no snap back).
+        [Header("Focus takeover")]
+        public float focusInTime = 0.45f;
+        public float focusOutTime = 0.7f;
+        [Tooltip("Safety: a focus never holds longer than this (seconds).")]
+        public float focusMaxTime = 6f;
+
+        bool focusHeld;
+        float focusLinear, focusRelease = -1f, focusStartedAt;
+        Vector3 focusPoint;
+        float focusZoom, focusPitch, focusAimBlend;
+        Vector3 aimSmoothed;
+
+        /// <summary>0..1 eased weight of the focus takeover.</summary>
+        public float FocusWeight { get; private set; }
+        public bool FocusActive => focusHeld;
+
+        /// <summary>Take the camera: frame <paramref name="point"/> from further back and a little higher.</summary>
+        public void FocusOn(Vector3 point, float zoomOut, float pitch, float aimBlend)
+        {
+            if (!focusHeld) focusStartedAt = Time.time;
+            focusHeld = true;
+            focusRelease = -1f;
+            focusPoint = point;
+            focusZoom = zoomOut;
+            focusPitch = pitch;
+            focusAimBlend = aimBlend;
+        }
+
+        /// <summary>Hand the camera back after <paramref name="delay"/> game seconds (the first scheduled release wins).</summary>
+        public void ReleaseFocus(float delay = 0f)
+        {
+            if (!focusHeld || focusRelease >= 0f) return;
+            focusRelease = Time.time + Mathf.Max(0f, delay);
+        }
+
+        void UpdateFocus(float sdt)
+        {
+            if (focusHeld && ((focusRelease >= 0f && Time.time >= focusRelease) || Time.time - focusStartedAt > focusMaxTime))
+            {
+                focusHeld = false;
+                focusRelease = -1f;
+            }
+            focusLinear = Mathf.MoveTowards(focusLinear, focusHeld ? 1f : 0f, sdt / Mathf.Max(0.01f, focusHeld ? focusInTime : focusOutTime));
+            FocusWeight = Ease.InOutCubic(focusLinear);
+        }
+
         void Update()
         {
             if (player == null || orbit == null) return;
@@ -125,6 +176,7 @@ namespace TungSahur.CameraSystem
             aimLinear = Mathf.MoveTowards(aimLinear, Aiming ? 1f : 0f, sdt / Mathf.Max(0.01f, Aiming ? aimInTime : aimOutTime));
             AimWeight = Aiming ? Ease.OutCubic(aimLinear) : Ease.InOutCubic(aimLinear);
             float aw = AimWeight;
+            UpdateFocus(sdt);
 
             // ---- pivot follow (smoothed, softer vertically so jumps don't jerk the frame)
             Vector3 target = player.position + Vector3.up * pivotHeight;
@@ -175,7 +227,7 @@ namespace TungSahur.CameraSystem
                     pitch -= d.y;
                 }
                 pitch = Mathf.Clamp(pitch, aimMinPitch, aimMaxPitch);
-                aimPoint.position = followPivot.position;
+                aimSmoothed = followPivot.position;
                 aimVel = Vector3.zero;
             }
             else if (locked != null)
@@ -192,11 +244,11 @@ namespace TungSahur.CameraSystem
                 yaw = Mathf.SmoothDampAngle(yaw, desiredYaw, ref yawVel, lockYawSmooth, Mathf.Infinity, sdt);
                 pitch = Mathf.SmoothDamp(pitch, desiredPitch, ref pitchVel, lockPitchSmooth, Mathf.Infinity, sdt);
                 Vector3 aim = Vector3.Lerp(followPivot.position, locked.LockPosition, lockAimBlend);
-                aimPoint.position = Vector3.SmoothDamp(aimPoint.position, aim, ref aimVel, 0.08f, Mathf.Infinity, sdt);
+                aimSmoothed = Vector3.SmoothDamp(aimSmoothed, aim, ref aimVel, 0.08f, Mathf.Infinity, sdt);
             }
             else
             {
-                if (!paused && input != null && input.GameplayEnabled)
+                if (!paused && input != null && input.GameplayEnabled && !focusHeld)
                 {
                     var d = input.LookDelta(dt);
                     yaw += d.x;
@@ -207,12 +259,27 @@ namespace TungSahur.CameraSystem
                     yaw = Mathf.SmoothDampAngle(yaw, recenterYaw, ref yawVel, 0.09f, Mathf.Infinity, dt);
                     pitch = Mathf.SmoothDamp(pitch, 12f, ref pitchVel, 0.12f, Mathf.Infinity, dt);
                 }
-                aimPoint.position = Vector3.SmoothDamp(aimPoint.position, followPivot.position, ref aimVel, 0.06f, Mathf.Infinity, sdt);
+                aimSmoothed = Vector3.SmoothDamp(aimSmoothed, followPivot.position, ref aimVel, 0.06f, Mathf.Infinity, sdt);
             }
+
+            // ---- focus takeover: turn behind the player toward the point, rise, pull back, aim between
+            float fw = aw > 0.5f ? 0f : FocusWeight;
+            Vector3 aimFinal = aimSmoothed;
+            if (fw > 0f)
+            {
+                Vector3 toF = focusPoint - player.position; toF.y = 0f;
+                float steer = Ease.Damp(focusHeld ? 6f : 3f, dt) * fw;
+                if (toF.sqrMagnitude > 0.25f)
+                    yaw = Mathf.LerpAngle(yaw, Mathf.Atan2(toF.x, toF.z) * Mathf.Rad2Deg + lockYawOffset * 0.5f, steer);
+                pitch = Mathf.Lerp(pitch, focusPitch, steer);
+                Vector3 focusAim = Vector3.Lerp(followPivot.position, focusPoint + Vector3.up * 0.8f, focusAimBlend);
+                aimFinal = Vector3.Lerp(aimSmoothed, focusAim, fw);
+            }
+            aimPoint.position = aimFinal;
 
             orbit.HorizontalAxis.Value = Mathf.Repeat(yaw + 180f, 360f) - 180f;
             orbit.VerticalAxis.Value = Mathf.Clamp(pitch, Mathf.Lerp(minPitch, aimMinPitch, aw), Mathf.Lerp(maxPitch, aimMaxPitch, aw));
-            if (baseRadius > 0f) orbit.Radius = Mathf.Lerp(baseRadius, aimRadius, aw);
+            if (baseRadius > 0f) orbit.Radius = Mathf.Lerp(baseRadius, aimRadius, aw) + focusZoom * fw;
 
             // ---- FOV (sprint widening, aim zoom tightening with the draw, punch kicks that spring back)
             fovKick = Mathf.SmoothDamp(fovKick, 0f, ref fovKickVel, 0.12f, Mathf.Infinity, dt);

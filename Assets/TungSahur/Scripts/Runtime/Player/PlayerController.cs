@@ -48,14 +48,20 @@ namespace TungSahur.Player
 
         [Header("Dodge")]
         public float rollDistance = 3.7f;
-        public float rollDuration = 0.66f;
+        [Tooltip("Roll state length (seconds). The Roll01 clip is played from rollClipRange.x to .y over this time.")]
+        public float rollDuration = 0.8f;
         [Tooltip("Elden Ring medium roll: 13 i-frames @30fps ≈ 0.43s.")]
         public Vector2 rollIFrames = new Vector2(0.03f, 0.46f);
+        [Tooltip("Normalized part of the Roll01 clip the roll plays: tuck-in to back on the feet.")]
+        public Vector2 rollClipRange = new Vector2(0.02f, 0.8f);
         public float backstepDistance = 2.1f;
         public float backstepDuration = 0.46f;
         public Vector2 backstepIFrames = new Vector2(0.02f, 0.26f);
         public float dodgeStamina = 16f;
-        public float dodgeClipLength = 1.07f;
+        [Tooltip("Roll clip length (Roll01), filled by the builder.")]
+        public float dodgeClipLength = 1.3f;
+        [Tooltip("Backstep clip length (Dodge01), filled by the builder.")]
+        public float backstepClipLength = 1.07f;
 
         [Header("Feel")]
         public float maxLean = 11f;
@@ -146,6 +152,7 @@ namespace TungSahur.Player
             motor.Tick(dt);
             if (motor.Grounded) lastGroundedTime = Time.time;
             UpdateGuardLayer(dt);
+            UpdateTwoHand(dt);
             UpdateBowAnimator(dt);
             UpdateLean(dt);
             stats.Guarding = IsGuarding;
@@ -182,6 +189,8 @@ namespace TungSahur.Player
 
         void SetState(PlayerState s)
         {
+            // a special cut short (hit, death) gives the camera back; after a blast its own release stands
+            if (State == PlayerState.Special && s != PlayerState.Special) CameraDirector.Instance?.ReleaseFocus(0.35f);
             State = s;
             stateTime = 0f;
         }
@@ -419,9 +428,6 @@ namespace TungSahur.Player
 
         // ------------------------------------------------------------------ procedural lean + squash
         float squash;
-        float rollAngle;
-        Vector3 rollAxisLocal = Vector3.right;
-        const float RollPivotHeight = 1.0f;
 
         void UpdateLean(float dt)
         {
@@ -443,13 +449,9 @@ namespace TungSahur.Player
 
         void UpdateVisualRoll()
         {
-            // compose: lean (around feet) then dodge roll (around body centre)
-            Quaternion lean = Quaternion.Euler(leanPitch, 0, leanRoll);
-            Quaternion roll = Quaternion.AngleAxis(rollAngle, rollAxisLocal);
-            Vector3 pivot = Vector3.up * RollPivotHeight;
-            Vector3 pos = pivot - roll * pivot;
-            visualRoot.localRotation = lean * roll;
-            visualRoot.localPosition = lean * pos;
+            // lean around the feet (the dodge roll is the pack's Roll01 clip, not a procedural spin)
+            visualRoot.localRotation = Quaternion.Euler(leanPitch, 0, leanRoll);
+            visualRoot.localPosition = Vector3.zero;
             float s = squash;
             visualRoot.localScale = new Vector3(1f + s * 0.6f, 1f - s, 1f + s * 0.6f);
         }

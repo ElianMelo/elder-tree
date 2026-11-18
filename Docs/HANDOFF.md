@@ -1,5 +1,26 @@
 # Handoff — Tung Tung Tung Sahur soulslike slice
 
+## 000000. Adjustments: grounded roll, two-handed hammer, heavy chain, special camera
+
+- **Roll** now plays the pack's **Roll01** (the in-place version). It used to play Dodge01, a sidestep, while the whole model spun 360° around a pivot 1 m above the ground, which is why it floated. The procedural spin is gone. The character's travel follows the clip's own root motion (`Roll01 [RM]` RootT.z, as a table in `PlayerController.Dodge.cs`): a fast push-off, then the travel stops once the feet are back under the hips. Roll length is 0.8 s and plays the clip from 2% to 80% (`rollClipRange`). I-frames are unchanged. The backstep keeps Dodge01. This applies to both forms.
+- **Two hands on the hammer, always.** The alligator now has its own override controller (`Animation/TungSahur_Croc.overrideController`): the idle is **CombatIdle2H01** and the guard is **Parry2H01**. A new arms-only layer (`TwoHandArms`, mask `M_Arms`) keeps the 2H hold on the arms during walk, run and jumps. The hammer is gripped like the pack's own 2H weapons. The builder reads HumanM's `B-handProp.R` prop bone on the same CombatIdle2H01 frame and transfers that grip to the alligator's hand (`CalibrateHammerGrip`). **`TwoHandGrip`** (new) then pins the left fist to the shaft after the animator, with two-bone IK on both arms. The alligator's wider shoulders leave its left fist about 35 cm off the handle, so the right hand also pulls the hammer in, by at most 18 cm. Each clip keeps its own hold: the 2H clips stack the hands, while the Polearm and Mining clips slide the left hand up the shaft. Measured after IK: the fist stays within 1 cm of the shaft in every hammer clip (7 cm for one instant of the leaping finisher). The grip lets go during rolls, hits, the cannon, the throw and transformations.
+- **Hammer moveset v2** (`CrocHammerMoveset`, all pack clips, with windows measured on the alligator by `PreviewRenderer.AnalyzeCrocSwing`):
+
+| | Clip | Notes |
+|---|---|---|
+| Light 1 | Attack2H03 | low sweep; the hit window opens **0.16 s** after the press (was ~0.73 s) |
+| Light 2 / 3 | Attack2H01 / Attack2H02 | diagonal / wind-round ground slam |
+| **Heavy 1** | Mining01 (overhead) | chargeable at the top, ground slam |
+| **Heavy 2** | AttackPolearm03 | chargeable, deep crash down |
+| **Heavy 3** | Attack2H04 | leaping finisher (not chargeable), 3 m slam |
+| Run / Roll attack | AttackPolearm02 / AttackPolearm01 | two-handed lunge / thrust |
+
+  The v1 heavies reused the club's heavy states, which the lights also played, so the hammer had no heavy chain of its own. `Moveset.version` is new: the builder rewrites the combos only when the asset is older than `CrocMovesetVersion` (2). Your future edits to the asset still survive rebuilds.
+- **No weapon glow:** charged heavies and the Sky Bombardment hang no longer light the weapon (emission and the tip flash are removed). A charge now reads through the charge sound, the FOV punch and a rumble on release.
+- **Sky Bombardment camera:** at the top of the leap the camera takes over (`CameraDirector.FocusOn`). It pulls back 2.6 m, rises to 24°, and turns to frame the impact point between you and the blast. Look input is ignored while it holds. It lets go 0.9 s after the blast (`ReleaseFocus`) and eases back, and the stick works again right away. Tune it in `Special_SkyBombardment` (Camera section). If the special is interrupted, the camera returns after 0.35 s.
+
+**Verified** (play mode, autopilot, god mode, alligator forced on): idle, walk and run with both hands on the shaft (grip gap ≈ 0); L1 → L2 → L3 and H1 → H2 → H3 chain; ground blasts on the heavies; roll on both forms (no spin, 3.8 m of travel, front-loaded); the special's camera pulls back to 7.2 m, rises to 24°, holds on the blast (all three dummies hit), releases, and then the right stick turns the view again. Console: 0 errors, 0 warnings. **Not verified by hand:** how the timings feel on a real pad, and the guard pose with the 2H parry. The preview renders are too low-res to judge the finger wrap closely.
+
 ## 00000. Alligator Mask (Bombardiro reward) + feedback pass
 
 **Reward:** felling Bombardiro Crocodilo drops the **Alligator Mask** beside the wreck (only if you don't own it yet). Walk into it to pick it up. The first time, a Majora's Mask–style cinematic plays: the mask is raised to the face and clamps on, then the world drops away into a churning vortex (only the body is drawn) while the body screams and flickers faster and faster between Elder Tree and alligator in hard camera cuts (face, low spin, overhead, profile), with bone-scale body horror, chromatic aberration, lens warp and hue shift. A white-out follows, the alligator roars, and an **ALLIGATOR MASK** card shows the controls. Skippable after 2.5 s (B / Esc / A). Ownership is saved in PlayerPrefs (`TungSahur.Masks.Owned`).

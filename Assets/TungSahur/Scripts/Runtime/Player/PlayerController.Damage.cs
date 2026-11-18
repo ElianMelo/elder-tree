@@ -95,7 +95,6 @@ namespace TungSahur.Player
             motor.GravityScale = 1f;
             if (State == PlayerState.Aim) ExitAim();
             IsSprinting = false;
-            rollAngle = 0f;
             SetState(PlayerState.Hit);
             FaceInstant(-dir);
             knockedDown = standingUp = false;
@@ -152,7 +151,6 @@ namespace TungSahur.Player
             if (State == PlayerState.Aim) ExitAim();
             IsSprinting = false;
             Invulnerable = false;
-            rollAngle = 0f;
             SetState(PlayerState.Dead);
             FaceInstant(-dir);
             animator.CrossFadeInFixedTime("Death", 0.08f);
@@ -171,7 +169,6 @@ namespace TungSahur.Player
             motor.Teleport(position, rotation);
             stats.RestoreAll();
             Invulnerable = false;
-            rollAngle = 0f;
             knockedDown = standingUp = false;
             SetState(PlayerState.Locomotion);
             animator.Play("Locomotion", 0, 0f);

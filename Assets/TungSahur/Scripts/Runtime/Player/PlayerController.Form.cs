@@ -67,7 +67,6 @@ namespace TungSahur.Player
             if (rig == null) { Debug.LogWarning($"[Forms] No rig '{form.rigId}' for {form.name}"); return; }
             if (State == PlayerState.Aim) ExitAim();
             EndSwing();
-            SetClubGlow(0f);
             ReturnHammer(true);
 
             // carry the pose over so the swap is seamless (same controller, same state names)
@@ -92,8 +91,8 @@ namespace TungSahur.Player
             trail = rig.trail;
             bowRig = rig.bowRig;
             cannonRig = rig.cannonRig;
-            mpb = null;
-            currentGlow = 0f;
+            twoHand = rig.twoHandGrip;
+            twoHandW = twoHandArmsW = 0f;
             moveset = form.moveset != null ? form.moveset : (baseForm != null ? baseForm.moveset : moveset);
             walkSpeed = baseWalk * form.moveSpeedMultiplier;
             runSpeed = baseRun * form.moveSpeedMultiplier;
@@ -110,8 +109,45 @@ namespace TungSahur.Player
             animator.SetBool(HGrounded, motor.Grounded);
             animator.SetLayerWeight(1, guardWeight);
             animator.SetLayerWeight(BowLegsLayer, 0f);
+            if (animator.layerCount > TwoHandLayer) animator.SetLayerWeight(TwoHandLayer, 0f);
             animator.Update(0f);
             FormChanged?.Invoke(form);
+        }
+
+        // ================================================================== two-handed hold
+        // Two-handed weapons (the bomb hammer): the off hand stays on the shaft through idle, walk/run,
+        // jumps and every swing. Walking and running keep the pack's 2H guard on the arms (arms-only
+        // layer), and TwoHandGrip pins the left fist to the handle after the pose is final.
+        const int TwoHandLayer = 3;
+        TwoHandGrip twoHand;
+        float twoHandW, twoHandArmsW;
+
+        bool TwoHandGripWanted()
+        {
+            if (twoHand == null || HammerThrown) return false;
+            switch (State)
+            {
+                case PlayerState.Locomotion:
+                case PlayerState.Air:
+                case PlayerState.Landing:
+                case PlayerState.Attack:
+                    return true;
+                case PlayerState.Special:
+                    return spPhase == SpecialPhase.Crouch || spPhase == SpecialPhase.Rise;
+                default:
+                    return false;   // roll, hits, death, cannon (hammer on the back), throw, transformations
+            }
+        }
+
+        void UpdateTwoHand(float dt)
+        {
+            bool grip = TwoHandGripWanted();
+            twoHandW = Mathf.MoveTowards(twoHandW, grip ? 1f : 0f, dt * (grip ? 7f : 12f));
+            if (twoHand != null) twoHand.Weight = Ease.InOutCubic(twoHandW);
+
+            bool arms = twoHand != null && (State == PlayerState.Locomotion || State == PlayerState.Air || State == PlayerState.Landing);
+            twoHandArmsW = Mathf.MoveTowards(twoHandArmsW, arms ? 1f : 0f, dt * (arms ? 6f : 10f));
+            if (animator.layerCount > TwoHandLayer) animator.SetLayerWeight(TwoHandLayer, twoHandArmsW * (1f - guardWeight));
         }
 
         // ================================================================== melee: bomb hammer
@@ -317,17 +353,18 @@ namespace TungSahur.Player
                         animator.CrossFadeInFixedTime("SpecialHold", 0.12f);
                         spTarget = SpecialTargetPoint();
                         CameraDirector.Instance?.FovKick(4f);
+                        FocusSpecialCamera();
                     }
                     break;
                 }
                 case SpecialPhase.Hang:
                     motor.SetVerticalVelocity(0f);
                     if (lockOn.Current != null) FaceTowards(lockOn.Current.transform.position, 540f, dt);
-                    SetClubGlow(Mathf.Clamp01(spT / sp.hangTime));
                     if (spT >= sp.hangTime)
                     {
                         spPhase = SpecialPhase.Throw; spT = 0f;
                         spTarget = SpecialTargetPoint();
+                        FocusSpecialCamera();
                         animator.CrossFadeInFixedTime("SpecialThrow", 0.06f);
                     }
                     break;
@@ -365,6 +402,13 @@ namespace TungSahur.Player
                     break;
             }
             UpdateThrownHammer(dt);
+        }
+
+        /// <summary>The camera pulls back and frames the impact point; control returns after the blast.</summary>
+        void FocusSpecialCamera()
+        {
+            if (sp == null || !sp.cameraFocus) return;
+            CameraDirector.Instance?.FocusOn(spTarget, sp.cameraZoomOut, sp.cameraPitch, sp.cameraAimBlend);
         }
 
         void ThrowHammer()
@@ -430,6 +474,7 @@ namespace TungSahur.Player
             TimeDirector.HitStop(0.12f);
             TimeDirector.SlowMo(0.5f, 0.45f);
             input.Rumble(1f, 1f, 0.45f);
+            CameraDirector.Instance?.ReleaseFocus(sp.cameraHoldAfterBlast);
         }
 
         /// <summary>The thrown hammer reappears in the hand (instantly when a form swap / death interrupts).</summary>
