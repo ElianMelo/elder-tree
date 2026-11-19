@@ -1,23 +1,25 @@
 """
-Crocodile boss + its bombs, PSX dark fantasy (Docs/ART_DIRECTION.md).
+Crocodile boss + its cannonballs, PSX dark fantasy (Docs/ART_DIRECTION.md).
 
     blender -b --factory-startup --python Tools/Blender/build_crocodile.py -- <out_dir>
 
 Live (MCP): exec with TS_EXPORT=False to build into a dedicated "Crocodile" scene without exporting.
 
-Crocodile.fbx  - a rusted four-engine high-wing bomber whose nose is a crocodile head (~2.4k tris).
+Crocodile.fbx   - a rotting Santos-Dumont 14-bis: box-kite canard up front, box-cell wings with dihedral at the
+                  back, open wooden truss fuselage, Antoinette V8 driving a two-paddle pusher propeller, bicycle
+                  wheels, a wicker pilot basket with a lantern. A crocodile head bursts out through the canard.
                   Separate parts so Unity can animate them procedurally:
-                    Bomber_Body   fuselage, scaly neck, cockpit, tail, wings, nacelles, landing gear
+                    Bomber_Body   airframe, canvas, wings, canard, engine, basket, gear, scaly neck
                     Bomber_Head   upper skull, brow, eyes, nostrils, upper teeth
                     Bomber_Jaw    lower jaw, origin on the hinge (rotate around local X to open)
-                    Bomber_Prop0-3 three-blade propellers, origin on the hub (spin around the nose axis)
+                    Bomber_Prop0  pusher propeller, origin on the hub (spins around the nose axis)
                   Nose points along Blender -Y (Unity +Z). Origin = ground under the wing root, wheels on z=0.
-AerialBomb.fbx  - finned drop bomb (~130 tris), origin at its centre, nose along -Y.
-LivingBomb.fbx  - the same bomb grown legs, a grin and red eyes (~420 tris). Parts: LBomb_Body,
+AerialBomb.fbx  - cast-iron cannonball with a fuse plug (~150 tris), origin at its centre, fuse trailing (+Y).
+LivingBomb.fbx  - the same cannonball grown croc legs, a grin and red eyes. Parts: LBomb_Body,
                   LBomb_Leg0-3 (origin on the hip), origin on the ground.
 
-Materials (remapped in Unity by name): M_BomberMetal, M_BomberGlass, M_Iron, M_CrocHide, M_CrocMouth,
-M_CrocTeeth, M_CrocEye, M_BombIron, M_BombBand, M_BombEye.
+Materials (remapped in Unity by name): M_BomberMetal, M_BomberCanvas, M_BomberWood, M_BomberGlass, M_Iron,
+M_CrocHide, M_CrocMouth, M_CrocTeeth, M_CrocEye, M_BombIron, M_BombBand, M_BombEye.
 UVs are box-projected in world metres (uniform texel density across the model).
 """
 import bpy
@@ -40,14 +42,15 @@ else:
     bpy.context.window.scene = scene
 
 MAT_RGB = {
-    "M_BomberMetal": (0.30, 0.31, 0.29), "M_BomberGlass": (0.10, 0.09, 0.16), "M_Iron": (0.12, 0.11, 0.11),
+    "M_BomberMetal": (0.30, 0.31, 0.29), "M_BomberGlass": (0.55, 0.32, 0.10), "M_Iron": (0.12, 0.11, 0.11),
+    "M_BomberCanvas": (0.40, 0.36, 0.27), "M_BomberWood": (0.15, 0.10, 0.06),
     "M_CrocHide": (0.20, 0.25, 0.14), "M_CrocMouth": (0.25, 0.08, 0.08), "M_CrocTeeth": (0.62, 0.57, 0.46),
     "M_CrocEye": (0.75, 0.70, 0.20), "M_BombIron": (0.17, 0.18, 0.13), "M_BombBand": (0.35, 0.09, 0.07),
     "M_BombEye": (0.9, 0.15, 0.08),
 }
 # metres per texture tile (box projection)
-TILE = {"M_BomberMetal": 2.4, "M_CrocHide": 1.4, "M_CrocMouth": 1.0, "M_CrocTeeth": 0.6, "M_Iron": 1.5,
-        "M_BombIron": 0.8, "M_BombBand": 0.8}
+TILE = {"M_BomberMetal": 2.4, "M_BomberCanvas": 2.0, "M_BomberWood": 1.2, "M_CrocHide": 1.4, "M_CrocMouth": 1.0,
+        "M_CrocTeeth": 0.6, "M_Iron": 1.5, "M_BombIron": 0.8, "M_BombBand": 0.8}
 
 
 def material(name):
@@ -180,98 +183,301 @@ def lerp_sections(secs, f):
     return secs[-1][1:]
 
 
+def tube(part, a, b, r, mat, sides=4, caps=True, phase=math.pi / 4):
+    """n-sided tube from a to b (struts, spars, cylinders)."""
+    d = (b - a).normalized()
+    s1 = d.cross(Vector((0, 0, 1)) if abs(d.z) < 0.9 else Vector((1, 0, 0))).normalized()
+    s2 = d.cross(s1).normalized()
+    ring = [s1 * math.cos(phase + k * 2 * math.pi / sides) * r + s2 * math.sin(phase + k * 2 * math.pi / sides) * r
+            for k in range(sides)]
+    part.loft([[a + o for o in ring], [b + o for o in ring]], mat, cap0=caps, cap1=caps)
+
+
+def strut(part, a, b, t, mat="M_Iron", caps=True):
+    tube(part, a, b, t * math.sqrt(2), mat, 4, caps)
+
+
+def slab(part, quad, thick, mat):
+    """a thin box from a planar quad (canvas panels must have two sides: URP culls back faces)."""
+    q = [Vector(p) for p in quad]
+    n = (q[1] - q[0]).cross(q[3] - q[0]).normalized() * thick * 0.5
+    top = [part.v(p + n) for p in q]
+    bot = [part.v(p - n) for p in q]
+    part.face(top, mat)
+    part.face(list(reversed(bot)), mat)
+    for j in range(4):
+        part.face([top[j], bot[j], bot[(j + 1) % 4], top[(j + 1) % 4]], mat)
+
+
 objects = []
 
-# =====================================================================================  BOMBER
+# =====================================================================================  14-BIS AIRFRAME
 body = Part("Bomber_Body")
-# ---- fuselage (8-sided, a little taller than wide; the tail rises like a real bomber)
-fus = [(-4.75, 0.14, 2.32), (-4.3, 0.30, 2.22), (-3.3, 0.54, 2.06), (-2.0, 0.74, 1.9), (-0.8, 0.86, 1.8),
-       (0.6, 0.90, 1.76), (1.6, 0.88, 1.75), (2.35, 0.84, 1.74)]
-body.loft(lathe_rings(fus, 8, wz=1.06, phase=math.pi / 8), "M_BomberMetal", cap1=False)
-# ---- scaly neck collar over the joint (croc hide, jagged)
-neck = [(1.85, 0.90, 1.75), (2.15, 1.02, 1.74), (2.45, 1.08, 1.72), (2.7, 1.0, 1.72)]
-body.loft(lathe_rings(neck, 10, wz=1.04, jag=0.07, seed=4), "M_CrocHide", cap0=False, cap1=False)
-# dorsal scutes running down the neck onto the back
-for k in range(6):
-    f = 2.5 - k * 0.42
-    zc = lerp_sections([(s[0], s[2], s[1]) for s in fus + [(2.6, 1.8, 0.86)]], f)
-    top = zc[0] + zc[1] * 1.06
-    body.spike(P(f, 0, top - 0.04), P(f - 0.18, 0, top + 0.2 - k * 0.02), Vector((1, 0, 0)), 0.11, "M_CrocHide")
-# ---- cockpit canopy (dim amber lit inside)
-can = []
-for f, w, z0, z1 in ((0.55, 0.28, 2.48, 2.6), (0.95, 0.44, 2.5, 2.92), (1.7, 0.5, 2.46, 2.95), (2.15, 0.38, 2.4, 2.72)):
-    can.append([P(f, -w, z0), P(f, -w * 0.8, z1 - 0.06), P(f, 0, z1), P(f, w * 0.8, z1 - 0.06), P(f, w, z0)])
-body.loft(can, "M_BomberGlass", closed=False)
-body.face([body.v(p) for p in can[0]] , "M_BomberGlass")
-# window frame bars
-for f in (0.95, 1.35, 1.7):
-    w, z0, z1 = lerp_sections([(0.55, 0.28, 2.48, 2.6), (0.95, 0.44, 2.5, 2.92), (1.7, 0.5, 2.46, 2.95), (2.15, 0.38, 2.4, 2.72)], f)
-    body.loft([[P(f - 0.03, -w - 0.02, z0), P(f - 0.03, 0, z1 + 0.03), P(f - 0.03, w + 0.02, z0)],
-               [P(f + 0.03, -w - 0.02, z0), P(f + 0.03, 0, z1 + 0.03), P(f + 0.03, w + 0.02, z0)]], "M_Iron", closed=False)
-
-# ---- wings: high-mounted, slight sweep and dihedral, 6-point airfoil
-def airfoil(lat, f_le, f_te, z, t):
-    c = f_le - f_te
-    return [P(f_le, lat, z), P(f_le - c * 0.22, lat, z + t * 0.62), P(f_le - c * 0.6, lat, z + t * 0.42),
-            P(f_te, lat, z + 0.01), P(f_le - c * 0.62, lat, z - t * 0.22), P(f_le - c * 0.18, lat, z - t * 0.36)]
+ZF = 1.8                                                      # fuselage centreline height
+FUS = [(-4.75, 0.2), (-3.4, 0.3), (-1.8, 0.36), (1.5, 0.3)]   # (f, half size): square box girder
 
 
-WING = [(-5.2, 0.38, -0.5, 2.78, 0.09), (-3.9, 0.6, -0.68, 2.69, 0.14), (-2.1, 0.86, -0.86, 2.6, 0.2),
-        (-0.5, 1.02, -0.96, 2.55, 0.24), (0.5, 1.02, -0.96, 2.55, 0.24), (2.1, 0.86, -0.86, 2.6, 0.2),
-        (3.9, 0.6, -0.68, 2.69, 0.14), (5.2, 0.38, -0.5, 2.78, 0.09)]
-body.loft([airfoil(*w) for w in WING], "M_BomberMetal")
-# ---- tailplane + fin
-TAIL = [(-2.0, -3.95, -4.55, 2.36, 0.07), (-0.3, -3.75, -4.75, 2.3, 0.1), (0.3, -3.75, -4.75, 2.3, 0.1),
-        (2.0, -3.95, -4.55, 2.36, 0.07)]
-body.loft([airfoil(*w) for w in TAIL], "M_BomberMetal")
-fin = []
-for z, f_le, f_te, t in ((2.3, -3.45, -4.8, 0.12), (3.2, -4.05, -4.95, 0.09), (3.95, -4.5, -5.05, 0.06)):
-    c = f_le - f_te
-    fin.append([P(f_le, 0, z), P(f_le - c * 0.25, t * 0.6, z), P(f_le - c * 0.62, t * 0.4, z), P(f_te, 0, z),
-                P(f_le - c * 0.62, -t * 0.4, z), P(f_le - c * 0.25, -t * 0.6, z)])
-body.loft(fin, "M_BomberMetal")
+def fs(f):
+    return lerp_sections(FUS, f)[0]
 
-# ---- engine nacelles (iron cowling ring at the front, exhaust stubs)
-ENGINES = [-3.9, -2.1, 2.1, 3.9]
-PROP_F = 1.98
-for e, lat in enumerate(ENGINES):
-    zw = lerp_sections([(w[0], w[3]) for w in WING], lat)[0]
-    zc = zw - 0.14
-    prof = [(-1.05, 0.10, zc + 0.05), (-0.45, 0.28, zc), (0.5, 0.34, zc), (1.45, 0.36, zc), (1.6, 0.40, zc),
-            (1.9, 0.38, zc), (1.95, 0.24, zc)]
-    body.loft(lathe_rings(prof, 8, phase=math.pi / 8, lat0=lat), "M_BomberMetal",
-              mats=lambda i, j: "M_Iron" if i >= 4 or i == -1 else "M_BomberMetal")
-    for s in (-1, 1):
-        a = P(0.9, lat + s * 0.3, zc - 0.12)
-        body.loft([[a + Vector((dx, 0, dz)) for dx, dz in ((-0.05, -0.05), (0.05, -0.05), (0.05, 0.05), (-0.05, 0.05))],
-                   [a + Vector((s * 0.12 + dx, 0.35, dz - 0.04)) for dx, dz in ((-0.04, -0.04), (0.04, -0.04), (0.04, 0.04), (-0.04, 0.04))]],
-                  "M_Iron")
 
-# ---- landing gear: main legs under the inner engines + a nose wheel under the neck
-def wheel(part, f, lat, z, r, w):
+def corner(f, sl, sz, inset=1.0):
+    s = fs(f) * inset
+    return P(f, sl * s, ZF + sz * s)
+
+
+def sweep(part, pts, radii, mat, sides=6, cap0=True, cap1=True, jag=0.0, seed=0):
+    """tube along a polyline with per-point radii (legs, tail)."""
+    pts = [Vector(p) for p in pts]
     rings = []
-    for x in (lat - w / 2, lat + w / 2):
-        rings.append([P(f + math.cos(a) * r, x, z + math.sin(a) * r) for a in (k * 2 * math.pi / 8 for k in range(8))])
-    part.loft(rings, "M_Iron")
+    for i, p in enumerate(pts):
+        t = (pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]).normalized()
+        ref = Vector((1, 0, 0)) if abs(t.x) < 0.9 else Vector((0, 0, 1))
+        s1 = (ref - t * ref.dot(t)).normalized()
+        s2 = t.cross(s1)
+        ring = []
+        for k in range(sides):
+            a = 2 * math.pi * k / sides
+            r = radii[i] * (1 + jag * noise.noise(Vector((i * 1.7 + seed, k * 2.3, seed * 0.37))))
+            ring.append(p + (s1 * math.cos(a) + s2 * math.sin(a)) * r)
+        rings.append(ring)
+    part.loft(rings, mat, cap0=cap0, cap1=cap1)
 
 
-def strut(part, a, b, t):
-    d = (b - a).normalized()
-    s1 = d.cross(Vector((0, 0, 1)) if abs(d.z) < 0.9 else Vector((1, 0, 0))).normalized() * t
-    s2 = d.cross(s1).normalized() * t
-    part.loft([[a + s1, a + s2, a - s1, a - s2], [b + s1, b + s2, b - s1, b - s2]], "M_Iron")
+def patch(part, centre, u, v, w, h, seed):
+    """an irregular stitched-on hide patch (thin slab) on the plane spanned by u, v."""
+    j = [1 + 0.28 * noise.noise(Vector((seed * 1.3, k * 1.7, 0.3))) for k in range(8)]
+    slab(part, [centre - u * w * j[0] - v * h * j[1], centre + u * w * j[2] - v * h * j[3],
+                centre + u * w * j[4] + v * h * j[5], centre - u * w * j[6] + v * h * j[7]], 0.03, "M_CrocHide")
 
 
-for lat in (-2.1, 2.1):
-    wheel(body, 0.35, lat, 0.46, 0.46, 0.3)
-    strut(body, P(0.35, lat, 2.2), P(0.35, lat, 0.46), 0.07)
-    strut(body, P(-0.45, lat, 2.25), P(0.3, lat, 0.75), 0.045)
-wheel(body, 1.55, 0, 0.3, 0.3, 0.2)
-strut(body, P(1.5, 0, 1.0), P(1.55, 0, 0.3), 0.05)
+def membrane(part, quad, sag, thick, mat):
+    """a two-sided hide sheet over a quad whose middle billows by `sag` (closed, so URP shows both faces)."""
+    q = [Vector(x) for x in quad]
+    n = (q[1] - q[0]).cross(q[3] - q[0]).normalized() * thick * 0.5
+    c = sum(q, Vector()) / 4 + sag
+    top = [part.v(x + n) for x in q]
+    bot = [part.v(x - n) for x in q]
+    ct, cb = part.v(c + n), part.v(c - n)
+    for j in range(4):
+        part.face([top[j], top[(j + 1) % 4], ct], mat)
+        part.face([bot[(j + 1) % 4], bot[j], cb], mat)
+        part.face([top[j], bot[j], bot[(j + 1) % 4], top[(j + 1) % 4]], mat)
+
+
+CORNERS = ((-1, -1), (1, -1), (1, 1), (-1, 1))
+WOOD = 1.6           # framing is chunky and dark (the 1906 ash spars read as twigs at PSX resolution)
+
+# ---- the croc IS the fuselage: its hide is stretched over the box girder, pinned along the four longerons
+# and bulging between them (saggy belly). Octagon rings: diagonals sit on the longerons.
+
+
+def body_ring(f, out=0.0):
+    s = fs(f)
+    ring = []
+    for j in range(8):
+        a = j * math.pi / 4
+        if j % 2:
+            r = s * math.sqrt(2) * 0.97
+        else:
+            r = s * (1.65 if j == 6 else 1.5) * (1 + 0.07 * noise.noise(Vector((f * 1.3, j * 2.1, 0.5))))
+        r += out
+        ring.append(P(f, math.cos(a) * r, ZF + math.sin(a) * r))
+    return ring
+
+
+BODY_F = [1.5, 0.9, 0.2, -0.5, -1.2, -1.9, -2.6, -3.3, -4.0, -4.75]
+body.loft([body_ring(f) for f in BODY_F], "M_CrocHide")
+# longerons ride the creases of the hide
+for sl, sz in CORNERS:
+    for (f0, _), (f1, _) in zip(FUS, FUS[1:]):
+        strut(body, corner(f0, sl, sz), corner(f1, sl, sz), 0.035 * WOOD, "M_BomberWood", caps=False)
+# wooden hoops binding the body like a harness
+for f in (0.75, -0.6, -3.0, -4.3):
+    ring = body_ring(f, 0.04)
+    for k in range(8):
+        strut(body, ring[k], ring[(k + 1) % 8], 0.035 * WOOD, "M_BomberWood", caps=False)
+# dorsal scutes in two rows along the back (clear of the basket and the engine)
+for f in (1.3, 0.95, 0.6, 0.25, -0.1, -0.95, -1.3, -2.75, -3.05, -4.5):
+    s = fs(f)
+    for sl in (-1, 1):
+        base = P(f, sl * s * 0.55, ZF + s * 1.38)
+        body.spike(base, base + Vector((sl * 0.04, 0.12, 0.17 * (s / 0.36))), Vector((1, 0, 0)), 0.07, "M_CrocHide")
+# tail: drops off the end of the girder and curls forward under it, clear of the pusher prop
+TAIL = [P(-4.5, 0, 1.78), P(-4.62, 0, 1.45), P(-4.52, 0, 1.15), P(-4.3, 0, 0.95), P(-4.02, 0, 0.86), P(-3.75, 0, 0.88)]
+sweep(body, TAIL, [0.25, 0.2, 0.15, 0.11, 0.08, 0.05], "M_CrocHide", sides=6, jag=0.08, seed=9)
+body.spike(TAIL[-1], P(-3.5, 0, 0.93), Vector((1, 0, 0)), 0.05, "M_CrocHide")
+for k, p in enumerate(TAIL[1:4]):
+    body.spike(p + Vector((0, 0.1, 0.06)), p + Vector((0, 0.28 - 0.04 * k, 0.12)), Vector((1, 0, 0)), 0.06, "M_CrocHide")
+
+# ---- box-kite canard around the neck: four canvas panels + thick ash edge frames, braced back to the girder
+CF0, CF1, CW, CH, CZ = 0.8, 2.3, 1.45, 1.05, 1.8
+for s in (-1, 1):
+    slab(body, [P(CF0, -CW, CZ + s * CH), P(CF0, CW, CZ + s * CH), P(CF1, CW, CZ + s * CH), P(CF1, -CW, CZ + s * CH)],
+         0.05, "M_BomberCanvas")
+    slab(body, [P(CF0, s * CW, CZ - CH), P(CF1, s * CW, CZ - CH), P(CF1, s * CW, CZ + CH), P(CF0, s * CW, CZ + CH)],
+         0.05, "M_BomberCanvas")
+    patch(body, P(1.5, s * (CW + 0.04), CZ + 0.15), Vector((0, 1, 0)), Vector((0, 0, 1)), 0.42, 0.34, 3 + s)
+patch(body, P(1.45, 0.5, CZ + CH + 0.04), Vector((0, 1, 0)), Vector((1, 0, 0)), 0.4, 0.45, 7)
+for f in (CF0, CF1):
+    rect = [P(f, -CW, CZ - CH), P(f, CW, CZ - CH), P(f, CW, CZ + CH), P(f, -CW, CZ + CH)]
+    for k in range(4):
+        strut(body, rect[k], rect[(k + 1) % 4], 0.04 * WOOD, "M_BomberWood")
+    for sl, sz in CORNERS:
+        if f == CF0:
+            strut(body, P(f, sl * CW, CZ + sz * CH), corner(0.0, sl, sz), 0.03 * WOOD, "M_BomberWood")
+# side-edge rails along the box
+for sl, sz in CORNERS:
+    strut(body, P(CF0, sl * CW, CZ + sz * CH), P(CF1, sl * CW, CZ + sz * CH), 0.035 * WOOD, "M_BomberWood")
+
+# hide webbing stretched from the neck to the canard's front frame (closes the box around the head).
+# A closed shell (front skin + back skin) so it renders from both sides.
+NW = 14
+web_f, web_b = [], []
+for f_off, dst in ((0.0, web_f), (-0.05, web_b)):
+    for ring_t, ff in ((0.0, 2.2), (0.5, 2.12), (1.0, 2.26)):
+        ring = []
+        for k in range(NW):
+            a = 2 * math.pi * k / NW
+            c, sn = math.cos(a), math.sin(a)
+            neck_p = Vector((c * 0.8, sn * 0.84))
+            rs = min((CW - 0.05) / max(abs(c), 1e-4), (CH - 0.05) / max(abs(sn), 1e-4))
+            rect_p = Vector((c * rs, sn * rs))
+            q = neck_p.lerp(rect_p, ring_t)
+            if ring_t == 0.5:
+                q *= 1 + 0.06 * noise.noise(Vector((k * 1.9, 0.4, 2.0)))
+            ring.append(P(ff + f_off, q.x, 1.76 + q.y))
+        dst.append(ring)
+body.loft(web_f + list(reversed(web_b)) + [web_f[0]], "M_CrocHide", cap0=False, cap1=False)
+
+# ---- wings: two box-cell wings with strong dihedral, three cells each, set at the back.
+# The planes run into the girder; the cell walls start just outboard of the engine.
+LE, TE, R0, R1, ZL, GAP = -2.5, -4.6, 0.5, 5.6, 1.66, 1.3
+RIN = 0.24
+DIH = math.tan(math.radians(10))
+
+
+def zl(lat):
+    return ZL + (max(abs(lat), R0) - R0) * DIH
+
+
+for s in (-1, 1):
+    span = (P(0, s * R1, zl(R1)) - P(0, s * R0, zl(R0))).normalized()
+    nrm = span.cross(Vector((0, 1, 0))).normalized()
+    if nrm.z < 0:
+        nrm = -nrm
+    for dz in (0.0, GAP):
+        slab(body, [P(LE, s * RIN, zl(R0) + dz), P(LE, s * R1, zl(R1) + dz), P(TE, s * R1, zl(R1) + dz),
+                    P(TE, s * RIN, zl(R0) + dz)], 0.06, "M_BomberCanvas")
+        # ash spars along both edges
+        strut(body, P(LE + 0.04, s * RIN, zl(R0) + dz), P(LE + 0.04, s * (R1 + 0.04), zl(R1) + dz), 0.04 * WOOD, "M_BomberWood")
+        strut(body, P(TE - 0.03, s * RIN, zl(R0) + dz), P(TE - 0.03, s * (R1 + 0.04), zl(R1) + dz), 0.03 * WOOD, "M_BomberWood")
+    for k in range(4):
+        lat = R0 + (R1 - R0) * k / 3
+        # inner cell walls are leathery croc-hide membranes, the tip walls stay canvas
+        slab(body, [P(LE, s * lat, zl(lat)), P(TE, s * lat, zl(lat)), P(TE, s * lat, zl(lat) + GAP),
+                    P(LE, s * lat, zl(lat) + GAP)], 0.05, "M_CrocHide" if k < 3 else "M_BomberCanvas")
+        for fp in (LE + 0.04, TE - 0.03):
+            strut(body, P(fp, s * lat, zl(lat)), P(fp, s * lat, zl(lat) + GAP), 0.035 * WOOD, "M_BomberWood")
+    # the cells' trailing openings are closed by billowing croc-hide sheets (the outer one torn half way)
+    for k in range(3):
+        l0, l1 = R0 + (R1 - R0) * k / 3 + 0.04, R0 + (R1 - R0) * (k + 1) / 3 - 0.04
+        top = GAP - 0.04 if k < 2 else GAP * 0.55
+        membrane(body, [P(TE + 0.05, s * l0, zl(l0) + 0.04), P(TE + 0.05, s * l1, zl(l1) + 0.04),
+                        P(TE + 0.05, s * l1, zl(l1) + top), P(TE + 0.05, s * l0, zl(l0) + top)],
+                 Vector((0, -0.3, 0)), 0.04, "M_CrocHide")
+    # hide patches stitched over the torn canvas: on top of the upper plane, under the lower one
+    for i, (l, fc, w, h) in enumerate(((1.4, -3.2, 0.5, 0.42), (3.1, -3.95, 0.42, 0.35), (4.6, -3.05, 0.36, 0.48))):
+        patch(body, P(fc, s * l, zl(l) + GAP) + nrm * 0.045, span, Vector((0, 1, 0)), w, h, 11 + i + 5 * s)
+    for i, (l, fc, w, h) in enumerate(((2.3, -3.5, 0.55, 0.42), (4.2, -3.1, 0.4, 0.32))):
+        patch(body, P(fc, s * l, zl(l)) - nrm * 0.045, span, Vector((0, 1, 0)), w, h, 21 + i + 5 * s)
+    # scutes riding the upper leading edge
+    for l in (1.2, 2.2, 3.2, 4.2):
+        base = P(LE + 0.04, s * l, zl(l) + GAP + 0.05)
+        body.spike(base, base + Vector((0, 0.16, 0.2)), Vector((1, 0, 0)), 0.07, "M_CrocHide")
+
+# ---- Antoinette V8 saddled on the croc's back between the wing roots
+E0, E1, EZ = -4.35, -3.25, 0.12
+body.loft([[P(f, -0.2, 2.0 + EZ), P(f, 0.2, 2.0 + EZ), P(f, 0.2, 2.3 + EZ), P(f, -0.2, 2.3 + EZ)] for f in (E0, E1)],
+          "M_BomberMetal")
+for s in (-1, 1):
+    up = Vector((s * 0.5, 0, 0.866))
+    for k in range(4):
+        base = P(-4.2 + k * 0.29, s * 0.08, 2.24 + EZ)
+        tube(body, base, base + up * 0.32, 0.08, "M_Iron", sides=6, phase=0)
+        tube(body, base + up * 0.32, base + up * 0.38, 0.06, "M_BomberMetal", sides=6, phase=0)
+    # exhaust manifold along each bank, a stub pipe out the back
+    m0, m1 = P(-4.25, s * 0.3, 2.6 + EZ), P(-3.3, s * 0.3, 2.6 + EZ)
+    strut(body, m0, m1, 0.035, "M_Iron")
+    strut(body, m0, P(-4.55, s * 0.36, 2.48 + EZ), 0.03, "M_Iron")
+strut(body, P(E0, 0, 2.17 + EZ), P(-4.88, 0, 2.17 + EZ), 0.03, "M_Iron")  # prop shaft
+
+# ---- wicker pilot basket hung under the girder just ahead of the wings, a lantern on its rim
+B0, B1, BW, BZ0, BZ1 = -2.4, -1.75, 0.5, 1.2, 2.3
+slab(body, [P(B0, -BW, BZ0), P(B0, BW, BZ0), P(B1, BW, BZ0), P(B1, -BW, BZ0)], 0.06, "M_BomberWood")
+for f in (B0, B1):
+    slab(body, [P(f, -BW, BZ0), P(f, BW, BZ0), P(f, BW, BZ1), P(f, -BW, BZ1)], 0.06, "M_BomberWood")
+for s in (-1, 1):
+    slab(body, [P(B0, s * BW, BZ0), P(B1, s * BW, BZ0), P(B1, s * BW, BZ1), P(B0, s * BW, BZ1)], 0.06, "M_BomberWood")
+lc = P(B1 + 0.02, 0.32, BZ1)
+tube(body, lc, lc + Vector((0, 0, 0.22)), 0.08, "M_BomberGlass", sides=6, phase=0)
+tube(body, lc + Vector((0, 0, 0.22)), lc + Vector((0, 0, 0.29)), 0.1, "M_Iron", sides=6, phase=0)
+
+# ---- bicycle-wheel landing gear: two mains under the wing roots + a small nose wheel
+
+
+def bike_wheel(part, f, lat, zc, r, seg=10):
+    rings = []
+    for k in range(seg):
+        a = k * 2 * math.pi / seg
+        c = P(f + math.cos(a) * r, lat, zc + math.sin(a) * r)
+        d = Vector((0, -math.cos(a), math.sin(a)))
+        x = Vector((1, 0, 0))
+        w = 0.05
+        rings.append([c + d * w + x * w, c + d * w - x * w, c - d * w - x * w, c - d * w + x * w])
+    part.loft(rings + [rings[0]], "M_Iron", cap0=False, cap1=False)
+    tube(part, P(f, lat - 0.07, zc), P(f, lat + 0.07, zc), 0.07, "M_Iron", sides=6, phase=0)
+    for k in range(3):
+        a = k * math.pi / 3 + 0.3
+        d = Vector((0, -math.cos(a), math.sin(a))) * r
+        strut(part, P(f, lat, zc) + d, P(f, lat, zc) - d, 0.016, "M_Iron", caps=False)
+
+
+GF, GL, GR = -2.85, 0.78, 0.44
+for s in (-1, 1):
+    bike_wheel(body, GF, s * GL, GR, GR)
+    axle = P(GF, s * (GL - 0.08), GR)
+    strut(body, P(GF + 0.45, s * 0.3, 1.48), axle, 0.05)
+    strut(body, P(GF - 0.45, s * 0.28, 1.5), axle, 0.05)
+strut(body, P(GF, -GL + 0.08, GR), P(GF, GL - 0.08, GR), 0.035)
+bike_wheel(body, 0.6, 0, 0.26, 0.26, seg=8)
+for s in (-1, 1):
+    strut(body, P(0.4, s * 0.22, 1.5), P(0.6, s * 0.09, 0.26), 0.035)
+
+# ---- croc limbs clutching the airframe: forelegs hook the canard's rear frame, hind legs grip the gear struts
+
+
+def claws(part, at, tips):
+    for t in tips:
+        part.spike(at, t, Vector((0, 1, 0)), 0.035, "M_CrocTeeth")
+
+
+for s in (-1, 1):
+    fore = [P(0.42, s * 0.36, 1.62), P(0.3, s * 0.95, 1.28), P(0.58, s * 1.3, 0.98), P(0.74, s * 1.43, 0.86)]
+    sweep(body, fore, [0.17, 0.12, 0.09, 0.075], "M_CrocHide", jag=0.1, seed=30 + s)
+    hand = fore[-1]
+    claws(body, hand, [P(0.84 + 0.05 * c, s * (1.52 + 0.02 * c), 0.66 + 0.03 * c) for c in (-1, 0, 1)])
+    hind = [P(-2.7, s * 0.4, 1.58), P(-2.5, s * 0.9, 1.3), P(-2.6, s * 0.74, 0.98), P(-2.66, s * 0.6, 0.9)]
+    sweep(body, hind, [0.19, 0.14, 0.1, 0.08], "M_CrocHide", jag=0.1, seed=40 + s)
+    claws(body, hind[-1], [P(-2.58, s * 0.47, 0.76), P(-2.74, s * 0.5, 0.77), P(-2.72, s * 0.64, 0.72)])
+
+# ---- scaly neck: the croc's head bursts forward through the canard
+neck = [(1.4, 0.46, 1.8), (1.8, 0.6, 1.78), (2.1, 0.78, 1.76), (2.45, 0.9, 1.74)]
+body.loft(lathe_rings(neck, 10, wz=1.04, jag=0.08, seed=4), "M_CrocHide", cap0=False, cap1=False)
 objects.append(body.finish())
 
 # ---- the croc head is oversized (the reference reads croc first, plane second): scale about the neck
-HS = 1.32
+HS = 1.12
 
 
 def HX(co):
@@ -351,26 +557,24 @@ for s in (-1, 1):
         jaw.spike(base, base + Vector((s * -0.02, 0, L)), Vector((0, 1, 0)), 0.055 if big else 0.04, "M_CrocTeeth")
 objects.append(jaw.finish())
 
-# ---- propellers (3 paddle blades + spinner), origin on the hub
-for e, lat in enumerate(ENGINES):
-    zw = lerp_sections([(w[0], w[3]) for w in WING], lat)[0]
-    hub = P(PROP_F, lat, zw - 0.14)
-    prop = Part(f"Bomber_Prop{e}", hub)
-    prop.loft(lathe_rings([(PROP_F - 0.05, 0.17, hub.z), (PROP_F + 0.12, 0.15, hub.z), (PROP_F + 0.3, 0.06, hub.z)], 6,
-                          lat0=lat), "M_Iron", cap1=True)
-    for b in range(3):
-        a = b * 2 * math.pi / 3 + (0.3 if e % 2 else 0)
-        radial = Vector((math.cos(a), 0, math.sin(a)))
-        tang = Vector((-math.sin(a), 0, math.cos(a)))
-        pitch = math.radians(24)
-        rings = []
-        for r, w in ((0.12, 0.08), (0.45, 0.13), (0.78, 0.1), (0.86, 0.05)):
-            c = hub + radial * r + Vector((0, -0.02, 0))
-            chord = (tang * math.cos(pitch) + Vector((0, 1, 0)) * math.sin(pitch)) * w
-            thick = (Vector((0, 1, 0)) * math.cos(pitch) - tang * math.sin(pitch)) * 0.02
-            rings.append([c - chord, c + thick, c + chord, c - thick])
-        prop.loft(rings, "M_Iron")
-    objects.append(prop.finish(smooth_angle=20))
+# ---- pusher propeller behind the engine: two steel arms carrying flat paddle blades, origin on the hub
+hub = P(-4.92, 0, 2.29)
+prop = Part("Bomber_Prop0", hub)
+prop.loft(lathe_rings([(-4.84, 0.1, hub.z), (-4.94, 0.11, hub.z), (-5.1, 0.04, hub.z)], 6), "M_Iron")
+for b in range(2):
+    a = b * math.pi + 0.4
+    radial = Vector((math.cos(a), 0, math.sin(a)))
+    tang = Vector((-math.sin(a), 0, math.cos(a)))
+    strut(prop, hub + radial * 0.08, hub + radial * 0.62, 0.028)
+    pitch = math.radians(20)
+    rings = []
+    for r, w in ((0.45, 0.1), (0.6, 0.21), (1.05, 0.23), (1.2, 0.13)):
+        c = hub + radial * r + Vector((0, 0.02, 0))
+        chord = (tang * math.cos(pitch) + Vector((0, 1, 0)) * math.sin(pitch)) * w
+        thick = (Vector((0, 1, 0)) * math.cos(pitch) - tang * math.sin(pitch)) * 0.025
+        rings.append([c - chord, c + thick, c + chord, c - thick])
+    prop.loft(rings, "M_BomberMetal")
+objects.append(prop.finish(smooth_angle=20))
 
 
 def export(path, objs):
@@ -396,74 +600,78 @@ def tris(objs):
 export("Crocodile.fbx", objects)
 print("Crocodile tris", tris(objects))
 
-# =====================================================================================  AERIAL BOMB
-BOMB_PROF = [(-0.46, 0.07), (-0.32, 0.16), (-0.1, 0.2), (0.25, 0.2), (0.42, 0.16), (0.54, 0.08), (0.58, 0.02)]
+# =====================================================================================  CANNONBALLS
 
 
-def bomb_body(part, scale, z, lat=0.0, f0=0.0, band=True):
-    prof = [(f0 + f * scale, r * scale, z) for f, r in BOMB_PROF]
-    part.loft(lathe_rings(prof, 8, phase=math.pi / 8, lat0=lat), "M_BombIron")
-    if band:
-        part.loft(lathe_rings([(f0 + 0.12 * scale, 0.205 * scale, z), (f0 + 0.2 * scale, 0.205 * scale, z)], 8,
-                              phase=math.pi / 8, lat0=lat), "M_BombBand", cap0=False, cap1=False)
-    # box tail: four fins
-    for k in range(4):
-        a = k * math.pi / 2 + math.pi / 4
-        d = Vector((math.cos(a), 0, math.sin(a)))
-        base = Vector((lat, 0, z))
-        pts = [(-0.38, 0.06), (-0.66, 0.06), (-0.66, 0.26), (-0.5, 0.26)]
-        quad = [base + P(f0 + f * scale, 0, 0) + d * r * scale for f, r in pts]
-        th = Vector((-d.z, 0, d.x)) * 0.012 * scale
-        part.loft([[q + th for q in quad], [q - th for q in quad]], "M_BombIron")
+def ball(part, r, zc, sides=10, jag=0.035, seed=7):
+    """cast-iron sphere around the forward axis (poles front/back), slightly lumpy like a sand casting."""
+    prof = []
+    for t in (14, 40, 65, 90, 115, 140, 166):
+        a = math.radians(t)
+        prof.append((r * math.cos(a), r * math.sin(a), zc))
+    part.loft(lathe_rings(prof, sides, jag=jag, seed=seed, phase=math.pi / sides), "M_BombIron")
 
 
-bomb = Part("AerialBomb")
-bomb_body(bomb, 1.0, 0.0)
-bomb_obj = bomb.finish()
+def on_ball(r, zc, elev, az, out=0.0):
+    """point on the ball surface: elev up from the equator, az right of the nose (degrees)."""
+    e, a = math.radians(elev), math.radians(az)
+    return P((r + out) * math.cos(e) * math.cos(a), (r + out) * math.cos(e) * math.sin(a), zc + (r + out) * math.sin(e))
+
+
+def fuse(part, base, axis, r):
+    """iron fuse plug + a frayed cord, base on the ball surface, axis pointing out."""
+    tube(part, base - axis * 0.02, base + axis * 0.05 * r / 0.3, 0.065 * r / 0.3, "M_BombBand", sides=6, phase=0)
+    tip = base + axis * 0.05 * r / 0.3
+    strut(part, tip, tip + (axis * 0.09 + Vector((0.02, 0, 0.03))) * r / 0.3, 0.012, "M_Iron")
+
+
+BALL_R = 0.3
+cball = Part("AerialBomb")
+ball(cball, BALL_R, 0.0)
+# casting seam around the middle
+cball.loft(lathe_rings([(0.0, BALL_R * 1.02, 0.0), (0.03, BALL_R * 1.02, 0.0)], 10, phase=math.pi / 10), "M_Iron",
+           cap0=False, cap1=False)
+fuse(cball, P(-BALL_R * 0.97, 0, 0), Vector((0, 1, 0)), BALL_R)
+bomb_obj = cball.finish(smooth_angle=50)
 bomb_obj.location.x += 3.0 if not EXPORT else 0
 export("AerialBomb.fbx", [bomb_obj])
 print("AerialBomb tris", tris([bomb_obj]))
 
-# =====================================================================================  LIVING BOMB
-LB_Z = 0.5
-LS = 0.95
+# =====================================================================================  LIVING CANNONBALL
+LB_Z = 0.52
+LR = 0.3
 lbody = Part("LBomb_Body")
-bomb_body(lbody, LS, LB_Z)
-# eyes: angry slanted red glints on the nose cone
+ball(lbody, LR, LB_Z, sides=12, seed=11)
+# eyes: angry slanted red glints on the front, an iron brow plate over each
 for s in (-1, 1):
-    c = P(0.42 * LS, s * 0.11, LB_Z + 0.15)
-    ring = [[c + Vector((math.cos(a) * 0.065, -0.02 + 0.01 * i, math.sin(a) * 0.05 - s * math.cos(a) * 0.02))
-             for a in (k * 2 * math.pi / 6 for k in range(6))] for i in range(2)]
+    c = on_ball(LR, LB_Z, 14, s * 24, -0.01)
+    n = (c - P(0, 0, LB_Z)).normalized()
+    side = Vector((1, 0, 0))
+    up = n.cross(side).normalized()
+    ring = [[c + n * dn + side * math.cos(a) * 0.065 + up * (math.sin(a) * 0.045 + s * math.cos(a) * 0.018)
+             for a in (k * 2 * math.pi / 6 for k in range(6))] for dn in (0.0, 0.025)]
     lbody.loft(ring, "M_BombEye")
-    # iron brow plate
-    lbody.loft([[P(0.36 * LS, s * 0.03, LB_Z + 0.22), P(0.36 * LS, s * 0.2, LB_Z + 0.2)],
-                [P(0.46 * LS, s * 0.03, LB_Z + 0.17), P(0.46 * LS, s * 0.18, LB_Z + 0.24)]], "M_Iron", closed=False)
-# grin: dark mouth band + a zigzag of teeth
-mouth_f = 0.5 * LS
-lbody.loft([[P(mouth_f - 0.02, math.cos(a) * 0.15, LB_Z - 0.02 + math.sin(a) * 0.09) for a in
-             (math.radians(d) for d in range(200, 345, 24))],
-            [P(mouth_f + 0.06, math.cos(a) * 0.12, LB_Z - 0.02 + math.sin(a) * 0.07) for a in
-             (math.radians(d) for d in range(200, 345, 24))]], "M_CrocMouth", closed=False)
-for k in range(7):
-    a = math.radians(205 + k * 21)
-    base = P(mouth_f + 0.02, math.cos(a) * 0.145, LB_Z + 0.0 + math.sin(a) * 0.05)
-    tip = base + Vector((0, 0, -0.05 if k % 2 == 0 else 0.0)) + Vector((0, -0.02, 0))
-    if k % 2 == 1:
-        tip = P(mouth_f + 0.04, math.cos(a) * 0.14, LB_Z - 0.09)
-        base = tip + Vector((0, 0, 0.05))
-    lbody.spike(base, tip, Vector((0, 1, 0)), 0.022, "M_CrocTeeth")
-# fuse on the back with a frayed end
-fz = LB_Z + 0.2 * LS
-strut(lbody, P(-0.05, 0, fz - 0.05), P(-0.12, 0.02, fz + 0.16), 0.02)
-lb_objs = [lbody.finish()]
+    b0, b1 = on_ball(LR, LB_Z, 24, s * 6, 0.012), on_ball(LR, LB_Z, 34, s * 42, 0.012)
+    slab(lbody, [b0, b1, b1 + Vector((0, 0, 0.045)), b0 + Vector((0, 0, 0.045))], 0.025, "M_Iron")
+# grin: dark mouth band across the lower front + a zigzag of teeth
+AZ = list(range(-55, 56, 22))
+lbody.loft([[on_ball(LR, LB_Z, el, az, 0.008) for az in AZ] for el in (-8, -26)], "M_CrocMouth", closed=False)
+for k, az in enumerate(range(-50, 51, 20)):
+    top = on_ball(LR, LB_Z, -8, az, 0.012)
+    lbody.spike(top, on_ball(LR, LB_Z, -16, az, 0.03), Vector((1, 0, 0)), 0.022, "M_CrocTeeth")
+    bot = on_ball(LR, LB_Z, -26, az + 10, 0.012)
+    lbody.spike(bot, on_ball(LR, LB_Z, -18, az + 10, 0.03), Vector((1, 0, 0)), 0.02, "M_CrocTeeth")
+# fuse on top, leaning back
+fuse(lbody, on_ball(LR, LB_Z, 75, 180, -0.01), (on_ball(LR, LB_Z, 75, 180) - P(0, 0, LB_Z)).normalized(), LR)
+lb_objs = [lbody.finish(smooth_angle=50)]
 # stubby croc legs: origin at the hip, foot forward with claws
-for i, (fs, ls) in enumerate(((1, -1), (1, 1), (-1, -1), (-1, 1))):
-    hip = P(fs * 0.28, ls * 0.17, LB_Z - 0.12)
+for i, (fs_, ls) in enumerate(((1, -1), (1, 1), (-1, -1), (-1, 1))):
+    hip = P(fs_ * 0.15, ls * 0.15, LB_Z - 0.16)
     leg = Part(f"LBomb_Leg{i}", hip)
-    knee = hip + Vector((ls * 0.08, 0, -0.18))
-    foot = P(fs * 0.28 + 0.05, ls * 0.27, 0.04)
-    strut(leg, hip, knee, 0.055)
-    strut(leg, knee, foot, 0.045)
+    knee = hip + Vector((ls * 0.1, 0, -0.17))
+    foot = P(fs_ * 0.2 + 0.05, ls * 0.29, 0.04)
+    strut(leg, hip, knee, 0.055, "M_CrocHide")
+    strut(leg, knee, foot, 0.045, "M_CrocHide")
     leg.loft([[foot + Vector((dx, 0.03, dz)) for dx, dz in ((-0.07, -0.04), (0.07, -0.04), (0.06, 0.03), (-0.06, 0.03))],
               [foot + Vector((dx, -0.12, dz)) for dx, dz in ((-0.08, -0.04), (0.08, -0.04), (0.05, 0.0), (-0.05, 0.0))]],
              "M_CrocHide")

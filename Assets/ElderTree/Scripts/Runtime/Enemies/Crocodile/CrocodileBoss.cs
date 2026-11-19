@@ -868,12 +868,12 @@ namespace ElderTree.Enemies
                 if (!hit)
                 {
                     Vector3 r = Rel;
-                    if (r.y < 2.8f && Mathf.Abs(r.z) < 2.8f && r.x * side > 1.2f && r.x * side < 6.6f)
+                    if (r.y < 2.8f && r.z > -5.6f && r.z < 0.6f && r.x * side > 1.2f && r.x * side < 6.6f)   // box-cell wings sit aft (z -2.5..-4.6)
                         hit = HitPlayer(150f, ImpactWeight.Heavy, transform.right * side + transform.forward * 0.4f, 70f);
                 }
             });
             CameraDirector.Instance?.Shake(0.35f, transform.right * side);
-            FXManager.Spawn(FXType.Dust, transform.position + transform.right * side * 4.5f, Quaternion.identity, 1.6f);
+            FXManager.Spawn(FXType.Dust, transform.position + transform.right * side * 4.5f - transform.forward * 3.5f, Quaternion.identity, 1.6f);
             AudioManager.Play(Sfx.Slam, transform.position + transform.right * side * 4f, 0.6f, 1.2f);
             yield return Hold(0.65f, (k, dt) => Pose(0f, 0f, 0f, 8f, 5f));
         }
@@ -900,7 +900,7 @@ namespace ElderTree.Enemies
                         hit = HitPlayer(170f, ImpactWeight.Slam, -transform.forward, 90f);
                 }
             });
-            Vector3 tail = transform.position - transform.forward * 5.6f;
+            Vector3 tail = transform.position - transform.forward * 5.2f;   // the pusher prop
             FXManager.Spawn(FXType.SlamRing, Blast.Ground(tail) + Vector3.up * 0.05f, Quaternion.identity, 2.4f);
             FXManager.Spawn(FXType.Dust, tail, Quaternion.identity, 2f);
             FXManager.Spawn(FXType.SlamDebris, tail, Quaternion.identity, 1.2f);

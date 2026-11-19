@@ -81,7 +81,7 @@ MonoBehaviour:
   - {fileID: 1295619964895698759}
   - {fileID: 7597369753599326621}
   bodyRenderer: {fileID: 6584085882304265707}
-  eyeMaterialIndex: 2
+  eyeMaterialIndex: 1
   fuseSpark: {fileID: 4464178576612828988}
   maxHealth: 45
   moveSpeed: 3.3
@@ -106,7 +106,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Combat.Targetable
   lockPoint: {fileID: 2475851108739661398}
   lockRadius: 0.3
-  displayName: Living Bomb
+  displayName: Living Cannonball
   rangeScale: 1
 --- !u!1 &784911894632328713
 GameObject:
@@ -199,7 +199,7 @@ Transform:
   m_GameObject: {fileID: 6261386224892030551}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.87632453, z: -0.1}
+  m_LocalPosition: {x: 0, y: 0.9896394, z: -0.1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

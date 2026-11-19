@@ -21,7 +21,7 @@ namespace ElderTree.EditorTools
         public const string LivingBombPrefabPath = Root + "/Prefabs/LivingBomb.prefab";
 
         static readonly string[] BossMats =
-            { "M_BomberMetal", "M_BomberGlass", "M_Iron", "M_CrocHide", "M_CrocMouth", "M_CrocTeeth", "M_CrocEye", "M_BombIron", "M_BombBand", "M_BombEye" };
+            { "M_BomberMetal", "M_BomberCanvas", "M_BomberWood", "M_BomberGlass", "M_Iron", "M_CrocHide", "M_CrocMouth", "M_CrocTeeth", "M_CrocEye", "M_BombIron", "M_BombBand", "M_BombEye" };
 
         [MenuItem("Elder Tree/7. Build Boss (Crocodile)")]
         public static string BuildBoss()
@@ -107,14 +107,43 @@ namespace ElderTree.EditorTools
                 return c * (0.85f + 0.3f * (H2(x, y, 432) - 0.5f));
             });
 
+            // aged doped linen (one tile = 2 m): rib tapes every 0.4 m with stitching, sag between ribs,
+            // tea/oil stains, soot, patched tears and a few holes
+            var canvas = TextureForge.SavePsx("T_BomberCanvas", 128, (u, v, x, y) =>
+            {
+                var c = Mx(Hex("#463E30"), Hex("#766A52"), 0.5f + 0.8f * (TextureForge.Fbm(u, v, 5, 5, 3, 441) - 0.5f));
+                if (((x + y) & 1) == 0) c *= 0.95f;                                        // weave
+                float rib = u * 5f, d = Mathf.Abs(rib - Mathf.Floor(rib) - 0.5f);
+                if (d < 0.045f) { c *= 0.74f; if (y % 3 == 0) c *= 0.75f; }               // rib tape + stitches
+                else c *= 1f - 0.14f * Sstep(0.08f, 0.5f, d);                              // sag between ribs
+                float stain = TextureForge.Fbm(u, v, 4, 4, 4, 442);
+                c = Mx(c, c * new Color(0.62f, 0.5f, 0.36f), Sstep(0.55f, 0.72f, stain) * 0.8f);
+                c *= 1f - Sstep(0.6f, 0.8f, TextureForge.Fbm(u, v, 3, 3, 3, 443)) * 0.4f;  // soot
+                TextureForge.Worley(u, v, 4, 444, out float f1, out _, out int id);
+                if (id % 5 == 0 && f1 < 0.13f) c = f1 < 0.1f ? Mx(Hex("#3A3226"), Hex("#54493A"), H2(x, y, 445)) : c * 0.55f;
+                if (id % 7 == 1 && f1 < 0.05f) c = Hex("#100C0A");                        // torn through
+                return c * (0.92f + 0.16f * (H2(x, y, 446) - 0.5f));
+            });
+            // tarred, smoke-blackened ash framing: long grain, near-black grime in the knots
+            var wood = TextureForge.SavePsx("T_BomberWood", 64, (u, v, x, y) =>
+            {
+                float grain = TextureForge.Fbm(u * 0.25f, v, 2, 16, 3, 451);
+                var c = Mx(Hex("#140E0A"), Hex("#3C2A1A"), 0.3f + 0.6f * grain);
+                c *= 0.86f + 0.14f * Mathf.Sin((v * 24f + grain * 6f) * Mathf.PI);
+                c = Mx(c, Hex("#0A0806"), Sstep(0.62f, 0.78f, TextureForge.Fbm(u, v, 5, 5, 2, 452)) * 0.7f);
+                return c * (0.9f + 0.2f * (H2(x, y, 453) - 0.5f));
+            });
+
             Matte(Lit("M_BomberMetal", Color.white, metal, null, 0f, 1f, null, false));
+            Matte(Lit("M_BomberCanvas", Color.white, canvas, null, 0f, 1f, null, false));
+            Matte(Lit("M_BomberWood", Color.white, wood, null, 0f, 1f, null, false));
             Matte(Lit("M_CrocHide", Color.white, hide, null, 0f, 1f, null, false));
             Matte(Lit("M_CrocTeeth", Color.white, bone, null, 0f, 1f, null, false));
             Matte(Lit("M_CrocMouth", Color.white, flesh, null, 0f, 1f, null, false));
             Matte(Lit("M_BombIron", new Color(0.62f, 0.66f, 0.5f), metal, null, 0f, 1f, null, false));
             Matte(Lit("M_BombBand", TextureForge.Hex("#4A1210"), null, null, 0f));
             Glow("M_CrocEye", TextureForge.Hex("#B8C03A"), 2.6f);         // sickly toxic glow (ART_DIRECTION accent)
-            Glow("M_BomberGlass", TextureForge.Hex("#2A2036"), 0f, TextureForge.Hex("#C8781E") * 0.22f);   // lantern-lit cockpit
+            Glow("M_BomberGlass", TextureForge.Hex("#3A2410"), 0f, TextureForge.Hex("#C8781E") * 1.4f);    // basket lantern
             Glow("M_BombEye", TextureForge.Hex("#8A1A10"), 0f);           // emission driven at runtime (blink)
             Glow("M_NavRed", TextureForge.Hex("#FF3020"), 3f);
             Glow("M_NavGreen", TextureForge.Hex("#7CFF60"), 2.2f);
@@ -369,7 +398,7 @@ namespace ElderTree.EditorTools
             AddHurtbox(root.transform, "Hurtbox", new Vector3(0, 0.45f, 0.05f), null, 0.42f, 1.1f, 2);
             var lockPoint = Child("LockPoint", root.transform, new Vector3(0, 0.55f, 0));
             var tg = root.AddComponent<Targetable>();
-            tg.lockPoint = lockPoint.transform; tg.lockRadius = 0.3f; tg.displayName = "Living Bomb";
+            tg.lockPoint = lockPoint.transform; tg.lockRadius = 0.3f; tg.displayName = "Living Cannonball";
 
             // sputtering fuse
             var ps = NewPS("FuseSpark", M("M_FX_Spark"), out var r);
@@ -407,22 +436,26 @@ namespace ElderTree.EditorTools
             foreach (var r in model.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = ShadowCastingMode.On;
             Transform Part(string n) => model.GetComponentsInChildren<Transform>().First(t => t.name == n);
 
-            // hurtboxes (pivot space: y = 0 is the fuselage centreline, +Z the snout)
-            AddHurtbox(pivot.transform, "Hurt_Fuselage", new Vector3(0, 0.1f, -1.2f), null, 0.95f, 7.6f, 2);
-            AddHurtbox(pivot.transform, "Hurt_Head", new Vector3(0, -0.15f, 4.4f), null, 1.0f, 4.8f, 2);
-            AddHurtbox(pivot.transform, "Hurt_Wings", new Vector3(0, 0.85f, 0.05f), new Vector3(10.4f, 0.5f, 1.9f));
-            AddHurtbox(pivot.transform, "Hurt_Tail", new Vector3(0, 0.9f, -4.4f), new Vector3(4f, 2.2f, 1.2f));
+            // hurtboxes (pivot space: y = 0 is the fuselage centreline, +Z the snout).
+            // 14-bis layout: croc head through the box-kite canard at the front, box-cell wings + pusher prop at the back.
+            AddHurtbox(pivot.transform, "Hurt_Fuselage", new Vector3(0, 0.1f, -1.5f), null, 0.7f, 7.4f, 2);
+            AddHurtbox(pivot.transform, "Hurt_Head", new Vector3(0, -0.15f, 4.2f), null, 0.95f, 4.0f, 2);
+            AddHurtbox(pivot.transform, "Hurt_Canard", new Vector3(0, 0f, 1.55f), new Vector3(3f, 2.2f, 1.6f));
+            AddHurtbox(pivot.transform, "Hurt_Wings", new Vector3(0, 1.05f, -3.55f), new Vector3(11.4f, 2.6f, 2.2f));
+            AddHurtbox(pivot.transform, "Hurt_Prop", new Vector3(0, 0.47f, -4.95f), new Vector3(2.5f, 2.5f, 0.6f));
             // solid body while it sits on the field
             var solid = Child("Body_Solid", pivot.transform, Vector3.zero);
-            var c1 = solid.AddComponent<CapsuleCollider>(); c1.center = new Vector3(0, 0.05f, -1.0f); c1.radius = 0.9f; c1.height = 7.4f; c1.direction = 2;
-            var c2 = solid.AddComponent<CapsuleCollider>(); c2.center = new Vector3(0, -0.2f, 4.3f); c2.radius = 0.95f; c2.height = 4.6f; c2.direction = 2;
+            var c1 = solid.AddComponent<CapsuleCollider>(); c1.center = new Vector3(0, 0.05f, -1.6f); c1.radius = 0.6f; c1.height = 7.0f; c1.direction = 2;
+            var c2 = solid.AddComponent<CapsuleCollider>(); c2.center = new Vector3(0, -0.2f, 4.2f); c2.radius = 0.9f; c2.height = 3.8f; c2.direction = 2;
+            var c3 = solid.AddComponent<BoxCollider>(); c3.center = new Vector3(0, 0f, 1.55f); c3.size = new Vector3(2.9f, 2.1f, 1.5f);
 
             var lockPoint = Child("LockPoint", pivot.transform, new Vector3(0, 0.25f, 1.2f));
             var socket = Child("BombSocket", pivot.transform, new Vector3(0, -0.95f, -0.3f));
+            // the Antoinette V8's exhaust stubs, one per cylinder bank
             var smoke = new[]
             {
-                EngineSmoke(pivot.transform, new Vector3(3.9f, 0.75f, -0.9f)),
-                EngineSmoke(pivot.transform, new Vector3(-3.9f, 0.75f, -0.9f)),
+                EngineSmoke(pivot.transform, new Vector3(0.36f, 0.8f, -4.55f)),
+                EngineSmoke(pivot.transform, new Vector3(-0.36f, 0.8f, -4.55f)),
             };
 
             // navigation lights: port red, starboard green (Unity -X is the plane's left), blinking belly beacon
@@ -439,10 +472,10 @@ namespace ElderTree.EditorTools
                 r.shadowCastingMode = ShadowCastingMode.Off;
                 return c;
             }
-            NavLamp("Nav_Port", new Vector3(-5.25f, 0.98f, -0.05f), "M_NavRed", 0.2f);
-            NavLamp("Nav_Starboard", new Vector3(5.25f, 0.98f, -0.05f), "M_NavGreen", 0.2f);
-            var beaconGlow = NavLamp("Beacon", new Vector3(0, -0.93f, -1.6f), "M_NavRed", 0.24f);
-            var bl = Child("BeaconLight", pivot.transform, new Vector3(0, -1.2f, -1.6f)).AddComponent<Light>();
+            NavLamp("Nav_Port", new Vector3(-5.68f, 1.4f, -2.5f), "M_NavRed", 0.2f);
+            NavLamp("Nav_Starboard", new Vector3(5.68f, 1.4f, -2.5f), "M_NavGreen", 0.2f);
+            var beaconGlow = NavLamp("Beacon", new Vector3(0, -0.42f, -0.6f), "M_NavRed", 0.24f);
+            var bl = Child("BeaconLight", pivot.transform, new Vector3(0, -0.75f, -0.6f)).AddComponent<Light>();
             bl.type = LightType.Point; bl.color = new Color(1f, 0.2f, 0.12f); bl.range = 13f; bl.intensity = 6f; bl.shadows = LightShadows.None;
 
             var audio = root.AddComponent<AudioSource>();
@@ -454,7 +487,9 @@ namespace ElderTree.EditorTools
             var boss = root.AddComponent<CrocodileBoss>();
             boss.pivot = pivot.transform;
             boss.jaw = Part("Bomber_Jaw");
-            boss.props = Enumerable.Range(0, 4).Select(i => Part($"Bomber_Prop{i}")).ToArray();
+            // the 14-bis has a single pusher prop; take however many Bomber_Prop* parts the model carries
+            boss.props = model.GetComponentsInChildren<Transform>().Where(t => t.name.StartsWith("Bomber_Prop"))
+                .GroupBy(t => t.name).Select(g => g.First()).OrderBy(t => t.name).ToArray();
             boss.bombSocket = socket.transform;
             boss.beacon = bl;
             boss.beaconGlow = beaconGlow.GetComponent<Renderer>();

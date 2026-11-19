@@ -250,7 +250,7 @@ Death: **YOU DIED**, fade, respawn at the spawn point; the boss is dismissed and
 
 | Piece | Where |
 |---|---|
-| Model (2,355 tris; croc-head bomber, separate jaw and 4 three-blade props), aerial bomb (192), living bomb (540) | `Tools/Blender/build_crocodile.py`: run headless with `-- <abs out dir>`, then copy the 3 FBX to `Art/Models/Boss` |
+| Model (4,116 tris; Santos-Dumont 14-bis fused with the croc: its hide is the fuselage, stretched over dark ash longerons and hoops, forelegs clutch the canard, hind legs grip the gear, tail curls under; hide webbing closes the canard around the head and fills the wing cells; Antoinette V8, one two-paddle pusher prop, separate jaw), aerial cannonball (200), living cannonball (578). Built live through the Blender MCP socket or headless | `Tools/Blender/build_crocodile.py`: run headless with `-- <abs out dir>`, then copy the 3 FBX to `Art/Models/Boss` |
 | AI: flight (banked steering, Hermite paths), moves, stance, phases | `Enemies/Crocodile/CrocodileBoss.cs` (all tuning is on the prefab) |
 | Bombs, markers, walkers, blasts | `AerialBomb.cs`, `LivingBomb.cs`, `Blast.cs` |
 | Fight flow (summon, dummies, death and victory) | `BossEncounter.cs` (on GameSystems) |

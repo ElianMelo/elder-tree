@@ -22,6 +22,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: M_BomberCanvas
+    second: {fileID: 2100000, guid: 150c6c05f481a804faf344a3edd12a09, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: M_BomberGlass
     second: {fileID: 2100000, guid: 9052e9f5ffa825a46955aaa394e30326, type: 2}
   - first:
@@ -29,6 +34,11 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: M_BomberMetal
     second: {fileID: 2100000, guid: 7e76e72d14c972941a477d7690e5c226, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_BomberWood
+    second: {fileID: 2100000, guid: bc163a64515dc6340b1c3d295dbd20b9, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
