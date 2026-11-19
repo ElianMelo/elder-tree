@@ -22,6 +22,26 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: M_LogDarkWood
+    second: {fileID: 2100000, guid: 72c9c4de98fe4d6408564296c6083f39, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_LogEye
+    second: {fileID: 2100000, guid: dc8e491017f99df44a9bd5c12f30682f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_LogMouth
+    second: {fileID: 2100000, guid: 33d5a1cb296a1424cb3f4637207869cd, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_LogWood
+    second: {fileID: 2100000, guid: 53ebc67718a1a71418168d1e1f607e82, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: M_TungDarkWood
     second: {fileID: 2100000, guid: 72c9c4de98fe4d6408564296c6083f39, type: 2}
   - first:

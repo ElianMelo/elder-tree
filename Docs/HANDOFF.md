@@ -1,5 +1,14 @@
 # Handoff — Elder Tree soulslike slice
 
+## 000000000000000. Shark boss is a regular shark now (no legs, no sneakers)
+
+- **Model** (`build_shark_boss.py`): the three legs and the sneakers are gone. It's a regular great shark: body, jaw, tail stock and caudal fin, flatter swept pectoral fins, and new small pelvic fins under the rear belly. 1,130 tris. The body was lowered 0.85 m (`DROP`), so it **swims through the air just above the dirt**: the body centre sits at 1.25 m and the belly floats about 0.4 m up. Its bites now land at the player's chest height.
+- **Prefab:** `SharkPivotHeight` 2.1 → 1.25, lock point lowered with it, leg hurtboxes removed, `burrowDepth` 3.15 → 2.3 (the fin breaks the surface by the same amount as before). The sneaker textures and materials are still built because the **Shark form** (player mask) still wears its blue running shoes.
+- **Animation** (`SharkBoss.cs`): the leg IK and gait are gone. The tail swims all the time, the head sways against the tail, and the body swells slowly up and down. A new `thrash` value lashes the tail hard (stagger, death, roar). A **hull** of extreme mesh points (`SharkBoss.hull`, built by the editor; the pectoral fins are left out) keeps the lowest point on or above the ground. So a raised head plants the tail, a tail slam props the body up, and a flop rests on the flank. This is off while it dives, erupts and belly-flops.
+- **Moves reworded for a legless shark:** the sprint warning is two tail slaps in the dirt (thump and dust) instead of the sneaker scuff. The roar rears up onto its tail. The tornado coil grinds its belly (skid) instead of squealing. "Stranded" and "Landed" lie on the dirt. The stagger and death thrash the tail instead of pedalling. The boss no longer plays `SneakerSqueak` (the Shark form's tornado still does).
+
+**Verified in play mode (AutoPilot, god mode):** the intro (fin, eruption, flop, roar), hovering stalk, bite, tail slam, leap and landing, stagger on its side and death lying flat all look right in screenshots. `BuildAll()` and play mode: 0 errors, 0 warnings. **Not verified:** the sprint and tornado on camera, and how the new hit heights feel on a pad.
+
 ## 00000000000000. Audio layers, music, footsteps in every form
 
 - **Layers and a mixer:** `AudioManager` mixes in layers (Music, Ambience, SFX, UI, Footsteps). Each has a volume, a group in the new `Assets/ElderTree/Audio/ElderTree.mixer` (made once by `Editor/GameMixer.cs`, then yours to edit in the Audio Mixer window) and a voice priority. The boss engine and dig loops route to SFX.

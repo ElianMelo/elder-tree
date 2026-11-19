@@ -17,9 +17,7 @@ namespace ElderTree.EditorTools
         public const string SharkBossModelDir = Root + "/Art/Models/SharkBoss";
         public const string SharkBossPrefabPath = Root + "/Prefabs/Shark.prefab";
 
-        static readonly string[] SharkBossMats =
-            { "M_SharkSkin", "M_SharkBelly", "M_SharkEye", "M_CrocMouth", "M_CrocTeeth", "M_SneakerCloth", "M_SneakerSole" };
-        static readonly string[] LegKeys = { "FL", "FR", "B" };
+        static readonly string[] SharkBossMats = { "M_SharkSkin", "M_SharkBelly", "M_SharkEye", "M_CrocMouth", "M_CrocTeeth" };
 
         [MenuItem("Elder Tree/7b. Build Boss (Shark)")]
         public static string BuildSharkBoss()
@@ -62,7 +60,7 @@ namespace ElderTree.EditorTools
                 if (id % 4 == 1 && f2 - f1 < 0.03f) c = Mx(c, Hex("#4A1A16"), 0.6f);                            // raw scratches
                 return c;
             });
-            // worn running-shoe mesh: faded blue weave, mud caked toward the sole
+            // worn running-shoe mesh: faded blue weave, mud caked toward the sole (worn by the Shark form, not the boss)
             var cloth = TextureForge.SavePsx("T_SneakerCloth", 64, (u, v, x, y) =>
             {
                 bool weave = ((x / 2) + (y / 2)) % 2 == 0;
@@ -112,7 +110,8 @@ namespace ElderTree.EditorTools
         }
 
         // ------------------------------------------------------------------ prefab
-        const float SharkPivotHeight = 2.1f;
+        /// <summary>Body centre above the ground (HOVER in build_shark_boss.py): the belly floats ~0.4 m up.</summary>
+        const float SharkPivotHeight = 1.25f;
 
         /// <summary>A trigger capsule along a bone (world points a -> b), parented to <paramref name="bone"/>.</summary>
         static void BoneHurtbox(Transform bone, string name, Vector3 a, Vector3 b, float radius)
@@ -143,18 +142,11 @@ namespace ElderTree.EditorTools
             foreach (var r in model.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = ShadowCastingMode.On;
             PrefabUtility.UnpackPrefabInstance(model, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
 
-            // rigid chains: tail0 -> tail1, thigh -> shin -> foot
+            // rigid chain: tail0 -> tail1
             var tail0 = Part("Shark_Tail0");
             var tail1 = Part("Shark_Tail1");
             tail1.SetParent(tail0, true);
-            var thighs = LegKeys.Select(k => Part($"Shark_Thigh{k}")).ToArray();
-            var shins = LegKeys.Select(k => Part($"Shark_Shin{k}")).ToArray();
-            var feet = LegKeys.Select(k => Part($"Shark_Foot{k}")).ToArray();
-            for (int i = 0; i < 3; i++)
-            {
-                shins[i].SetParent(thighs[i], true);
-                feet[i].SetParent(shins[i], true);
-            }
+            var jawT = Part("Shark_Jaw");
 
             // hurtboxes (pivot space: y = 0 is the body centreline, +Z the snout)
             AddHurtbox(pivot.transform, "Hurt_Body", new Vector3(0, 0f, 0.1f), null, 0.92f, 4.4f, 2);
@@ -163,16 +155,11 @@ namespace ElderTree.EditorTools
             Vector3 up = Vector3.up;
             BoneHurtbox(tail0, "Hurt_Tail", tail0.position + root.transform.forward * 0.2f, tail1.position, 0.45f);
             BoneHurtbox(tail1, "Hurt_Caudal", tail1.position, tail1.position - root.transform.forward * 1.1f + up * 0.6f, 0.35f);
-            for (int i = 0; i < 3; i++)
-            {
-                BoneHurtbox(thighs[i], "Hurt_Thigh", thighs[i].position, shins[i].position, 0.3f);
-                BoneHurtbox(shins[i], "Hurt_Shin", shins[i].position, feet[i].position + up * 0.15f, 0.26f);
-            }
             // solid body while it stands still (stops the player walking through it)
             var solid = Child("Body_Solid", pivot.transform, Vector3.zero);
             var c1 = solid.AddComponent<CapsuleCollider>(); c1.center = new Vector3(0, 0f, 0.4f); c1.radius = 0.85f; c1.height = 5f; c1.direction = 2;
 
-            var lockPoint = Child("LockPoint", root.transform, new Vector3(0, 2.25f, 0.9f));
+            var lockPoint = Child("LockPoint", root.transform, new Vector3(0, SharkPivotHeight + 0.15f, 0.9f));
 
             var dig = root.AddComponent<AudioSource>();
             dig.clip = SoundPicks.DigLoop();
@@ -182,12 +169,10 @@ namespace ElderTree.EditorTools
 
             var boss = root.AddComponent<SharkBoss>();
             boss.pivot = pivot.transform;
-            boss.jaw = Part("Shark_Jaw");
+            boss.jaw = jawT;
             boss.tail0 = tail0;
             boss.tail1 = tail1;
-            boss.thighs = thighs;
-            boss.shins = shins;
-            boss.feet = feet;
+            boss.hull = SharkHull(new[] { Part("Shark_Body"), jawT, tail0, tail1 });
             boss.lockPoint = lockPoint.transform;
             boss.flashRenderers = model.GetComponentsInChildren<Renderer>().ToArray();
             boss.bodyColliders = solid.GetComponents<Collider>();
@@ -199,6 +184,41 @@ namespace ElderTree.EditorTools
             foreach (var hb in root.GetComponentsInChildren<Hurtbox>(true)) hb.gameObject.layer = LayerHurtbox;
             PrefabUtility.SaveAsPrefabAsset(root, SharkBossPrefabPath);
             Object.DestroyImmediate(root);
+        }
+
+        /// <summary>
+        /// A few extreme vertices of each rigid part (in that part's local space): the boss keeps the lowest of
+        /// them above the ground, so a pitched head or a dropped tail lifts the body instead of sinking into the
+        /// dirt. The wide pectoral fins are left out so it can lie on its side.
+        /// </summary>
+        static SharkBoss.HullPoint[] SharkHull(Transform[] parts)
+        {
+            var dirs = new System.Collections.Generic.List<Vector3>();
+            for (int x = -1; x <= 1; x++)
+                for (int y = -1; y <= 1; y++)
+                    for (int z = -1; z <= 1; z++)
+                        if (x != 0 || y != 0 || z != 0) dirs.Add(new Vector3(x, y, z).normalized);
+            var hull = new System.Collections.Generic.List<SharkBoss.HullPoint>();
+            foreach (var part in parts)
+            {
+                var mesh = part.GetComponent<MeshFilter>()?.sharedMesh;
+                if (mesh == null) continue;
+                var verts = mesh.vertices;
+                var picked = new System.Collections.Generic.HashSet<int>();
+                foreach (var d in dirs)
+                {
+                    int best = -1; float bestDot = float.MinValue;
+                    for (int i = 0; i < verts.Length; i++)
+                    {
+                        Vector3 w = part.TransformPoint(verts[i]);
+                        if (Mathf.Abs(w.x) > 1f && part.name == "Shark_Body") continue;   // pectoral fins
+                        float dot = Vector3.Dot(w, d);
+                        if (dot > bestDot) { bestDot = dot; best = i; }
+                    }
+                    if (best >= 0 && picked.Add(best)) hull.Add(new SharkBoss.HullPoint { bone = part, local = verts[best] });
+                }
+            }
+            return hull.ToArray();
         }
 
         // ------------------------------------------------------------------ scene

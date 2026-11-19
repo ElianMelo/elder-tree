@@ -10,19 +10,20 @@ using UnityEngine;
 namespace ElderTree.Enemies
 {
     /// <summary>
-    /// Shark: a shark that runs the arena on three sneakered legs. A ground boss, every
+    /// Shark: a great shark that swims through the air just above the dirt. A ground boss, every
     /// attack announced by the body (no ground markers):
-    ///  - Sprint: scuffs a sneaker, then sprints through the arena at you and lunges jaws first as it
-    ///    passes; skids round and goes again (2 passes, 3 in phase 2), then stands panting.
+    ///  - Sprint: lashes the dirt with its tail, then charges through the arena at you and lunges jaws first
+    ///    as it passes; skids round and goes again (2 passes, 3 in phase 2), then hangs there panting.
     ///  - Bite: up close, rears its head and snaps forward (2 bites, 3 in phase 2).
     ///  - Tail whip (flank / behind): turns away with the tail cocked, then whips the body round.
     ///  - Tail slam (behind): the nose dips, the tail rises high, and it crashes down.
-    ///  - Shark tornado (you hug it): coils, then spins on its sneakers, drifting at you, and reels dizzy.
+    ///  - Shark tornado (you hug it): coils, then spins on the spot, drifting at you, and reels dizzy.
     ///  - Spin leap (mid range): crouches, leaps spinning and belly-slams where you stood.
     ///  - Burrow: dives into the dirt; only the dorsal fin cuts through the arena, circling you. Where the
     ///    dirt starts to boil, it erupts jaws first (twice in phase 2), then belly-flops, open to blows.
-    /// Clubs and arrows wear its stance down: it flops onto its side, sneakers kicking, open to criticals.
-    /// The legs are procedural: a three-beat gait drives two-bone IK so the sneakers land on the ground.
+    /// Clubs and arrows wear its stance down: it flops onto its side, tail thrashing, open to criticals.
+    /// Animation is procedural: the tail swims, the body sways and swells, and a hull of extreme points keeps
+    /// it out of the ground (a raised head or a dropped tail props the body up instead of clipping).
     /// </summary>
     public class SharkBoss : BossBase
     {
@@ -35,8 +36,8 @@ namespace ElderTree.Enemies
         public Transform pivot;
         public Transform jaw;
         public Transform tail0, tail1;
-        [Tooltip("Front left, front right, back.")]
-        public Transform[] thighs, shins, feet;
+        [Tooltip("Extreme points of the rigid parts (built by the editor): the lowest stays above the ground.")]
+        public HullPoint[] hull;
         public Transform lockPoint;
         public Renderer[] flashRenderers;
         public Collider[] bodyColliders;
@@ -77,7 +78,10 @@ namespace ElderTree.Enemies
         public float eruptRadius = 2.8f;
         public float finSpeed = 9f;
         [Tooltip("How far the body sinks: the dorsal fin tip should just break the surface.")]
-        public float burrowDepth = 3.15f;
+        public float burrowDepth = 2.3f;
+
+        [System.Serializable]
+        public struct HullPoint { public Transform bone; public Vector3 local; }
 
         public Mode State { get; private set; } = Mode.Dormant;
         public override bool IsAlive => State != Mode.Dead && State != Mode.Dormant;
@@ -115,19 +119,14 @@ namespace ElderTree.Enemies
         float tPitch, tBank, tLift, tJaw, tTailYaw, tTailPitch, tSink, sharp = 6f;
         float pitch, bank, lift, jawAngle, tailYaw, tailPitch, sink;
         float swim = 1f;                 // tail swimming wiggle amount
-        readonly float[] legAirTarget = new float[3], legAir = new float[3];
-        float kickAmp;                   // 0 = legs hang, 1 = pedalling in the air
-        bool tuckLegs;
+        float thrash;                    // 0 = calm, 1 = tail lashing hard (stagger, death, warnings)
+        bool keepOffGround = true;       // off while it dives, erupts and flops (it goes into the dirt on purpose)
+        float groundWeight = 1f;
         float closePressure, spinCd, leapCd, sprintCd, burrowCd, tailCd;
 
         // rig rest data
         Vector3 pivotRestLocal;
         Quaternion jawRel, tail0Rel, tail1Rel;
-        readonly Quaternion[] thighRel = new Quaternion[3], shinRel = new Quaternion[3], footRel = new Quaternion[3];
-        readonly Vector3[] hipRest = new Vector3[3], ankleRestRoot = new Vector3[3];
-        readonly float[] len1 = new float[3], len2 = new float[3], phi1Rest = new float[3], phi2Rest = new float[3];
-        readonly float[] legPhase = { 0f, 0.5f, 0.25f };
-        readonly bool[] legSwing = new bool[3];
         Vector3 lockRest, prevPos;
         float tailLen = 1.1f;
         bool rigReady;
@@ -150,23 +149,6 @@ namespace ElderTree.Enemies
             if (tail0) tail0Rel = inv * tail0.rotation;
             if (tail1) tail1Rel = inv * tail1.rotation;
             if (tail0 && tail1) tailLen = Mathf.Max(0.6f, Vector3.Distance(tail0.position, tail1.position) * 0.9f);
-            Quaternion rootInv = Quaternion.Inverse(transform.rotation);
-            for (int i = 0; i < 3 && thighs != null && i < thighs.Length; i++)
-            {
-                if (!thighs[i] || !shins[i] || !feet[i]) continue;
-                thighRel[i] = inv * thighs[i].rotation;
-                shinRel[i] = inv * shins[i].rotation;
-                footRel[i] = rootInv * feet[i].rotation;
-                Vector3 h = pivot.InverseTransformPoint(thighs[i].position);
-                Vector3 k = pivot.InverseTransformPoint(shins[i].position);
-                Vector3 a = pivot.InverseTransformPoint(feet[i].position);
-                hipRest[i] = h;
-                ankleRestRoot[i] = transform.InverseTransformPoint(feet[i].position);
-                len1[i] = Vector2.Distance(new Vector2(h.z, h.y), new Vector2(k.z, k.y));
-                len2[i] = Vector2.Distance(new Vector2(k.z, k.y), new Vector2(a.z, a.y));
-                phi1Rest[i] = Mathf.Atan2(k.z - h.z, -(k.y - h.y));
-                phi2Rest[i] = Mathf.Atan2(a.z - k.z, -(a.y - k.y));
-            }
             if (lockPoint) lockRest = lockPoint.localPosition;
             rigReady = true;
         }
@@ -210,9 +192,9 @@ namespace ElderTree.Enemies
             airY = 0f;
             vel = Vector3.zero;
             swim = 1f;
-            kickAmp = 0f;
-            tuckLegs = false;
-            for (int i = 0; i < 3; i++) legAir[i] = legAirTarget[i] = 0f;
+            thrash = 0f;
+            keepOffGround = true;
+            groundWeight = 1f;
         }
 
         // ================================================================== brain
@@ -403,9 +385,13 @@ namespace ElderTree.Enemies
         void Roar(float pitchScale = 1f, float vol = 1f) =>
             AudioManager.Play(Sfx.SharkRoar, transform.position + transform.forward * 3f, vol, Random.Range(0.96f, 1.04f) * pitchScale);
 
-        void Squeak(Vector3 at, float vol = 0.8f) => AudioManager.Play(Sfx.SneakerSqueak, at, vol, Random.Range(0.9f, 1.15f));
-
-        Vector3 FootPos(int i) => feet != null && i < feet.Length && feet[i] ? feet[i].position : transform.position;
+        /// <summary>The tail slaps the dirt: a low thump and a puff of dust where the tail tip is.</summary>
+        void TailSlap(float vol = 0.6f)
+        {
+            Vector3 at = Blast.Ground(TailTip);
+            AudioManager.Play(Sfx.Slam, at, vol * 0.45f, Random.Range(1.25f, 1.45f));
+            FXManager.Spawn(FXType.DustSmall, at, Quaternion.LookRotation(Vector3.up), 1.2f);
+        }
 
         void Thud(float k)
         {
@@ -466,7 +452,7 @@ namespace ElderTree.Enemies
             yield return FinTravel(2.6f, 7f, false);
             yield return Erupt(false, 0.75f);
             yield return BellyFlop(false);
-            // rear up on the back sneaker and scream, front legs pedalling
+            // rear up on its tail and scream
             currentMove = "Roar";
             yield return RearRoar(1.7f);
         }
@@ -476,18 +462,16 @@ namespace ElderTree.Enemies
             Face(PlayerPos - transform.position, 999f, 1f);
             Roar();
             CameraDirector.Instance?.Shake(0.35f, Vector3.down);
-            legAirTarget[0] = legAirTarget[1] = 1f;
-            kickAmp = 1f;
+            thrash = 0.5f;
             yield return Hold(time, (k, dt) =>
             {
                 float up = k < 0.85f ? Ease.OutCubic(Mathf.Clamp01(k / 0.25f)) : 1f - (k - 0.85f) / 0.15f;
-                Pose(-26f * up, Mathf.Sin(k * 18f) * 3f * up, 0.35f * up, 62f * up, 7f);
-                tTailPitch = -14f * up;
+                Pose(-34f * up, Mathf.Sin(k * 18f) * 3f * up, 0.5f * up, 62f * up, 7f);
+                tTailPitch = -10f * up;
                 swim = 2.2f;
                 Face(PlayerPos - transform.position, 120f, dt);
             });
-            legAirTarget[0] = legAirTarget[1] = 0f;
-            kickAmp = 0f;
+            thrash = 0f;
             swim = 1f;
             tTailPitch = 0f;
         }
@@ -505,21 +489,19 @@ namespace ElderTree.Enemies
         {
             sprintCd = phaseTwo ? 6f : 8.5f;
             int passes = phaseTwo ? 3 : 2;
-            // scuff the back sneaker like a bull: the warning
+            // drops low and lashes the dirt with its tail like a bull pawing: the warning
             Roar(1.15f, 0.7f);
             yield return Hold(0.95f / SpeedMul, (k, dt) =>
             {
                 Brake(dt, 2f);
                 Face(PlayerPos - transform.position, 260f, dt);
                 Pose(7f, 0f, -0.22f, 18f, 8f);
-                tTailYaw = Mathf.Sin(k * 25f) * 18f;
-                if (Mathf.Repeat(k * 2.2f, 1f) < dt * 2.2f / (0.95f / SpeedMul))
-                {
-                    Squeak(FootPos(2));
-                    FXManager.Spawn(FXType.DustSmall, FootPos(2) - transform.forward * 0.5f, Quaternion.LookRotation(-transform.forward), 1.4f);
-                }
+                tTailYaw = Mathf.Sin(k * 25f) * 26f;
+                tTailPitch = -12f;
+                swim = 0.3f;
+                if (Mathf.Repeat(k * 2.2f, 1f) < dt * 2.2f / (0.95f / SpeedMul)) TailSlap(0.8f);
             });
-            tTailYaw = 0f;
+            tTailYaw = tTailPitch = 0f;
 
             for (int pass = 0; pass < passes && PlayerAlive; pass++)
             {
@@ -570,8 +552,7 @@ namespace ElderTree.Enemies
                 currentMove = "Skid";
                 float through = lunged ? 0.35f : 0.1f;
                 yield return Hold(through, (k, dt) => Locomote(Heading * speed, dt));
-                Squeak(transform.position, 1f);
-                AudioManager.Play(Sfx.Skid, transform.position, 0.7f, 1.2f);
+                AudioManager.Play(Sfx.Skid, transform.position, 0.7f, 1.05f);
                 float side = Mathf.Sign(Vector3.Dot(Vector3.Cross(Heading, Flat(PlayerPos - transform.position)), Vector3.up) + 0.01f);
                 yield return Hold(0.6f / SpeedMul, (k, dt) =>
                 {
@@ -580,7 +561,7 @@ namespace ElderTree.Enemies
                     Pose(-4f, -side * 14f * (1f - k), 0f, 10f, 10f);
                     tTailYaw = side * 40f * (1f - k);
                     if (Random.value < dt * 22f)
-                        FXManager.Spawn(FXType.DustSmall, FootPos(Random.Range(0, 3)), Quaternion.LookRotation(Vector3.up), 1.3f);
+                        FXManager.Spawn(FXType.DustSmall, Blast.Ground(TailTip), Quaternion.LookRotation(Vector3.up), 1.3f);
                 });
                 tTailYaw = 0f;
             }
@@ -589,7 +570,7 @@ namespace ElderTree.Enemies
             yield return Recover(1.4f / Mathf.Sqrt(SpeedMul), "Winded");
         }
 
-        IEnumerator Recover(float time, string label, bool dizzy = false)
+        IEnumerator Recover(float time, string label, bool dizzy = false, bool grounded = false)
         {
             State = Mode.Recovering;
             currentMove = label;
@@ -599,6 +580,7 @@ namespace ElderTree.Enemies
                 Brake(dt, 2f);
                 float pant = Mathf.Sin(k * time * 9f);
                 if (dizzy) Pose(5f, Mathf.Sin(k * time * 6f) * 11f * (1f - k * 0.6f), -0.12f, 30f, 5f);
+                else if (grounded) Pose(3f + pant * 1.5f, pant * 2f, -0.6f, 26f + pant * 10f, 6f);   // beached: lies on the dirt
                 else Pose(6f + pant * 1.5f, 0f, -0.15f, 26f + pant * 10f, 6f);
                 if (dizzy) { tTailYaw = Mathf.Sin(k * time * 5f) * 20f; SetYaw(yaw + Mathf.Sin(k * time * 3f) * 30f * dt, dt); }
             });
@@ -651,7 +633,6 @@ namespace ElderTree.Enemies
             float side = Mathf.Abs(r0.x) > 0.4f ? Mathf.Sign(r0.x) : (Random.value < 0.5f ? -1f : 1f);
             // turn away (tail swings to the far side) and cock the tail
             float startYaw = yaw;
-            Squeak(FootPos(2), 0.7f);
             AudioManager.Play(Sfx.SharkRoar, transform.position, 0.45f, 1.45f);
             yield return Hold(0.62f / SpeedMul, (k, dt) =>
             {
@@ -684,8 +665,6 @@ namespace ElderTree.Enemies
             currentMove = "TailSlam";
             tailCd = phaseTwo ? 1.5f : 2.5f;
             AudioManager.Play(Sfx.SharkRoar, transform.position, 0.5f, 1.7f);
-            Squeak(FootPos(0), 0.6f);
-            legAirTarget[2] = 1f;
             yield return Hold(0.78f / SpeedMul, (k, dt) =>
             {
                 Brake(dt, 2f);
@@ -707,7 +686,6 @@ namespace ElderTree.Enemies
                         hit = HitPlayer(tailSlamDamage, ImpactWeight.Slam, -transform.forward, 90f);
                 }
             });
-            legAirTarget[2] = 0f;
             Vector3 tip = Blast.Ground(transform.position - transform.forward * 5.2f);
             FXManager.Spawn(FXType.SlamRing, tip + Vector3.up * 0.05f, Quaternion.identity, 2.2f);
             FXManager.Spawn(FXType.Dust, tip, Quaternion.identity, 1.8f);
@@ -726,7 +704,7 @@ namespace ElderTree.Enemies
             closePressure = 0f;
             spinCd = phaseTwo ? 8f : 11f;
             float dir = Random.value < 0.5f ? 1f : -1f;
-            // coil: crouch, tail wound round, sneakers squealing
+            // coil: drops low, tail wound round, belly grinding the dirt
             Roar(1.25f, 0.8f);
             float y0 = yaw;
             yield return Hold(0.85f / SpeedMul, (k, dt) =>
@@ -737,7 +715,7 @@ namespace ElderTree.Enemies
                 Pose(-3f, Mathf.Sin(k * 40f) * 2f * k, -0.28f * e, 24f, 9f);
                 tTailYaw = -dir * 62f * e;
                 swim = 0f;
-                if (Random.value < dt * 9f) Squeak(FootPos(Random.Range(0, 3)), 0.5f);
+                if (Random.value < dt * 4f) AudioManager.Play(Sfx.Skid, transform.position, 0.35f, Random.Range(0.8f, 1f));
                 if (Random.value < dt * 14f)
                 {
                     float a = Random.value * Mathf.PI * 2f;
@@ -787,10 +765,8 @@ namespace ElderTree.Enemies
             if (lr.magnitude > Limit - 1f) land = arenaCenter + lr.normalized * (Limit - 1f);
             land.y = groundY;
             AudioManager.Play(Sfx.Jump, start, 1f, 0.5f);
-            Squeak(start, 1f);
+            TailSlap(1f);
             FXManager.Spawn(FXType.Dust, start, Quaternion.identity, 1.8f);
-            tuckLegs = true;
-            for (int i = 0; i < 3; i++) legAirTarget[i] = 1f;
             float dir = Random.value < 0.5f ? 1f : -1f, y0 = yaw;
             const float air = 0.85f;
             yield return Hold(air, (k, dt) =>
@@ -804,13 +780,11 @@ namespace ElderTree.Enemies
             });
             airY = 0f;
             Place(land);
-            tuckLegs = false;
-            for (int i = 0; i < 3; i++) legAirTarget[i] = 0f;
             Thud(1.2f);
             FXManager.Spawn(FXType.SlamRing, transform.position + Vector3.up * 0.05f, Quaternion.identity, 3.2f);
             if (PlayerAlive && FlatDist < 4.4f && Rel.y < 2.5f)
                 HitPlayer(leapDamage, ImpactWeight.Slam, Flat(PlayerPos - transform.position), 90f);
-            yield return Recover(0.85f, "Landed");
+            yield return Recover(0.85f, "Landed", false, true);
         }
 
         // ================================================================== burrow
@@ -824,7 +798,7 @@ namespace ElderTree.Enemies
             {
                 Brake(dt, 2f);
                 Pose(-20f * Ease.OutCubic(k), 0f, 0.25f * k, 30f, 8f);
-                legAirTarget[0] = legAirTarget[1] = k;
+                swim = 1f + k;
             });
             yield return Dive(3.2f);
 
@@ -837,7 +811,7 @@ namespace ElderTree.Enemies
                 if (!last) yield return Dive(2.6f);
             }
             yield return BellyFlop(true);
-            yield return Recover(1.5f, "Stranded");
+            yield return Recover(1.5f, "Stranded", false, true);
         }
 
         void EnterBurrowInstant()
@@ -845,8 +819,8 @@ namespace ElderTree.Enemies
             State = Mode.Burrowed;
             SetBodyColliders(false);
             tSink = sink = 1f;
-            tuckLegs = true;
-            for (int i = 0; i < 3; i++) legAir[i] = legAirTarget[i] = 1f;
+            keepOffGround = false;
+            groundWeight = 0f;
             Pose(0f, 0f, 0f, 0f, 6f);
             pitch = 0f;
             if (digAudio && !digAudio.isPlaying) digAudio.Play();
@@ -855,8 +829,7 @@ namespace ElderTree.Enemies
         IEnumerator Dive(float distance)
         {
             currentMove = "Dive";
-            tuckLegs = true;
-            for (int i = 0; i < 3; i++) legAirTarget[i] = 1f;
+            keepOffGround = false;
             Vector3 start = transform.position;
             Vector3 end = start + Heading * distance;
             AudioManager.Play(Sfx.WhooshHeavy, start, 0.8f, 0.7f);
@@ -999,9 +972,8 @@ namespace ElderTree.Enemies
         IEnumerator BellyFlop(bool damage)
         {
             currentMove = "BellyFlop";
-            tuckLegs = false;
-            for (int i = 0; i < 3; i++) legAirTarget[i] = 1f;
-            kickAmp = 0.6f;
+            keepOffGround = false;
+            thrash = 0.6f;
             Vector3 start = transform.position;
             Vector3 fwd = Heading;
             yield return Hold(0.42f, (k, dt) =>
@@ -1013,8 +985,8 @@ namespace ElderTree.Enemies
                 Place(start + fwd * 1.6f * e);
             });
             airY = 0f;
-            for (int i = 0; i < 3; i++) legAirTarget[i] = 0f;
-            kickAmp = 0f;
+            thrash = 0f;
+            keepOffGround = true;
             Thud(1.1f);
             FXManager.Spawn(FXType.SlamRing, transform.position + transform.forward * 1.2f + Vector3.up * 0.05f, Quaternion.identity, 2.4f);
             if (damage && PlayerAlive && InFront(-2.5f, 4.6f, 2f, 2.5f))
@@ -1036,7 +1008,7 @@ namespace ElderTree.Enemies
             State = Mode.Staggered;
             airY = 0f;
             tSink = 0f;
-            tuckLegs = false;
+            keepOffGround = true;
             tTailYaw = tTailPitch = 0f;
             closePressure = 0f;
             vel = Vector3.zero;
@@ -1046,9 +1018,8 @@ namespace ElderTree.Enemies
             AudioManager.Play(Sfx.Stagger, transform.position, 1f, 0.7f);
             AudioManager.Play(Sfx.SharkRoar, transform.position, 0.8f, 0.8f);
             float side = Random.value < 0.5f ? -1f : 1f;
-            // flops onto its side, sneakers pedalling in the air
-            for (int i = 0; i < 3; i++) legAirTarget[i] = 1f;
-            kickAmp = 1f;
+            // flops onto its side, tail thrashing
+            thrash = 1f;
             swim = 1.6f;
             yield return Hold(0.4f, (k, dt) => Pose(0f, side * 96f * Ease.OutBack(k), -0.98f * k, 34f, 14f));
             Thud(0.8f);
@@ -1057,18 +1028,17 @@ namespace ElderTree.Enemies
             {
                 float dt = Time.deltaTime;
                 t += dt;
-                kickAmp = Mathf.Lerp(1f, 0.35f, t / staggerTime);
+                thrash = Mathf.Lerp(1f, 0.35f, t / staggerTime);
                 Pose(0f, side * 96f, -0.98f, 30f + Mathf.Sin(t * 5f) * 8f, 8f);
                 if (Random.value < dt * 3f)
                     FXManager.Spawn(FXType.HitSpark, transform.position + Vector3.up * 1.2f + transform.forward * Random.Range(-2f, 2f), Quaternion.LookRotation(Vector3.up), 0.6f);
                 Place(transform.position);
                 yield return null;
             }
-            // scramble back up
-            Squeak(transform.position, 1f);
+            // rolls upright and rises off the dirt
+            AudioManager.Play(Sfx.WhooshHeavy, transform.position, 0.7f, 0.75f);
             yield return Hold(0.5f, (k, dt) => Pose(0f, side * 96f * (1f - Ease.InOutCubic(k)), -0.98f * (1f - k), 20f, 12f));
-            for (int i = 0; i < 3; i++) legAirTarget[i] = 0f;
-            kickAmp = 0f;
+            thrash = 0f;
             swim = 1f;
             poise = maxPoise;
             SetBodyColliders(false);
@@ -1094,12 +1064,11 @@ namespace ElderTree.Enemies
             TimeDirector.SlowMo(1.1f, 0.3f);
             AudioManager.Play(Sfx.SharkRoar, transform.position, 1f, 0.65f);
             tSink = 0f;
-            tuckLegs = false;
+            keepOffGround = true;
             tTailYaw = tTailPitch = 0f;
             float startAir = airY;
             float side = Random.value < 0.5f ? -1f : 1f;
-            for (int i = 0; i < 3; i++) legAirTarget[i] = 1f;
-            kickAmp = 1f;
+            thrash = 1f;
             yield return Hold(0.6f, (k, dt) =>
             {
                 airY = Mathf.Lerp(startAir, 0f, k);
@@ -1112,12 +1081,12 @@ namespace ElderTree.Enemies
             {
                 float dt = Time.deltaTime;
                 t += dt;
-                kickAmp = Mathf.Max(0f, 1f - t / 2.2f) * (0.6f + 0.4f * Mathf.Sin(t * 13f));
+                thrash = Mathf.Max(0f, 1f - t / 2.2f) * (0.6f + 0.4f * Mathf.Sin(t * 13f));
                 swim = Mathf.Max(0f, 1.5f - t);
                 Place(transform.position);
                 yield return null;
             }
-            kickAmp = 0f;
+            thrash = 0f;
             swim = 0f;
         }
 
@@ -1166,7 +1135,7 @@ namespace ElderTree.Enemies
             if (dt <= 0f || State == Mode.Dormant || !rigReady) return;
 
             transform.rotation = Quaternion.Euler(0f, yaw, 0f);
-            // measured motion drives the gait
+            // measured motion drives the tail
             Vector3 moved = Flat(transform.position - prevPos) / dt;
             prevPos = transform.position;
             if (moved.magnitude > 40f) moved = Vector3.zero;     // teleports (spawn, intro)
@@ -1180,29 +1149,27 @@ namespace ElderTree.Enemies
             tailYaw = Mathf.Lerp(tailYaw, tTailYaw, Ease.Damp(16f, dt));
             sink = Mathf.Lerp(sink, tSink, Ease.Damp(tSink > sink ? 7f : 12f, dt));
             jawAngle = Mathf.Lerp(jawAngle, tJaw, Ease.Damp(tJaw > jawAngle ? 14f : 30f, dt));
-            for (int i = 0; i < 3; i++) legAir[i] = Mathf.MoveTowards(legAir[i], legAirTarget[i], dt * 5f);
 
             float speed = moved.magnitude;
-            float turning = Mathf.Abs(yawRate) * Mathf.Deg2Rad * 1.3f;
-            float gaitSpeed = State == Mode.Burrowed ? 0f : speed + Mathf.Min(turning, 6f);
+            float t = Time.time;
 
-            // body: bob with the stride, lean into turns, sink underground
-            float bob = 0f;
-            float amp = Mathf.Clamp01(gaitSpeed / 1.5f);
-            if (amp > 0f) bob = -Mathf.Abs(Mathf.Sin(legPhase[0] * Mathf.PI * 2f)) * 0.07f * amp - (speed > 9f ? 0.12f : 0f);
-            pivot.localPosition = pivotRestLocal + Vector3.up * (lift + bob - sink * burrowDepth);
-            pivot.localRotation = Quaternion.Euler(pitch, 0f, bank);
+            // tail: a swimming wave that grows with speed, a fast lash when thrashing, plus whatever the move is doing
+            float freq = 5f + speed * 0.6f;
+            float wave = swim * (0.35f + Mathf.Clamp01(speed / 8f)) * 16f;
+            float w0 = Mathf.Sin(t * freq) * wave + Mathf.Sin(t * 14f) * thrash * 22f;
+            float w1 = Mathf.Sin(t * freq - 1.1f) * wave * 1.4f + Mathf.Sin(t * 14f - 1.3f) * thrash * 30f;
+
+            // body: swims with a slow swell, the head sways against the tail, sinks underground
+            float swell = State == Mode.Burrowed ? 0f : Mathf.Sin(t * 1.7f) * 0.07f * (1f - Mathf.Clamp01(speed / 10f));
+            pivot.localPosition = pivotRestLocal + Vector3.up * (lift + swell - sink * burrowDepth);
+            pivot.localRotation = Quaternion.Euler(pitch + Mathf.Sin(t * 1.7f - 0.9f) * 1.5f, -w0 * 0.14f,
+                                                   bank + Mathf.Sin(t * 14f + 0.5f) * thrash * 5f);
 
             if (jaw) jaw.rotation = pivot.rotation * Quaternion.AngleAxis(jawAngle, Vector3.right) * jawRel;
-
-            // tail: a swimming wave that grows with speed, plus whatever the move is doing
-            float wave = swim * (0.35f + Mathf.Clamp01(speed / 8f)) * 16f;
-            float w0 = Mathf.Sin(Time.time * (5f + speed * 0.6f)) * wave;
-            float w1 = Mathf.Sin(Time.time * (5f + speed * 0.6f) - 1.1f) * wave * 1.4f;
             if (tail0) tail0.rotation = pivot.rotation * Quaternion.Euler(tailPitch, tailYaw * 0.6f + w0, 0f) * tail0Rel;
             if (tail1) tail1.rotation = pivot.rotation * Quaternion.Euler(tailPitch * 1.3f, tailYaw + w0 + w1, 0f) * tail1Rel;
 
-            AnimateLegs(dt, moved, gaitSpeed);
+            KeepOffGround(dt);
 
             if (lockPoint) lockPoint.localPosition = Vector3.Lerp(lockRest, new Vector3(0f, 0.7f, -0.2f), Mathf.Clamp01(sink));
 
@@ -1212,86 +1179,19 @@ namespace ElderTree.Enemies
             UpdateFlash(dt);
         }
 
-        void AnimateLegs(float dt, Vector3 moved, float gaitSpeed)
+        /// <summary>
+        /// Lift the body so its lowest hull point stays on or above the ground: a raised head plants the tail,
+        /// a tail slam props the body up, a flop on the side rests on the flank. Off while it burrows on purpose.
+        /// </summary>
+        void KeepOffGround(float dt)
         {
-            if (thighs == null || thighs.Length < 3) return;
-            // a three-beat scurry: the stance sweeps back at body speed, the swing arcs forward
-            const float duty = 0.42f;
-            float amp = Mathf.Clamp01(gaitSpeed / 1.2f);
-            float half = Mathf.Clamp(0.1f + gaitSpeed * 0.045f, 0.1f, 0.56f) * amp;
-            float cycleDist = Mathf.Max(0.3f, 2f * half / duty);
-            float rate = amp > 0.01f ? gaitSpeed / cycleDist : 1.5f;
-            Vector3 moveLocal = transform.InverseTransformDirection(moved);
-            moveLocal.y = 0f;
-            Vector3 stepDir = moveLocal.sqrMagnitude > 0.04f ? moveLocal.normalized : Vector3.forward;
-            Quaternion flatRot = Quaternion.Euler(0f, yaw, 0f);
-            float t = Time.time;
-
-            for (int i = 0; i < 3; i++)
-            {
-                if (!thighs[i] || !shins[i] || !feet[i]) continue;
-                float prevPhase = legPhase[i];
-                legPhase[i] = Mathf.Repeat(legPhase[i] + rate * dt, 1f);
-                float ph = legPhase[i];
-                float off, lift = 0f;
-                bool swing = ph >= duty;
-                if (!swing) off = half * (1f - 2f * ph / duty);
-                else
-                {
-                    float s = (ph - duty) / (1f - duty);
-                    off = -half + 2f * half * (s * s * (3f - 2f * s));
-                    lift = Mathf.Sin(s * Mathf.PI) * (0.12f + half * 0.55f);
-                }
-                // footfall: a heavy rubber thud (and a squeak now and then)
-                if (legSwing[i] && !swing && amp > 0.5f && State != Mode.Burrowed && legAir[i] < 0.2f)
-                {
-                    AudioManager.Play(Sfx.Footstep, FootPos(i), 0.55f, 0.55f);
-                    if (gaitSpeed > 9f) FXManager.Spawn(FXType.DustSmall, FootPos(i), Quaternion.identity, 0.9f);
-                    if (Random.value < 0.06f) Squeak(FootPos(i), 0.35f);
-                }
-                legSwing[i] = swing;
-
-                Vector3 groundRoot = new Vector3(ankleRestRoot[i].x, ankleRestRoot[i].y + lift, ankleRestRoot[i].z) + stepDir * off;
-                Vector3 groundWorld = transform.TransformPoint(groundRoot) - Vector3.up * airY;
-                Vector3 groundLocal = pivot.InverseTransformPoint(groundWorld);
-
-                // in the air: tucked, hanging, or pedalling
-                Vector3 h = hipRest[i];
-                float L = len1[i] + len2[i];
-                Vector3 airLocal;
-                if (tuckLegs) airLocal = h + new Vector3(0f, -L * 0.55f, 0.35f);
-                else
-                {
-                    float w = t * 11f + i * 2.1f;
-                    airLocal = h + new Vector3(0f, -L * (0.8f - 0.25f * kickAmp * (0.5f + 0.5f * Mathf.Sin(w))), 0.38f * kickAmp * Mathf.Cos(w));
-                }
-                Vector3 target = Vector3.Lerp(groundLocal, airLocal, legAir[i]);
-                SolveLeg(i, target);
-
-                // feet stay flat on the ground (or follow the body in the air), toe lifting through the swing
-                float toe = swing ? -Mathf.Sin((ph - duty) / (1f - duty) * Mathf.PI) * 25f * amp : 0f;
-                Quaternion ground = flatRot * Quaternion.AngleAxis(toe, Vector3.right) * footRel[i];
-                Quaternion body = pivot.rotation * Quaternion.AngleAxis(20f * kickAmp * Mathf.Sin(t * 11f + i), Vector3.right) * footRel[i];
-                feet[i].rotation = Quaternion.Slerp(ground, body, legAir[i]);
-            }
-        }
-
-        /// <summary>Two-bone IK in the leg's sagittal plane (pivot space), knee bending forward.</summary>
-        void SolveLeg(int i, Vector3 target)
-        {
-            Vector3 h = hipRest[i];
-            float L1 = len1[i], L2 = len2[i];
-            Vector2 d = new Vector2(target.z - h.z, target.y - h.y);   // (forward, up)
-            float dist = Mathf.Clamp(d.magnitude, Mathf.Abs(L1 - L2) + 0.02f, L1 + L2 - 0.002f);
-            float alpha = Mathf.Atan2(d.x, -d.y);
-            float a1 = Mathf.Acos(Mathf.Clamp((L1 * L1 + dist * dist - L2 * L2) / (2f * L1 * dist), -1f, 1f));
-            float phi1 = alpha + a1;
-            Vector2 knee = new Vector2(Mathf.Sin(phi1), -Mathf.Cos(phi1)) * L1;
-            Vector2 foot = new Vector2(Mathf.Sin(alpha), -Mathf.Cos(alpha)) * dist;
-            Vector2 shin = foot - knee;
-            float phi2 = Mathf.Atan2(shin.x, -shin.y);
-            thighs[i].rotation = pivot.rotation * Quaternion.AngleAxis(-(phi1 - phi1Rest[i]) * Mathf.Rad2Deg, Vector3.right) * thighRel[i];
-            shins[i].rotation = pivot.rotation * Quaternion.AngleAxis(-(phi2 - phi2Rest[i]) * Mathf.Rad2Deg, Vector3.right) * shinRel[i];
+            groundWeight = Mathf.MoveTowards(groundWeight, keepOffGround && sink < 0.02f ? 1f : 0f, dt * 4f);
+            if (groundWeight <= 0f || hull == null || hull.Length == 0) return;
+            float minY = float.MaxValue;
+            foreach (var h in hull)
+                if (h.bone) minY = Mathf.Min(minY, h.bone.TransformPoint(h.local).y);
+            float deficit = groundY + 0.03f - minY;
+            if (deficit > 0f) pivot.position += Vector3.up * deficit * groundWeight;
         }
 
         void UpdateFlash(float dt)

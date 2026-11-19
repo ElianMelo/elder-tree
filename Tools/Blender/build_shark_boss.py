@@ -5,20 +5,17 @@ Shark boss, PSX dark fantasy (Docs/ART_DIRECTION.md).
 
 Live (MCP): exec with TS_EXPORT=False to build into a dedicated "Shark" scene without exporting.
 
-Shark.fbx - a scarred grey shark standing on three legs in worn, mud-caked blue sneakers (~2.2k tris).
+Shark.fbx - a scarred grey shark, no legs: it swims through the air just above the dirt (~1.1k tris).
                 Rigid PS1-style segments so Unity can animate them procedurally:
-                  Shark_Body        torso + head (upper jaw, eyes, gills, dorsal + pectoral fins)
+                  Shark_Body        torso + head (upper jaw, eyes, gills, dorsal, pectoral + pelvic fins)
                   Shark_Jaw         lower jaw, origin on the hinge
                   Shark_Tail0       tail stock, origin at the joint with the body
                   Shark_Tail1       caudal fin, origin at the joint with Tail0
-                  Shark_Thigh{FL,FR,B}  origin on the hip
-                  Shark_Shin{FL,FR,B}   origin on the knee
-                  Shark_Foot{FL,FR,B}   sneaker, origin on the ankle
-                Nose along Blender -Y (Unity +Z). Origin = ground under the body centre, soles on z=0.
-                No brand marks on the shoes: a plain side stripe and a pale toe cap.
+                Nose along Blender -Y (Unity +Z). Origin = ground under the body centre; the body centre sits
+                HOVER above it (the belly floats ~0.4 m off the ground).
 
-Materials (remapped in Unity by name): M_SharkSkin, M_SharkBelly, M_SharkEye, M_CrocMouth, M_CrocTeeth,
-M_SneakerCloth, M_SneakerSole. UVs are box-projected in world metres (uniform texel density).
+Materials (remapped in Unity by name): M_SharkSkin, M_SharkBelly, M_SharkEye, M_CrocMouth, M_CrocTeeth.
+UVs are box-projected in world metres (uniform texel density).
 """
 import bpy
 import bmesh
@@ -42,11 +39,9 @@ else:
 MAT_RGB = {
     "M_SharkSkin": (0.17, 0.20, 0.23), "M_SharkBelly": (0.48, 0.46, 0.41), "M_SharkEye": (0.6, 0.25, 0.1),
     "M_CrocMouth": (0.25, 0.08, 0.08), "M_CrocTeeth": (0.62, 0.57, 0.46),
-    "M_SneakerCloth": (0.14, 0.27, 0.36), "M_SneakerSole": (0.52, 0.5, 0.45),
 }
 # metres per texture tile (box projection)
-TILE = {"M_SharkSkin": 1.6, "M_SharkBelly": 1.6, "M_CrocMouth": 1.0, "M_CrocTeeth": 0.6,
-        "M_SneakerCloth": 0.5, "M_SneakerSole": 0.5}
+TILE = {"M_SharkSkin": 1.6, "M_SharkBelly": 1.6, "M_CrocMouth": 1.0, "M_CrocTeeth": 0.6}
 FLAT_UV = ("M_SharkEye",)
 
 
@@ -56,9 +51,15 @@ def material(name):
     return m
 
 
+# The body was drawn with its centre at z ~2.1 (when it stood on legs). DROP lowers it so the
+# centre sits at HOVER and the belly floats just above the ground. Unity's SharkPivotHeight = HOVER.
+DROP = 0.85
+HOVER = 2.1 - DROP
+
+
 def P(f, lat, z):
-    """forward distance, lateral (right +), height -> Blender coords (nose along -Y)."""
-    return Vector((lat, -f, z))
+    """forward distance, lateral (right +), height (as drawn) -> Blender coords (nose along -Y), lowered by DROP."""
+    return Vector((lat, -f, z - DROP))
 
 
 class Part:
@@ -270,10 +271,15 @@ for s in (-1, 1):
 # ---- dorsal fin (tall, swept, notched trailing edge from old fights)
 body.loft([fin_ring(2.92, 0.62, -0.58, 0.15), fin_ring(3.4, 0.1, -0.78, 0.1), fin_ring(3.78, -0.42, -0.86, 0.06),
            fin_ring(3.98, -0.78, -0.9, 0.025)], "M_SharkSkin")
-# ---- pectoral fins (drooping wings above the front legs)
+# ---- pectoral fins: long swept blades, angled a little down, pale underneath
 for s in (-1, 1):
-    body.loft([wing_ring(s * 0.72, 1.3, 0.55, 1.78, 0.12), wing_ring(s * 1.25, 0.82, 0.25, 1.5, 0.07),
-               wing_ring(s * 1.72, 0.25, 0.02, 1.2, 0.025)], "M_SharkSkin",
+    body.loft([wing_ring(s * 0.72, 1.3, 0.55, 1.76, 0.12), wing_ring(s * 1.25, 0.8, 0.2, 1.58, 0.07),
+               wing_ring(s * 1.74, 0.18, -0.08, 1.38, 0.025)], "M_SharkSkin",
+              mats=lambda i, j: "M_SharkBelly" if j in (3, 4, 5) else "M_SharkSkin")
+# ---- pelvic fins: small swept fins under the rear belly
+for s in (-1, 1):
+    body.loft([wing_ring(s * 0.32, -0.5, -1.05, 1.5, 0.08), wing_ring(s * 0.58, -0.82, -1.18, 1.36, 0.045),
+               wing_ring(s * 0.8, -1.1, -1.26, 1.24, 0.02)], "M_SharkSkin",
               mats=lambda i, j: "M_SharkBelly" if j in (3, 4, 5) else "M_SharkSkin")
 
 # ---- upper teeth: a row of triangular blades hanging from the mouth edge, bigger at the front
@@ -332,59 +338,6 @@ tail1.loft([fin_ring(2.42, -3.32, -3.75, 0.09), fin_ring(3.0, -3.78, -4.12, 0.06
 tail1.loft([fin_ring(2.32, -3.38, -3.75, 0.08), fin_ring(1.86, -3.64, -3.94, 0.05), fin_ring(1.46, -3.9, -4.06, 0.02)],
            "M_SharkSkin")
 objects.append(tail1.finish())
-
-# =====================================================================================  LEGS + SNEAKERS
-LEGS = {  # hip, knee, ankle, thigh radius
-    "FL": (P(0.9, -0.52, 1.5), P(1.15, -0.6, 0.88), P(0.95, -0.6, 0.3), 0.3),
-    "FR": (P(0.9, 0.52, 1.5), P(1.15, 0.6, 0.88), P(0.95, 0.6, 0.3), 0.3),
-    "B": (P(-0.85, 0.0, 1.5), P(-0.6, 0.0, 0.88), P(-0.8, 0.0, 0.3), 0.32),
-}
-
-
-def sneaker(part, ankle, k=1.0):
-    """A chunky, worn running shoe around the ankle: rubber sole, cloth upper, toe cap, stripe, laces."""
-    fa, lat = -ankle.y, ankle.x
-
-    def S(df, dl, z):
-        return P(fa + df * k, lat + dl * k, z * k)
-    # sole: tread slab, wider at the ball of the foot, round toe
-    sole = [(-0.18, 0.12), (-0.1, 0.145), (0.1, 0.155), (0.3, 0.15), (0.42, 0.12), (0.49, 0.06)]
-    part.loft([[S(f, -w, 0.0), S(f, w, 0.0), S(f, w, 0.075), S(f, -w, 0.075)] for f, w in sole], "M_SneakerSole")
-    # upper: collar at the heel, low toe box
-    up = [(-0.17, 0.115, 0.3), (-0.06, 0.13, 0.31), (0.1, 0.14, 0.25), (0.26, 0.135, 0.19), (0.38, 0.11, 0.14), (0.46, 0.06, 0.1)]
-    part.loft([[S(f, -w, 0.07), S(f, -w * 0.97, h * 0.62), S(f, -w * 0.6, h), S(f, w * 0.6, h), S(f, w * 0.97, h * 0.62), S(f, w, 0.07)]
-               for f, w, h in up], "M_SneakerCloth", mats=lambda i, j: "M_SneakerSole" if i >= 4 else "M_SneakerCloth")
-    # side stripe: one plain slanted band each side (no brand marks)
-    for s in (-1, 1):
-        a0, a1 = (-0.08, 0.1), (0.22, 0.2)
-        ring0 = [S(a0[0], s * 0.137, a0[1]), S(a0[0] + 0.05, s * 0.137, a0[1] + 0.035), S(a0[0] + 0.05, s * 0.147, a0[1] + 0.035), S(a0[0], s * 0.147, a0[1])]
-        ring1 = [S(a1[0], s * 0.14, a1[1]), S(a1[0] + 0.05, s * 0.14, a1[1] + 0.03), S(a1[0] + 0.05, s * 0.15, a1[1] + 0.03), S(a1[0], s * 0.15, a1[1])]
-        part.loft([ring0, ring1], "M_SneakerSole")
-    # laces across the instep, tongue sticking up at the collar
-    for f in (0.04, 0.13, 0.22):
-        h = lerp_sections([(u[0], u[2]) for u in up], f)[0]
-        part.loft([[S(f - 0.012, -0.08, h + 0.005), S(f + 0.012, -0.08, h + 0.005), S(f + 0.012, -0.08, h + 0.03), S(f - 0.012, -0.08, h + 0.03)],
-                   [S(f - 0.012, 0.08, h + 0.005), S(f + 0.012, 0.08, h + 0.005), S(f + 0.012, 0.08, h + 0.03), S(f - 0.012, 0.08, h + 0.03)]],
-                  "M_SneakerSole")
-    part.loft([[S(-0.02, -0.07, 0.3), S(-0.02, 0.07, 0.3)], [S(-0.07, -0.06, 0.37), S(-0.07, 0.06, 0.37)]], "M_SneakerCloth", closed=False)
-    # heel tab
-    part.loft([[S(-0.19, -0.05, 0.22), S(-0.19, 0.05, 0.22), S(-0.17, 0.05, 0.22), S(-0.17, -0.05, 0.22)],
-               [S(-0.2, -0.04, 0.34), S(-0.2, 0.04, 0.34), S(-0.18, 0.04, 0.34), S(-0.18, -0.04, 0.34)]], "M_SneakerSole")
-
-
-leg_objs = []
-for key, (hip, knee, ankle, r) in LEGS.items():
-    thigh = Part(f"Shark_Thigh{key}", hip)
-    thigh.tube(hip + Vector((0, 0, 0.12)), knee, r, r * 0.72, "M_SharkSkin", sides=6, mid=r * 1.05)
-    leg_objs.append(thigh.finish())
-    shin = Part(f"Shark_Shin{key}", knee)
-    shin.tube(knee + (knee - ankle).normalized() * 0.08, ankle + Vector((0, 0, 0.08)), r * 0.74, r * 0.5, "M_SharkSkin", sides=6, mid=r * 0.66)
-    leg_objs.append(shin.finish())
-    foot = Part(f"Shark_Foot{key}", ankle)
-    sneaker(foot, ankle - Vector((0, 0, ankle.z)), 1.38 if key != "B" else 1.45)
-    leg_objs.append(foot.finish(smooth_angle=30))
-objects += leg_objs
-
 
 def export(path, objs):
     if not EXPORT:
