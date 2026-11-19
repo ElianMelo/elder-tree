@@ -98,6 +98,7 @@ namespace TungSahur.Enemies
             if (ending != null) { StopCoroutine(ending); ending = null; }
             if (!Active) { primaryFelled = false; felled.Clear(); }
             Active = true;
+            AudioManager.SetMusic(MusicMood.Boss);
             SetDummies(false);
             b.BeginFight();
             hud?.ShowBossBar(b);
@@ -127,6 +128,7 @@ namespace TungSahur.Enemies
         {
             if (ending != null) { StopCoroutine(ending); ending = null; }
             Active = false;
+            AudioManager.SetMusic(MusicMood.Explore);
             if (!keepWreck) ResetAllBosses();
             foreach (var l in LivingBomb.Active.ToArray()) l.Despawn();
             hud?.HideBossBar();
@@ -157,6 +159,8 @@ namespace TungSahur.Enemies
             // others still in the air: keep fighting, move the bar to the next one
             var next = NextLivingBoss();
             if (next != null) { if (hud != null && hud.BossBarTarget == b) hud.ShowBossBar(next); return; }
+            // the fight music falls away under the victory sting; the arena's music returns once things settle
+            AudioManager.SetMusic(MusicMood.None);
             ending = StartCoroutine(Victory());
         }
 
@@ -179,6 +183,7 @@ namespace TungSahur.Enemies
             yield return new WaitForSeconds(0.8f);
             hud?.HideBossBar();
             Active = false;
+            AudioManager.SetMusic(MusicMood.Explore);
             yield return new WaitForSeconds(6f);
             SetDummies(true);
             ending = null;

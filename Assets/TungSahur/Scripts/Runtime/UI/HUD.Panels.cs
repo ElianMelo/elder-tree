@@ -279,6 +279,8 @@ namespace TungSahur.UI
                     AddSetting("Camera sensitivity", () => Settings.CameraSensitivity.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture), d => Settings.CameraSensitivity = Mathf.Clamp(Settings.CameraSensitivity + d * 0.1f, 0.2f, 3f));
                     AddSetting("Invert vertical", () => Settings.InvertY ? "On" : "Off", _ => Settings.InvertY = !Settings.InvertY);
                     AddSetting("Master volume", () => $"{Mathf.RoundToInt(Settings.MasterVolume * 100)}%", d => Settings.MasterVolume = Mathf.Clamp01(Settings.MasterVolume + d * 0.05f));
+                    AddSetting("Music volume", () => $"{Mathf.RoundToInt(Settings.MusicVolume * 100)}%", d => Settings.MusicVolume = Mathf.Clamp01(Settings.MusicVolume + d * 0.05f));
+                    AddSetting("Effects volume", () => $"{Mathf.RoundToInt(Settings.EffectsVolume * 100)}%", d => Settings.EffectsVolume = Mathf.Clamp01(Settings.EffectsVolume + d * 0.05f));
                     AddSetting("Camera shake", () => $"{Mathf.RoundToInt(Settings.ShakeScale * 100)}%", d => Settings.ShakeScale = Mathf.Clamp(Settings.ShakeScale + d * 0.1f, 0f, 1.5f));
                     AddSetting("Controller vibration", () => Settings.Rumble ? "On" : "Off", _ => Settings.Rumble = !Settings.Rumble);
                     AddSetting("Show control hints", () => hintsExpanded ? "On" : "Off", _ => SetHints(!hintsExpanded));

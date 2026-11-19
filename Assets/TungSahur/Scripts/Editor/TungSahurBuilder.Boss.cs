@@ -446,7 +446,8 @@ namespace TungSahur.EditorTools
             bl.type = LightType.Point; bl.color = new Color(1f, 0.2f, 0.12f); bl.range = 13f; bl.intensity = 6f; bl.shadows = LightShadows.None;
 
             var audio = root.AddComponent<AudioSource>();
-            audio.clip = AssetDatabase.LoadAssetAtPath<AudioClip>(SfxForge.Dir + "/sfx_engine_loop.wav") ?? SfxForge.EngineLoop();
+            audio.clip = SoundPicks.EngineLoop();
+            audio.outputAudioMixerGroup = GameMixer.Sfx;
             audio.loop = true; audio.playOnAwake = false; audio.spatialBlend = 0.8f; audio.rolloffMode = AudioRolloffMode.Linear;
             audio.minDistance = 10f; audio.maxDistance = 90f; audio.dopplerLevel = 0f; audio.volume = 0f;
 

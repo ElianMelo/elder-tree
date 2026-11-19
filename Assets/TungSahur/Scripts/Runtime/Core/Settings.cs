@@ -10,6 +10,8 @@ namespace TungSahur
         public static float CameraSensitivity = 1f;
         public static bool InvertY;
         public static float MasterVolume = 0.9f;
+        public static float MusicVolume = 1f;
+        public static float EffectsVolume = 1f;
         public static float ShakeScale = 1f;
         public static bool Rumble = true;
 
@@ -18,6 +20,8 @@ namespace TungSahur
             CameraSensitivity = PlayerPrefs.GetFloat("tung.sens", 1f);
             InvertY = PlayerPrefs.GetInt("tung.invert", 0) == 1;
             MasterVolume = PlayerPrefs.GetFloat("tung.vol", 0.9f);
+            MusicVolume = PlayerPrefs.GetFloat("tung.music", 1f);
+            EffectsVolume = PlayerPrefs.GetFloat("tung.sfx", 1f);
             ShakeScale = PlayerPrefs.GetFloat("tung.shake", 1f);
             Rumble = PlayerPrefs.GetInt("tung.rumble", 1) == 1;
             Apply();
@@ -28,6 +32,8 @@ namespace TungSahur
             PlayerPrefs.SetFloat("tung.sens", CameraSensitivity);
             PlayerPrefs.SetInt("tung.invert", InvertY ? 1 : 0);
             PlayerPrefs.SetFloat("tung.vol", MasterVolume);
+            PlayerPrefs.SetFloat("tung.music", MusicVolume);
+            PlayerPrefs.SetFloat("tung.sfx", EffectsVolume);
             PlayerPrefs.SetFloat("tung.shake", ShakeScale);
             PlayerPrefs.SetInt("tung.rumble", Rumble ? 1 : 0);
             var input = PlayerInputReader.Instance;
@@ -39,7 +45,13 @@ namespace TungSahur
                 input.invertY = InvertY;
             }
             AudioListener.volume = MasterVolume;
-            if (AudioManager.Instance != null) AudioManager.Instance.masterVolume = MasterVolume;
+            var am = AudioManager.Instance;
+            if (am != null)
+            {
+                am.masterVolume = MasterVolume;
+                am.musicVolume = MusicVolume;
+                am.sfxVolume = am.footstepVolume = EffectsVolume;
+            }
         }
     }
 }

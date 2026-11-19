@@ -1,5 +1,48 @@
 # Handoff — Tung Tung Tung Sahur soulslike slice
 
+## 00000000000000. Audio layers, music, footsteps in every form
+
+- **Layers and a mixer:** `AudioManager` mixes in layers (Music, Ambience, SFX, UI, Footsteps). Each has a volume, a group in the new `Assets/TungSahur/Audio/TungSahur.mixer` (made once by `Editor/GameMixer.cs`, then yours to edit in the Audio Mixer window) and a voice priority. The boss engine and dig loops route to SFX.
+- **Sounds stack instead of cutting each other off:**
+  - The old pool took the next voice round-robin, so a burst of footsteps and swings could cut a roar, an explosion or a sting mid-play.
+  - It's now 40 voices that take a free voice first. They respect caps (6 per cue, 4 footsteps, 6 UI) and otherwise steal the voice with the least left to play: footsteps first, then SFX, then UI.
+  - The project's real-voice limit went from 32 to 64. In a 160-play flood test, YOU DIED and an explosion both kept ringing.
+- **Music:** the explore track (`music_misty_woods_calling`) plays in the arena and crossfades to the boss track (`music_epic_fallen_empire`) when a fight starts. It falls silent under GREAT ENEMY FELLED, then returns. Loops crossfade before each track's fade-out tail. The pause menu has new **Music volume** and **Effects volume** settings.
+- **Footsteps after transforming:** `FootstepFX` now follows whichever animator the controller drives every frame and re-finds the foot bones if the rig changed or was hidden. Tested through the real slot keys: the tree, alligator, shark and back to the tree all play about 9 steps per 2.7 s of walking.
+- **Footsteps 30% quieter:** cue volume 0.69 → 0.48.
+- `AudioManager.Played` (event per one-shot) and `ActiveVoices` are there for debugging.
+
+**Verified in play mode:** the above, music crossfades both ways, 0 errors. **Not verified by ear:** the music choice and level, and the overall mix.
+
+## 0000000000000. Audio feedback 2: dark UI, physical specials, footsteps that actually fire
+
+- **UI sounds match the game:** the bright app-style UI clips are gone. Menus (F1 debug, pause, title flow) move with a dry switch click, open/confirm with a door latch and close with the latch shutting. Out-of-mana is a locked door rattling, and lock-on is a small metal clink.
+- **Shark special (Tralala Tornado) and spirit:** new `Sfx.BladeRing` (a blade being drawn) replaces the magic charge on spirit spend, spirit level-up (plus a blade whoosh) and the Tornado wind-up. The spin's turns use `BladeWhoosh` and the weapon-spin whoosh, and the old fan whoosh is gone. The Tornado wind-up's "squeak" (`SneakerSqueak`, shared with Tralalero) is now a rubber-sole scuff, not a squeaky toy.
+- **Alligator special (Sky Bombardment):** new `Sfx.GroundGrind` (stone grinding) on the crouch. The thrown hammer and Bombardiro's falling bombs (`BombWhistle`) are a deep incoming flyby instead of a slide whistle. The impact adds `RockBreak` on top of the slam and the explosion.
+- **Charged heavy** (all forms): the charge is a leather grip tightening, and the release is a deep whoosh, replacing the magic charge and energy blast.
+- **Footsteps fixed:** `FootstepFX` used a fixed 0.105 m foot height and the Elder Tree's planted ankle sits at ~0.11–0.13 m, so steps almost never played. It now learns the planted height per rig (re-learned on mask swaps) and plays a bit louder.
+- `Sfx` gained `BladeRing` and `GroundGrind` (appended, so serialized cue ids are unchanged). The `Comedy_Cartoon` and `User_Interface_Menu` folders are no longer used; their clips' import settings were reverted.
+
+**Verified in play mode (AutoPilot):** footsteps fire continuously while walking; F1 opens and closes with the latch sounds; Sky Bombardment plays GroundGrind → flyby → Explosion + Slam + RockBreak; Tornado plays BladeRing → scuff → spin whooshes + blade hits; 0 errors. **Not verified by ear.**
+
+## 000000000000. Audio feedback: quieter bed, no human voices, original cutscene sounds back
+
+- **Ambience:** the night-crickets bed was loud and distracting. It is now a soft low wind (`wind_general_soft_low_loop_02`) at 0.3, about 9 dB under the previous bed (`SoundPicks.AmbienceVolume`).
+- **No human voices:** everything from `Voice/*` and the human-performed `Animal_Impersonations` is gone. PlayerHurt is a hollow wooden thud (`Doors/door_old_wooden_close_thud`), JawSnap a lid snapping shut (`Doors/small_box_close`; the comedy bite clips were mouth noises).
+- **Transformation cutscene uses the original sounds again:** MaskReceived, MaskOn, MaskScream, Transform and the form roars (CrocRoar, SharkRoar, which the cutscene plays) use the synthesized clips restored to `Assets/TungSahur/Audio` (same GUIDs and import settings, old volumes). The bosses use the same roar cues, so their roars are the originals again too. `SoundPicks.Own(...)` loads them.
+- Package clips that are no longer used had their import settings reverted to the package defaults.
+
+**Verified:** 0 errors; in play mode all 55 cues resolve (112 package clips + 8 own) and the wind bed plays at 0.3. **Not verified by ear.**
+
+## 00000000000. Real audio: everything now comes from the Gamemaster Audio package
+
+- **Placeholders gone:** `SfxForge.cs` and all 95 synthesized clips in `Assets/TungSahur/Audio` are deleted. Every one of the 55 `Sfx` cues, the night ambience bed and both boss loops (Bombardiro engine, Tralalero dig) now play clips from `Assets/Gamemaster Audio - Pro Sound Collection` (123 one-shot clips + 3 loops).
+- **Sound design lives in one table:** `Editor/SoundPicks.cs` maps each cue to its package clips, volume, pitch range, spatial blend and min interval. Change a line there and run **Tung Sahur/5. Build Audio** (also part of `BuildAll()`).
+- **Package map:** `Editor/GamemasterAudio.cs` has folder constants, `Load`, `Family` (every variation of a family) and the import settings for used clips (mono, Normalize off, Vorbis 0.7). `Docs/AUDIO.md` has the cue table, the catalog by category with a shortlist for upcoming work, and `Docs/audio_package_families.csv` lists all 1,349 families with variation numbers and lengths.
+- **Mix carried over:** cue volumes were set from measured loudness against the old mix (every cue within 3 dB). Ambience bed 0.32 → 0.5, Bombardiro engine 0.85 → 1, Tralalero dig 0.8 → 1, since those package loops are quieter.
+
+**Verified:** 0 compile errors; in play mode all 55 cues resolve (no empty or missing clips), firing every cue starts voices, the ambience loop plays; no asset references the old clips. **Not verified by ear:** the picks were chosen by name, length and loudness. First to audition: Knock (a woody impact thunk; the pure wood-block knocks are ~8 dB quieter), CrocRoar (bear roar), SharkRoar (walrus bark), LockOn, Title.
+
 ## 0000000000. Long sword pass 2: new left-to-right light, a real iai, blade roll
 
 - **Light 2 (left-to-right)** is now **Light 1 mirrored**: the same Attack2H01 kesa on a humanoid-mirrored animator state (`Sword_L2`, `mirror = true`), so it answers Light 1 stroke for stroke (Light 1 ends low left, Light 2 low right, same heights, same off-hand IK gap of 0.35 m). The mirrored hand turns the blade over, so it uses `bladeRoll` 120° (edge lead 0.56; unrolled it was −0.28). Moveset v5. Chain: kesa right→left, mirrored kesa left→right, thrust, rising right→left. (The dual-wield backhand and the TreeChopping02 cut tried before are gone.)

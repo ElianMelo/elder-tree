@@ -175,7 +175,8 @@ namespace TungSahur.EditorTools
             var lockPoint = Child("LockPoint", root.transform, new Vector3(0, 2.25f, 0.9f));
 
             var dig = root.AddComponent<AudioSource>();
-            dig.clip = AssetDatabase.LoadAssetAtPath<AudioClip>(SfxForge.Dir + "/sfx_dig_loop.wav") ?? SfxForge.DigLoop();
+            dig.clip = SoundPicks.DigLoop();
+            dig.outputAudioMixerGroup = GameMixer.Sfx;
             dig.loop = true; dig.playOnAwake = false; dig.spatialBlend = 0.85f; dig.rolloffMode = AudioRolloffMode.Linear;
             dig.minDistance = 6f; dig.maxDistance = 45f; dig.dopplerLevel = 0f; dig.volume = 0f;
 

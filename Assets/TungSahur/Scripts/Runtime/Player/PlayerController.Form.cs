@@ -331,7 +331,7 @@ namespace TungSahur.Player
             squash = 0.16f;
             animator.SetFloat(HActionSpeed, 1f);
             animator.CrossFadeInFixedTime("Land", 0.08f, 0, 0.1f);
-            AudioManager.Play(Sfx.ChargeUp, transform.position, 0.8f, 0.8f);
+            AudioManager.Play(Sfx.GroundGrind, transform.position, 1f, 0.85f);
             input.Rumble(0.2f, 0.3f, s.crouchTime);
             return true;
         }
@@ -501,6 +501,7 @@ namespace TungSahur.Player
             FXManager.Spawn(FXType.Dust, at, Quaternion.identity, sp.radius * 0.6f);
             FXManager.Spawn(FXType.Smoke, at + Vector3.up, Quaternion.identity, 1.6f);
             AudioManager.Play(Sfx.Slam, at, 1f, 0.7f);
+            AudioManager.Play(Sfx.RockBreak, at, 1f, 0.8f);
             CameraDirector.Instance?.Shake(sp.shake, Vector3.down);
             CameraDirector.Instance?.FovKick(-5f);
             TimeDirector.HitStop(0.12f);

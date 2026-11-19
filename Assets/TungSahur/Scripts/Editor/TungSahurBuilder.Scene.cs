@@ -44,71 +44,14 @@ namespace TungSahur.EditorTools
         public static AudioManager.Cue[] cues;
         static AudioClip ambience;
 
-        [MenuItem("Tung Sahur/5. Build Audio (procedural)")]
+        /// <summary>Wire every cue and the ambience bed to clips from the Gamemaster Audio package (see SoundPicks).</summary>
+        [MenuItem("Tung Sahur/5. Build Audio")]
         public static string BuildAudio()
         {
-            AudioManager.Cue C(Sfx id, AudioClip[] clips, float vol, float pmin = 0.94f, float pmax = 1.06f, float spatial = 0.65f, float interval = 0.03f) =>
-                new AudioManager.Cue { id = id, clips = clips, volume = vol, pitchMin = pmin, pitchMax = pmax, spatial = spatial, minInterval = interval };
-            cues = new[]
-            {
-                C(Sfx.Knock, SfxForge.Knock(), 0.95f, 0.92f, 1.08f),
-                C(Sfx.ImpactHeavy, SfxForge.ImpactHeavy(), 0.9f),
-                C(Sfx.Slam, SfxForge.Slam(), 1f, 0.95f, 1.03f, 0.4f),
-                C(Sfx.WhooshLight, SfxForge.WhooshLight(), 0.55f, 0.9f, 1.12f),
-                C(Sfx.WhooshHeavy, SfxForge.WhooshHeavy(), 0.7f, 0.92f, 1.05f),
-                C(Sfx.Footstep, SfxForge.Footsteps(), 0.45f, 0.85f, 1.15f, 0.7f, 0.06f),
-                C(Sfx.Dodge, SfxForge.Dodge(), 0.7f),
-                C(Sfx.Jump, SfxForge.Jump(), 0.55f),
-                C(Sfx.Land, SfxForge.Land(), 0.7f),
-                C(Sfx.DummyHit, SfxForge.DummyHit(), 0.85f, 0.9f, 1.1f),
-                C(Sfx.LockOn, SfxForge.LockOn(), 0.35f, 1f, 1f, 0f),
-                C(Sfx.LockOff, SfxForge.LockOff(), 0.3f, 1f, 1f, 0f),
-                C(Sfx.ChargeUp, SfxForge.ChargeUp(), 0.5f, 1f, 1f),
-                C(Sfx.ChargeRelease, SfxForge.ChargeRelease(), 0.6f),
-                C(Sfx.UIMove, SfxForge.UIMove(), 0.35f, 0.98f, 1.02f, 0f),
-                C(Sfx.UISelect, SfxForge.UISelect(), 0.45f, 1f, 1f, 0f),
-                C(Sfx.UIBack, SfxForge.UIBack(), 0.4f, 1f, 1f, 0f),
-                C(Sfx.Felled, SfxForge.Felled(), 0.9f, 1f, 1f, 0f, 1f),
-                C(Sfx.Guard, SfxForge.GuardUp(), 0.5f),
-                C(Sfx.Stagger, SfxForge.Stagger(), 0.75f),
-                C(Sfx.Title, SfxForge.Title(), 0.9f, 1f, 1f, 0f, 1f),
-                C(Sfx.BowDraw, SfxForge.BowDraw(), 0.55f, 0.95f, 1.05f, 0.5f, 0.1f),
-                C(Sfx.BowRelease, SfxForge.BowRelease(), 0.85f, 0.95f, 1.05f, 0.45f),
-                C(Sfx.BowNock, SfxForge.BowNock(), 0.45f, 0.95f, 1.08f, 0.5f),
-                C(Sfx.ArrowHit, SfxForge.ArrowHit(), 0.85f, 0.92f, 1.08f, 0.8f),
-                C(Sfx.FullDraw, SfxForge.FullDraw(), 0.4f, 1f, 1f, 0f, 0.2f),
-                C(Sfx.Explosion, SfxForge.Explosion(), 1f, 0.9f, 1.08f, 0.55f, 0.04f),
-                C(Sfx.BombPop, SfxForge.BombPop(), 0.8f, 0.92f, 1.08f, 0.7f),
-                C(Sfx.BombWhistle, SfxForge.BombWhistle(), 0.5f, 0.95f, 1.08f, 0.6f, 0.12f),
-                C(Sfx.BombBeep, SfxForge.BombBeep(), 0.7f, 1f, 1f, 0.6f, 0.05f),
-                C(Sfx.CrocRoar, SfxForge.CrocRoar(), 1f, 0.95f, 1.05f, 0.35f, 0.3f),
-                C(Sfx.JawSnap, SfxForge.JawSnap(), 0.95f, 0.95f, 1.05f, 0.6f),
-                C(Sfx.MetalHit, SfxForge.MetalHit(), 0.85f, 0.92f, 1.08f, 0.6f),
-                C(Sfx.PlayerHurt, SfxForge.PlayerHurt(), 0.9f, 0.95f, 1.05f, 0.2f, 0.08f),
-                C(Sfx.Skid, SfxForge.Skid(), 0.85f, 0.95f, 1.05f, 0.6f, 0.2f),
-                C(Sfx.YouDied, SfxForge.YouDied(), 0.9f, 1f, 1f, 0f, 1f),
-                C(Sfx.GreatEnemyFelled, SfxForge.GreatEnemyFelled(), 0.9f, 1f, 1f, 0f, 1f),
-                C(Sfx.Deflect, SfxForge.Deflect(), 0.8f, 0.93f, 1.07f, 0.6f, 0.08f),
-                C(Sfx.RockBreak, SfxForge.RockBreak(), 1f, 0.93f, 1.05f, 0.6f, 0.1f),
-                C(Sfx.CannonFire, SfxForge.CannonFire(), 1f, 0.95f, 1.05f, 0.3f, 0.1f),
-                C(Sfx.MaskOn, SfxForge.MaskOn(), 0.9f, 0.97f, 1.03f, 0.2f, 0.2f),
-                C(Sfx.MaskScream, SfxForge.MaskScream(), 0.95f, 1f, 1f, 0f, 0.5f),
-                C(Sfx.Transform, SfxForge.TransformSwap(), 0.8f, 0.95f, 1.05f, 0.3f, 0.06f),
-                C(Sfx.ManaEmpty, SfxForge.ManaEmpty(), 0.6f, 0.97f, 1.03f, 0f, 0.12f),
-                C(Sfx.MaskReceived, SfxForge.MaskReceived(), 0.85f, 1f, 1f, 0f, 1f),
-                C(Sfx.SharkRoar, SfxForge.SharkRoar(), 1f, 0.96f, 1.04f, 0.4f, 0.3f),
-                C(Sfx.BladeWhoosh, SfxForge.BladeWhoosh(), 0.6f, 0.92f, 1.08f),
-                C(Sfx.BladeHit, SfxForge.BladeHit(), 0.9f, 0.92f, 1.08f),
-                C(Sfx.VineCut, SfxForge.VineCut(), 0.75f, 0.9f, 1.1f, 0.65f, 0.04f),
-                C(Sfx.VineRustle, SfxForge.VineRustle(), 0.6f, 0.9f, 1.1f, 0.65f, 0.1f),
-                C(Sfx.CrossbowFire, SfxForge.CrossbowFire(), 0.9f, 0.95f, 1.05f),
-                C(Sfx.CrossbowReload, SfxForge.CrossbowReload(), 0.55f, 0.97f, 1.03f),
-                C(Sfx.SpinWhirl, SfxForge.SpinWhirl(), 0.7f, 0.9f, 1.12f, 0.6f, 0.05f),
-                C(Sfx.SneakerSqueak, SfxForge.SneakerSqueak(), 0.6f, 0.9f, 1.12f, 0.7f, 0.08f),
-                C(Sfx.Burrow, SfxForge.Burrow(), 1f, 0.94f, 1.06f, 0.55f, 0.1f),
-            };
-            ambience = SfxForge.Ambience();
-            return $"Audio built: {cues.Length} cues";
+            cues = SoundPicks.Cues();
+            ambience = SoundPicks.Ambience();
+            int clips = cues.Sum(c => c.clips.Length), own = cues.Sum(c => c.clips.Count(a => AssetDatabase.GetAssetPath(a).StartsWith(SoundPicks.OwnDir)));
+            return $"Audio built: {cues.Length} cues, {clips - own} Gamemaster Audio clips + {own} own (cutscene)";
         }
 
         // ------------------------------------------------------------------ club icon for the HUD
@@ -432,7 +375,10 @@ namespace TungSahur.EditorTools
             var am = audioGo.AddComponent<AudioManager>();
             am.cues = cues;
             am.ambienceLoop = ambience;
-            am.ambienceVolume = 0.32f;
+            am.ambienceVolume = SoundPicks.AmbienceVolume;
+            am.exploreMusic = SoundPicks.ExploreMusic();
+            am.bossMusic = SoundPicks.BossMusic();
+            GameMixer.Assign(am);
 
             // ---------------- HUD
             var hudGo = new GameObject("HUD");

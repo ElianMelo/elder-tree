@@ -136,7 +136,7 @@ namespace TungSahur.Player
             Spirit -= m.spiritAttackCost;
             SpiritSpent?.Invoke();
             // the blade flares as the spirit is drawn into it
-            AudioManager.Play(Sfx.ChargeUp, transform.position + Vector3.up * 1.2f, 0.45f, 1.45f);
+            AudioManager.Play(Sfx.BladeRing, transform.position + Vector3.up * 1.2f, 0.8f, 1.15f);
             return true;
         }
 
@@ -161,7 +161,8 @@ namespace TungSahur.Player
             spiritLevelLeft = m.spiritLevelDuration;
             Vector3 p = clubTip != null ? clubTip.position : transform.position + Vector3.up * 1.4f;
             FXManager.Spawn(FXType.ChargeFlash, p, Quaternion.identity, 1.3f);
-            AudioManager.Play(Sfx.ChargeRelease, p, 0.9f, 1.25f);
+            AudioManager.Play(Sfx.BladeRing, p, 1f, 0.85f);
+            AudioManager.Play(Sfx.BladeWhoosh, p, 0.7f, 1.1f);
             CameraDirector.Instance?.FovKick(-2.5f);
             input.Rumble(0.4f, 0.7f, 0.15f);
             SpiritLevelChanged?.Invoke(SpiritLevel);
@@ -302,7 +303,7 @@ namespace TungSahur.Player
             // coil: the sweep's wind-up and opening cut play out and arrive on the level-blade frame as the spin starts
             animator.SetFloat(HActionSpeed, Mathf.Clamp(spinPoseNorm * spinClipLength / Mathf.Max(0.05f, s.windupTime), 0.05f, 3f));
             animator.CrossFadeInFixedTime("Sword_Spin", 0.1f, 0, 0f);
-            AudioManager.Play(Sfx.ChargeUp, transform.position + Vector3.up, 0.7f, 1.25f);
+            AudioManager.Play(Sfx.BladeRing, transform.position + Vector3.up, 1f, 1f);
             AudioManager.Play(Sfx.SneakerSqueak, transform.position, 0.8f, 1.1f);
             FXManager.Spawn(FXType.DustSmall, transform.position, Quaternion.identity, 1.2f);
             input.Rumble(0.15f, 0.25f, s.windupTime);
@@ -333,7 +334,7 @@ namespace TungSahur.Player
                         BeginSlash();
                         CameraDirector.Instance?.FovKick(s.fovKick);
                         AudioManager.Play(Sfx.SpinWhirl, transform.position + Vector3.up, 1f, 0.9f);
-                        AudioManager.Play(Sfx.WhooshHeavy, transform.position + Vector3.up, 0.7f, 1.1f);
+                        AudioManager.Play(Sfx.BladeWhoosh, transform.position + Vector3.up, 0.9f, 0.85f);
                         FXManager.Spawn(FXType.Dust, transform.position, Quaternion.identity, 1.1f);
                     }
                     break;
@@ -486,7 +487,7 @@ namespace TungSahur.Player
             }
             if (finisher)
             {
-                AudioManager.Play(Sfx.WhooshHeavy, c, 1f, 0.8f);
+                AudioManager.Play(Sfx.BladeWhoosh, c, 1f, 0.75f);
                 CameraDirector.Instance?.FovKick(-3f);
             }
         }

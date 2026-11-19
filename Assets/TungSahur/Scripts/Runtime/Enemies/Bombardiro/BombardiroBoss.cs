@@ -1240,7 +1240,7 @@ namespace TungSahur.Enemies
         }
 
         // ================================================================== presentation
-        float EngineVolume => 0.85f * (AudioManager.Instance != null ? AudioManager.Instance.sfxVolume : 1f);
+        float EngineVolume => 1f * (AudioManager.Instance != null ? AudioManager.Instance.sfxVolume : 1f);
 
         void Update()
         {
