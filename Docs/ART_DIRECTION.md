@@ -48,9 +48,9 @@ Distilled from the 91 images in `Assets/References` plus web research on PS1-era
 
 | Layer | Where | What |
 |---|---|---|
-| Shader | `Assets/TungSahur/Art/Shaders/PSXLit.shader` | URP Simple Lit (Lambert, no specular) + clip-space **vertex snapping** + **15-bit ordered dither** on output. Every lit material uses it through `TungSahurBuilder.Lit()`. |
+| Shader | `Assets/ElderTree/Art/Shaders/PSXLit.shader` | URP Simple Lit (Lambert, no specular) + clip-space **vertex snapping** + **15-bit ordered dither** on output. Every lit material uses it through `ElderTreeBuilder.Lit()`. |
 | Globals | `Scripts/Runtime/FX/PSXGlobals.cs` (on the `PostProcess` object) | Snap grid (default 320×180, aspect-matched) and dither strength (0.45). Set the grid to 0 to turn the wobble off. |
-| Resolution | URP `PC_RPAsset` via `BuildScene()` | Render scale **0.4** with **point** upscaling, MSAA off, hard 1K shadows. UI Toolkit stays native-res and crisp. `TungSahurBuilder.PsxRenderScale` tunes it. |
+| Resolution | URP `PC_RPAsset` via `BuildScene()` | Render scale **0.4** with **point** upscaling, MSAA off, hard 1K shadows. UI Toolkit stays native-res and crisp. `ElderTreeBuilder.PsxRenderScale` tunes it. |
 | Textures | `TextureForge.SavePsx` | 64–256 px, 15-bit Bayer-dithered, point filtered, uncompressed. Tiling world textures keep nearest-mips so the ground does not boil. Ground, planks, stone, burlap, bark, pine needles, dark wood, leather, rusted iron, club. |
 | Props | `Tools/Blender/build_props.py` (`PSX = True`) | No bevels, ≤8-sided cylinders, 10×6 spheres, faceted shading. A gnarled dead tree and a dark pine replace the round storybook trees. Props are 48–790 tris; the dummy, which acts as an enemy, is 1,120. |
 | Weapons | `build_psx_weapons.py` (club), `build_bow.py` (`PSX = True`) | Iron-banded spiked cudgel (325 tris), bow 572, arrow 284, quiver 1,360 (was 8.4k / 1.4k / 6.3k). Dark wood, black horn, dried-blood and bone fletching, leather quiver. |

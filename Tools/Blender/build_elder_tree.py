@@ -1,5 +1,5 @@
 """
-Elder Tree - low-poly PSX dark-fantasy player character (replaces the Tung Sahur log).
+Elder Tree - low-poly PSX dark-fantasy player character (replaces the Elder Tree log).
 
 Art direction: Docs/ART_DIRECTION.md. ~2k triangles, 3-12 sided tubes, silhouette first
 (crown of antler branches, heavy brow, long drooping nose, moss beard, root feet,

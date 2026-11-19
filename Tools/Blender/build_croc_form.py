@@ -1,5 +1,5 @@
 """
-Alligator Mask set, PSX dark fantasy (Docs/ART_DIRECTION.md). Everything the Bombardiro reward needs:
+Alligator Mask set, PSX dark fantasy (Docs/ART_DIRECTION.md). Everything the Crocodile reward needs:
 
     blender -b --factory-startup --python Tools/Blender/build_croc_form.py -- <abs out_dir>
 

@@ -1,6 +1,6 @@
 # Audio
 
-Game audio comes from **Gamemaster Audio – Pro Sound Collection** (`Assets/Gamemaster Audio - Pro Sound Collection`, 6,827 clips). The procedural `SfxForge` generator is gone. The one exception is the **transformation cutscene**: its original synthesized clips were kept because they fit better (`Assets/TungSahur/Audio`: mask fanfare, mask clamp, scream, body swap, and the croc / shark roars, which the cutscene plays as the form's roar). They load through `SoundPicks.Own(...)`.
+Game audio comes from **Gamemaster Audio – Pro Sound Collection** (`Assets/Gamemaster Audio - Pro Sound Collection`, 6,827 clips). The procedural `SfxForge` generator is gone. The one exception is the **transformation cutscene**: its original synthesized clips were kept because they fit better (`Assets/ElderTree/Audio`: mask fanfare, mask clamp, scream, body swap, and the croc / shark roars, which the cutscene plays as the form's roar). They load through `SoundPicks.Own(...)`.
 
 **Tone rules (from playtest feedback):** everything should sound physical and dark-fantasy. Use wood, stone, metal, leather and fire, and nothing cartoonish, magical-sparkly or "app UI". The `Comedy_Cartoon` and `User_Interface_Menu` folders are out. Menus use door latches and switch clicks, the shark's special uses blade metal, and the alligator's uses stone and explosions.
 
@@ -10,12 +10,12 @@ Game audio comes from **Gamemaster Audio – Pro Sound Collection** (`Assets/Gam
 
 | What | Where |
 |---|---|
-| Package map (folder constants, `Load`, `Family`, import settings) | `Assets/TungSahur/Scripts/Editor/GamemasterAudio.cs` |
-| Cue → clips + mix (volume, pitch range, spatial blend, min interval) | `Assets/TungSahur/Scripts/Editor/SoundPicks.cs` |
-| Cue enum + pooled one-shot player + ambience bed | `Assets/TungSahur/Scripts/Runtime/Audio/AudioManager.cs` (`Sfx`) |
-| Mixer: Master → Music, Ambience, SFX, UI, Footsteps | `Assets/TungSahur/Audio/TungSahur.mixer` (created once by `Editor/GameMixer.cs`; edit it freely in Window > Audio > Audio Mixer) |
-| Wiring into the scene | `TungSahurBuilder.BuildAudio()` → menu **Tung Sahur/5. Build Audio** (also part of `BuildAll()`) |
-| Boss loops | `SoundPicks.EngineLoop()` (Bombardiro prefab), `SoundPicks.DigLoop()` (Tralalero prefab) |
+| Package map (folder constants, `Load`, `Family`, import settings) | `Assets/ElderTree/Scripts/Editor/GamemasterAudio.cs` |
+| Cue → clips + mix (volume, pitch range, spatial blend, min interval) | `Assets/ElderTree/Scripts/Editor/SoundPicks.cs` |
+| Cue enum + pooled one-shot player + ambience bed | `Assets/ElderTree/Scripts/Runtime/Audio/AudioManager.cs` (`Sfx`) |
+| Mixer: Master → Music, Ambience, SFX, UI, Footsteps | `Assets/ElderTree/Audio/ElderTree.mixer` (created once by `Editor/GameMixer.cs`; edit it freely in Window > Audio > Audio Mixer) |
+| Wiring into the scene | `ElderTreeBuilder.BuildAudio()` → menu **Elder Tree/5. Build Audio** (also part of `BuildAll()`) |
+| Boss loops | `SoundPicks.EngineLoop()` (Crocodile prefab), `SoundPicks.DigLoop()` (Shark prefab) |
 | Every package family with variation numbers, length, mono/stereo, loop flag | `Docs/audio_package_families.csv` (1,349 families) |
 
 ## Adding a sound
@@ -24,7 +24,7 @@ Game audio comes from **Gamemaster Audio – Pro Sound Collection** (`Assets/Gam
 2. One-shot: add a value to `Sfx`, add a `C(Sfx.X, P(...), volume, pitchMin, pitchMax, spatial, minInterval)` line in `SoundPicks.Cues()`, call `AudioManager.Play(Sfx.X, pos)` / `Play2D`.
    Loop on an object: add a `SoundPicks.XLoop()` like `EngineLoop()` and assign it to an `AudioSource` in the builder.
    Quick experiments in editor code: `GamemasterAudio.Family(GamemasterAudio.Folder.Punches, "kick_hard_impact")` loads every variation.
-3. Run **Tung Sahur/5. Build Audio**, or `BuildAll()`. A wrong path logs `[GamemasterAudio] Missing clip: …`.
+3. Run **Elder Tree/5. Build Audio**, or `BuildAll()`. A wrong path logs `[GamemasterAudio] Missing clip: …`.
 
 **Import settings** are applied only to clips the game uses (`GamemasterAudio.Configure`): force to mono for one-shots and positional loops (the AudioManager pans them), **Normalize off** (otherwise Unity peak-normalizes the mono downmix and breaks the mix), Vorbis 0.7, Decompress On Load under 3 s / Compressed In Memory above, Streaming for the stereo ambience bed. The rest of the package keeps its import defaults, so unused clips cost nothing in a build.
 
@@ -55,7 +55,7 @@ One-shots share a pool of 40 voices (the project's real-voice limit was raised f
 
 ## Footsteps
 
-`FX/FootstepFX` (on the Player) fires `Sfx.Footstep` when a foot bone plants. It learns each rig's planted ankle height, because the Elder Tree's ankle sits ~0.11 m above the root and the old fixed 0.105 m threshold almost never fired. A step lands within `plantMargin` (3 cm) of that height and re-arms after the foot lifts `liftMargin` (7 cm). It follows whichever body the controller drives (checked every frame), so mask swaps re-learn it. Volume scales with speed. The cue sits on the Footsteps layer at 0.48 (cut 30% from 0.69). Bosses play their own steps (Tralalero `FootPos`).
+`FX/FootstepFX` (on the Player) fires `Sfx.Footstep` when a foot bone plants. It learns each rig's planted ankle height, because the Elder Tree's ankle sits ~0.11 m above the root and the old fixed 0.105 m threshold almost never fired. A step lands within `plantMargin` (3 cm) of that height and re-arms after the foot lifts `liftMargin` (7 cm). It follows whichever body the controller drives (checked every frame), so mask swaps re-learn it. Volume scales with speed. The cue sits on the Footsteps layer at 0.48 (cut 30% from 0.69). Bosses play their own steps (Shark `FootPos`).
 
 ## Current cues
 
@@ -116,10 +116,10 @@ One-shots share a pool of 40 voices (the project's real-voice limit was raised f
 | BladeRing (shark: spirit spend / level-up, Tornado wind-up) | Guns_Weapons/Knife_Sword_Pick/knife_unsheathe_01, 02, 03 | 1.00 |
 | GroundGrind (alligator: Sky Bombardment crouch) | Doors/rock_door_slide_block_move_drag_02, 04, 07 | 0.68 |
 | Ambience bed (2D) | Animals_Nature_Ambiences/wind_general_soft_low_loop_02 (27.4 s; crickets were distracting) | 0.30 (`SoundPicks.AmbienceVolume`) |
-| Bombardiro engine | Vehicles_Engines_Motors/truck_low_engine_rattle_loop (10.2 s) | runtime |
-| Tralalero dig | Doors/rock_door_slide_block_move_drag_loop1 (4.0 s) | runtime |
+| Crocodile engine | Vehicles_Engines_Motors/truck_low_engine_rattle_loop (10.2 s) | runtime |
+| Shark dig | Doors/rock_door_slide_block_move_drag_loop1 (4.0 s) | runtime |
 
-Picks were chosen by name, length and measured loudness, not by ear. Candidates to audition first if something sounds off: Knock (a wood "bullet impact" thunk; the pure wood-block knocks in `Miscellaneous/Wood/wood_block_sticks_hit_clap_*` have the right "tung" timbre but are ~8 dB quieter), PlayerHurt, JawSnap, LockOn, Title.
+Picks were chosen by name, length and measured loudness, not by ear. Candidates to audition first if something sounds off: Knock (a wood "bullet impact" thunk; the pure wood-block knocks in `Miscellaneous/Wood/wood_block_sticks_hit_clap_*` have the right hollow-knock timbre but are ~8 dB quieter), PlayerHurt, JawSnap, LockOn, Title.
 
 ## Package catalog
 

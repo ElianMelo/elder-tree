@@ -1,13 +1,13 @@
 """
-Tung Sahur - bow, arrow and quiver (Blender 4.2+/5.x). Live (MCP) or headless:
+Elder Tree - bow, arrow and quiver (Blender 4.2+/5.x). Live (MCP) or headless:
 
     blender -b --factory-startup --python Tools/Blender/build_bow.py -- <out_dir> [--icon <png>]
 
 Live via MCP:  exec(compile(open(p).read(), p, 'exec'), {"__name__": "__main__", "__file__": p, "TS_EXPORT": True,
-                                                       "TS_ICON": "Assets/TungSahur/UI/Icon_Bow.png"})
-Then copy the three FBX into Assets/TungSahur/Art/Models and run TungSahurBuilder.BuildAll() in Unity.
+                                                       "TS_ICON": "Assets/ElderTree/UI/Icon_Bow.png"})
+Then copy the three FBX into Assets/ElderTree/Art/Models and run ElderTreeBuilder.BuildAll() in Unity.
 
-Builds into a dedicated "TungBow" scene so the character scene is never touched.
+Builds into a dedicated "ElderTreeBow" scene so the character scene is never touched.
 
 Conventions (match the club / character exports):
   * Bow: limbs along +Z, origin at the grip centre, arrows fly toward -Y (Unity +Z), the string
@@ -38,14 +38,14 @@ os.makedirs(OUT_DIR, exist_ok=True)
 if bpy.app.background and "--" in sys.argv:
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
-scene = bpy.data.scenes.get("TungBow") or bpy.data.scenes.new("TungBow")
+scene = bpy.data.scenes.get("ElderTreeBow") or bpy.data.scenes.new("ElderTreeBow")
 for ob in list(scene.objects):
     bpy.data.objects.remove(ob, do_unlink=True)
 if bpy.context.window is not None:
     bpy.context.window.scene = scene
 
 # ---------------------------------------------------------------------------------- dimensions
-BOW_HALF = 0.68          # tip-to-tip 1.36 m (Tung is ~1.9 m tall)
+BOW_HALF = 0.68          # tip-to-tip 1.36 m (the Elder Tree is ~1.9 m tall)
 RISER_HALF = 0.15        # stiff handle section (fraction of half length below is "s")
 GRIP_LO, GRIP_HI = -0.075, 0.062
 SHELF_Z = 0.075          # arrow rest just above the grip
@@ -322,7 +322,7 @@ def build_bow():
             quad.append(mb.v(base + nrm * dy + Vector((0, 0, dz))))
     box_faces(mb, quad, "M_BowHorn")
 
-    ob = mb.build("TungSahur_Bow", shape_key="Draw")
+    ob = mb.build("ElderTree_Bow", shape_key="Draw")
     return ob
 
 
@@ -380,7 +380,7 @@ def lathe(mb, profile, seg, mat_fn, axis_dir=Vector((0, -1, 0)), origin=Vector((
     return sweep(mb, frames, secs, mat_fn, cap_start, cap_end)
 
 
-def build_arrow(name="TungSahur_Arrow", mb=None, origin=Vector((0, 0, 0)), axis=Vector((0, -1, 0)), roll=0.0, head=True, length=ARROW_LEN):
+def build_arrow(name="ElderTree_Arrow", mb=None, origin=Vector((0, 0, 0)), axis=Vector((0, -1, 0)), roll=0.0, head=True, length=ARROW_LEN):
     own = mb is None
     mb = mb or MeshBuilder()
     L = length
@@ -502,7 +502,7 @@ def build_quiver():
         axis = Vector((math.cos(a) * -0.08, math.sin(a) * -0.08, -1)).normalized()
         # only the part above the rim is visible: stop the shafts inside the quiver
         build_arrow(mb=mb, origin=base, axis=axis, roll=rng.uniform(0, 3), head=False, length=0.38)
-    return mb.build("TungSahur_Quiver")
+    return mb.build("ElderTree_Quiver")
 
 
 # ---------------------------------------------------------------------------------- build
@@ -541,7 +541,7 @@ string_ob.parent = bow
 
 # look-dev lighting (warm key / cool fill / rim, matching the game's lantern night); never exported
 if scene.world is None:
-    scene.world = bpy.data.worlds.new("TungBowWorld")
+    scene.world = bpy.data.worlds.new("ElderTreeBowWorld")
 scene.world.use_nodes = True
 _bg = next(n for n in scene.world.node_tree.nodes if n.type == "BACKGROUND")
 _bg.inputs[0].default_value = (0.05, 0.06, 0.08, 1)
@@ -663,6 +663,6 @@ if ICON_PATH:
 
 if DO_EXPORT:
     empties = [c for c in bow.children if c.type == 'EMPTY']
-    export([bow] + empties, os.path.join(OUT_DIR, "TungSahur_Bow.fbx"))
-    export([arrow], os.path.join(OUT_DIR, "TungSahur_Arrow.fbx"))
-    export([quiver], os.path.join(OUT_DIR, "TungSahur_Quiver.fbx"))
+    export([bow] + empties, os.path.join(OUT_DIR, "ElderTree_Bow.fbx"))
+    export([arrow], os.path.join(OUT_DIR, "ElderTree_Arrow.fbx"))
+    export([quiver], os.path.join(OUT_DIR, "ElderTree_Quiver.fbx"))

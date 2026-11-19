@@ -1,5 +1,5 @@
 """
-Tung Sahur - environment & dummy props (Blender 4.2+/5.x, headless friendly).
+Elder Tree - environment & dummy props (Blender 4.2+/5.x, headless friendly).
 
     blender -b --factory-startup --python build_props.py -- <out_dir> [preview.png]
 

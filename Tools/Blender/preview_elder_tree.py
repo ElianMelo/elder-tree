@@ -24,9 +24,9 @@ P["RightLowerArm"].rotation_euler = (0, 0, math.radians(-26))
 P["Neck"].rotation_euler = (math.radians(8), 0, 0)
 bpy.context.view_layer.update()
 
-# ---- club in the right fist (if the Tung scene's club exists, link a copy)
+# ---- club in the right fist (if the legacy log scene's club exists, link a copy)
 club = scene.objects.get("Preview_Club")
-src = bpy.data.objects.get("TungSahur_Club")
+src = bpy.data.objects.get("LegacyLog_Club")
 if club is None and src is not None:
     club = src.copy()
     club.name = "Preview_Club"

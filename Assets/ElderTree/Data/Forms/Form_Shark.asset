@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c472b754be96f043b9628e824b584c6, type: 3}
+  m_Name: Form_Shark
+  m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Equipment.FormData
+  displayName: Shark
+  rigId: Shark
+  moveset: {fileID: 11400000, guid: 426492617a70a3b4e88ba795a50d06ae, type: 2}
+  melee: {fileID: 11400000, guid: a8293330f40c158409a7fb71cd09b8e2, type: 2}
+  rangedKind: 2
+  bow: {fileID: 0}
+  cannon: {fileID: 0}
+  crossbow: {fileID: 11400000, guid: 5ea379ab5e2d3f542887b89f6bfe9112, type: 2}
+  special: {fileID: 11400000, guid: 485173d98b0faed4fa314a0ebe52e90c, type: 2}
+  moveSpeedMultiplier: 1.04
+  rollDistanceMultiplier: 1.05
+  damageTakenMultiplier: 1
+  ignoreLightFlinch: 0
+  roar: 45
+  roarPitch: 1.15

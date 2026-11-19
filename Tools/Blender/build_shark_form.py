@@ -1,5 +1,5 @@
 """
-Shark Mask set, PSX dark fantasy (Docs/ART_DIRECTION.md). Everything the Tralalero reward needs:
+Shark Mask set, PSX dark fantasy (Docs/ART_DIRECTION.md). Everything the Shark reward needs:
 
     blender -b --factory-startup --python Tools/Blender/build_shark_form.py -- <abs out_dir>
 
@@ -7,7 +7,7 @@ SharkForm.fbx     - the humanoid shark the player turns into. Same skeleton as t
                     alligator (Human Mega Animations Pack HumanM x 0.95), PS1 rigid skinning. Countershaded
                     slate hide with a pale belly, a tall swept dorsal fin, gill slits, a tapered great-white head with
                     an underslung grin of serrated teeth, pectoral fins sweeping off the forearms, a crescent
-                    caudal fin, a shark-jaw pauldron, and Tralalero's worn blue running shoes (no brand marks).
+                    caudal fin, a shark-jaw pauldron, and the Shark's worn blue running shoes (no brand marks).
 SharkSword.fbx    - two-handed long sword (nodachi). Origin = grip, blade along +Z (Unity +Y), cutting edge
                     toward -X (faces away from the wielder in Unity). Rayskin grip, jaw-bone guard ringed with teeth,
                     tooth pommel, a curved blade with a saw of shark teeth on the spine.
