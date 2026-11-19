@@ -15,7 +15,9 @@ namespace ElderTree.Dev
     /// exercised and screenshotted without a human (used for automated playtests).
     /// Script: "stick x y; rstick x y; tap RB 0.1; hold RT 0.8; press B; release B; key F1; wait 0.5; shot name; log".
     /// Bosses: "boss [name]" spawns one (primary by default) and makes it the focus of "bossmove X",
-    /// "bosshp dmg [poise]", "lockboss", "bossaway" and the log.
+    /// "bosshp dmg [poise]", "lockboss", "bossaway" and the log. "waitmove X [timeout]" waits until the focus boss's
+    /// CurrentMove is X; "viewcam yaw dist height [lookY]" puts a review camera on the focus boss (yaw relative to its
+    /// heading, 90 = its right side) that follows it, "viewcam off" removes it. "tpboss d" stands the player d metres in front of the focus boss.
     /// </summary>
     public class AutoPilot : MonoBehaviour
     {
@@ -51,6 +53,19 @@ namespace ElderTree.Dev
         {
             if (pad != null && pad.added) InputSystem.RemoveDevice(pad);
             if (I == this) I = null;
+        }
+
+        Camera viewCam;
+        Vector4 viewCamParams;
+
+        void LateUpdate()
+        {
+            var b = FocusBoss;
+            if (viewCam == null || b == null) return;
+            Vector3 c = b.transform.position;
+            Quaternion r = b.transform.rotation * Quaternion.Euler(0f, viewCamParams.x, 0f);
+            viewCam.transform.position = c + r * Vector3.forward * viewCamParams.y + Vector3.up * viewCamParams.z;
+            viewCam.transform.LookAt(c + Vector3.up * viewCamParams.w);
         }
 
         void Update()
@@ -134,6 +149,37 @@ namespace ElderTree.Dev
                     }
                     case "bossaway": if (FocusBoss != null) BossEncounter.Instance?.Despawn(FocusBoss); break;
                     case "bossmove": FocusBoss?.ForceNextMove(p[1]); break;
+                    case "tpboss":
+                    {
+                        // "tpboss d": stand d metres in front of the focus boss, facing it
+                        var b = FocusBoss; var pc = PlayerController.Instance;
+                        if (b == null || pc == null) break;
+                        Vector3 at = b.transform.position + b.transform.forward * F(1, 4f);
+                        pc.motor.Teleport(at, Quaternion.LookRotation(-b.transform.forward));
+                        break;
+                    }
+                    case "waitmove":
+                    {
+                        float until = Time.unscaledTime + F(2, 8f);
+                        while (Time.unscaledTime < until && FocusBoss != null && FocusBoss.CurrentMove != p[1]) yield return null;
+                        break;
+                    }
+                    case "viewcam":
+                    {
+                        if (p.Length > 1 && p[1] == "off") { if (viewCam) Destroy(viewCam.gameObject); viewCam = null; break; }
+                        if (viewCam == null)
+                        {
+                            var go = new GameObject("AutoPilot ViewCam");
+                            go.transform.SetParent(transform, false);
+                            viewCam = go.AddComponent<Camera>();
+                            var main = Camera.main;
+                            if (main != null) { viewCam.CopyFrom(main); viewCam.targetTexture = null; }
+                            viewCam.depth = 50f;
+                            viewCam.fieldOfView = 50f;
+                        }
+                        viewCamParams = new Vector4(F(1, 90f), F(2, 22f), F(3, 5f), F(4, 5f));
+                        break;
+                    }
                     case "bosshp":
                     {
                         var b = FocusBoss;

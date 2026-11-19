@@ -30,6 +30,7 @@ namespace ElderTree.EditorTools
             log.AppendLine(BuildAnimator());
             log.AppendLine(BuildBoss());            // boss materials are shared by the mask set
             log.AppendLine(BuildSharkBoss());       // reuses the croc mouth / teeth materials
+            log.AppendLine(BuildDruidBoss());
             log.AppendLine(BuildMaskSet());         // data + models the player prefab needs
             log.AppendLine(BuildSharkSet());        // the Shark's reward: shark body, long sword, crossbow, vines
             log.AppendLine(BuildPrefabs());

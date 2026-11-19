@@ -14,7 +14,8 @@ namespace ElderTree.Audio
         Deflect, RockBreak, CannonFire, MaskOn, MaskScream, Transform, ManaEmpty, MaskReceived,
         SharkRoar, SneakerSqueak, Burrow,
         BladeWhoosh, BladeHit, VineCut, VineRustle, CrossbowFire, CrossbowReload, SpinWhirl,
-        BladeRing, GroundGrind
+        BladeRing, GroundGrind,
+        WoodGroan, RootSnap, DeepRumble
     }
 
     /// <summary>

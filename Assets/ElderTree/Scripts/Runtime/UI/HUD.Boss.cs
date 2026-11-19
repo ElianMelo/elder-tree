@@ -9,7 +9,7 @@ namespace ElderTree.UI
     public partial class HUD
     {
         // ================================================================== boss bar (Elden Ring: bottom centre)
-        /// <summary>Pause menu: summon roster boss N (0 = Crocodile, 1 = Shark).</summary>
+        /// <summary>Pause menu: summon roster boss N (0 = Crocodile, 1 = Shark, 2 = Druid).</summary>
         public System.Action<int> SummonBossRequested;
 
         VisualElement bossBox, bossFill, bossChip;

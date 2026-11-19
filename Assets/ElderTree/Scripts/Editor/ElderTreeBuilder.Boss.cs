@@ -522,6 +522,7 @@ namespace ElderTree.EditorTools
             enc.boss = boss; enc.player = pc; enc.hud = hud; enc.spawnPoint = spawn;
             enc.bosses.Add(boss);
             PlaceSharkBoss(actorRoot, enc);
+            PlaceDruidBoss(actorRoot, enc);
         }
     }
 }

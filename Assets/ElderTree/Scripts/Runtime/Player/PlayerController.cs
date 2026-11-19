@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace ElderTree.Player
 {
-    public enum PlayerState { Locomotion, Air, Landing, Attack, Dodge, Hit, Dead, Aim, Special, Transform, Cinematic }
+    public enum PlayerState { Locomotion, Air, Landing, Attack, Dodge, Hit, Dead, Aim, Special, Transform, Cinematic, Held }
 
     /// <summary>
     /// Souls-like player brain. Locomotion (free + lock-on strafing), sprint, jump, roll/backstep with
@@ -152,10 +152,11 @@ namespace ElderTree.Player
                 case PlayerState.Special: UpdateSpecial(dt); break;
                 case PlayerState.Transform: UpdateTransform(dt); break;
                 case PlayerState.Cinematic: UpdateCinematic(dt); break;
+                case PlayerState.Held: UpdateHeld(dt); break;
             }
             if (State != PlayerState.Special) UpdateThrownHammer(dt);
 
-            motor.Tick(dt);
+            if (State != PlayerState.Held) motor.Tick(dt);     // held in a fist: the grabber places the body
             if (motor.Grounded) lastGroundedTime = Time.time;
             UpdateGuardLayer(dt);
             UpdateTwoHand(dt);

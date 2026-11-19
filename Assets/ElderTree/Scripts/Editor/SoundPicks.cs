@@ -123,6 +123,11 @@ namespace ElderTree.EditorTools
 
                 // ---------------------------------------------------------------- Alligator Mask special (Sky Bombardment)
                 C(Sfx.GroundGrind, P("Doors/rock_door_slide_block_move_drag_02", "Doors/rock_door_slide_block_move_drag_04", "Doors/rock_door_slide_block_move_drag_07"), 0.68f, 0.95f, 1.05f, 0.5f, 0.2f),   // crouch: stone grinding underfoot
+
+                // ---------------------------------------------------------------- Druid (a giant tree: no voice, only wood and earth)
+                C(Sfx.WoodGroan, P("Doors/door_creak_long_01", "Doors/door_creak_long_02", "Doors/door_creak_long_03", "Doors/door_creak_long_04"), 0.8f, 0.5f, 0.6f, 0.45f, 0.25f),   // a trunk bending: its roar and its strain
+                C(Sfx.RootSnap, P("Foley/bone_break_neck_snap_crack_01", "Foley/bone_break_neck_snap_crack_02", "Foley/bone_break_neck_snap_crack_03"), 0.7f, 0.62f, 0.78f, 0.6f, 0.06f),   // roots splintering under blows
+                C(Sfx.DeepRumble, P("Cinematic Sounds/cinematic_deep_bass_rumble_01", "Cinematic Sounds/cinematic_deep_bass_rumble_02"), 0.7f, 0.9f, 1.05f, 0.3f, 0.5f),   // the ground taking its weight
             };
             foreach (var c in cues) c.layer = c.id == Sfx.Footstep ? AudioLayer.Footsteps : UiCues.Contains(c.id) ? AudioLayer.UI : AudioLayer.SFX;
             Configure(cues.SelectMany(c => c.clips).Where(c => UnityEditor.AssetDatabase.GetAssetPath(c).StartsWith(Root)), Use.OneShot);
