@@ -85,8 +85,10 @@ namespace ElderTree.UI
         {
             if (player == null) return;
             var f = player.CurrentForm;
-            Texture2D meleeIcon = f != null && f.melee != null && f.melee.icon != null ? f.melee.icon : clubIcon;
-            Texture2D rangedIcon = f != null && f.rangedKind == RangedKind.Cannon && f.cannon != null && f.cannon.icon != null ? f.cannon.icon
+            Texture2D meleeIcon = f != null && f.magic != null && f.magic.icon != null ? f.magic.icon
+                : f != null && f.melee != null && f.melee.icon != null ? f.melee.icon : clubIcon;
+            Texture2D rangedIcon = f != null && f.rangedKind == RangedKind.Orb && f.orb != null && f.orb.icon != null ? f.orb.icon
+                : f != null && f.rangedKind == RangedKind.Cannon && f.cannon != null && f.cannon.icon != null ? f.cannon.icon
                 : f != null && f.rangedKind == RangedKind.Crossbow && f.crossbow != null && f.crossbow.icon != null ? f.crossbow.icon
                 : f != null && f.bow != null && f.bow.icon != null ? f.bow.icon : bowIcon;
             var ci = clubSlot?.Q(className: "equip__icon");
@@ -96,12 +98,14 @@ namespace ElderTree.UI
             if (ammoLabel != null) ammoLabel.text = $"◆ {Mathf.RoundToInt(player.RangedManaCost)}";
         }
 
-        string MeleeName => player != null && player.CurrentForm != null && player.CurrentForm.melee != null ? player.CurrentForm.melee.displayName : "Elder Club";
+        string MeleeName => player != null && player.CurrentForm != null && player.CurrentForm.magic != null ? player.CurrentForm.magic.displayName
+            : player != null && player.CurrentForm != null && player.CurrentForm.melee != null ? player.CurrentForm.melee.displayName : "Elder Club";
         string RangedName
         {
             get
             {
                 var f = player != null ? player.CurrentForm : null;
+                if (f != null && f.rangedKind == RangedKind.Orb && f.orb != null) return f.orb.displayName;
                 if (f != null && f.rangedKind == RangedKind.Cannon && f.cannon != null) return f.cannon.displayName;
                 if (f != null && f.rangedKind == RangedKind.Crossbow && f.crossbow != null) return f.crossbow.displayName;
                 if (f != null && f.bow != null) return f.bow.displayName;

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ElderTree.Equipment
 {
-    public enum RangedKind { Bow, Cannon, Crossbow }
+    public enum RangedKind { Bow, Cannon, Crossbow, Orb }
 
     /// <summary>
     /// A body the player can be: the Elder Tree (base) or a mask form. Holds the loadout (moveset,
@@ -25,6 +25,10 @@ namespace ElderTree.Equipment
         public BowData bow;
         public CannonData cannon;
         public CrossbowData crossbow;
+        [Tooltip("Druid: the energy ball thrown from both hands (rangedKind = Orb).")]
+        public OrbData orb;
+        [Tooltip("A caster form: light / heavy cast this spell from the staff instead of swinging the melee weapon.")]
+        public SpellData magic;
         [Tooltip("Light + heavy together (Sky Bombardment, Spin Slash...). Empty = the moveset's skill attack.")]
         public SpecialData special;
 

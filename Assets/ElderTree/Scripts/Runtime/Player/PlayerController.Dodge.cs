@@ -107,7 +107,8 @@ namespace ElderTree.Player
             if (dodgeQueuedAttack && t >= 0.78f)
             {
                 FinishDodge();
-                StartAttack(moveset.dodgeAttack);
+                if (!IsCaster) StartAttack(moveset.dodgeAttack);
+                else if (!TryStartCast(false)) ReturnToLocomotion(0.15f);
                 return;
             }
             if (dodgeQueuedDodge && t >= 0.86f)

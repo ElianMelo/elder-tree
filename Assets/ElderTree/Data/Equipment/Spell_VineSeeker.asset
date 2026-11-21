@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2d71e218fd377049b2e41d616e6b9c8, type: 3}
+  m_Name: Spell_VineSeeker
+  m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Equipment.SpellData
+  displayName: Vine Seeker
+  icon: {fileID: 2800000, guid: 49282bd7fa095034f8dfba930bca028e, type: 3}
+  manaCost: 14
+  chargedManaCost: 26
+  staminaCost: 8
+  castTime: 0.55
+  releaseAt: 0.22
+  recoverAt: 0.62
+  castMoveSpeed: 1.1
+  castTurnSpeed: 420
+  chargeMinTime: 0.75
+  chargeMaxTime: 1.1
+  chargeDamageMultiplier: 1.9
+  strands: 3
+  chargedStrands: 5
+  launchSpeed: 9
+  maxSpeed: 21
+  acceleration: 26
+  homingDelay: 0.12
+  turnRate: 210
+  maxTurnRate: 420
+  seekCone: 32
+  seekRange: 32
+  lifetime: 3.2
+  launchPitch: 6
+  damage: 72
+  poise: 24
+  burstDamage: 22
+  burstPoise: 10
+  burstRadius: 1.6
+  burstDelay: 0.38
+  burstLife: 2.2
+  shake: 0.18
+  hitStop: 0.05
+  glow: {r: 0.55, g: 1, b: 0.35, a: 1}

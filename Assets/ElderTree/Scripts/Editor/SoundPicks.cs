@@ -128,6 +128,22 @@ namespace ElderTree.EditorTools
                 C(Sfx.WoodGroan, P("Doors/door_creak_long_01", "Doors/door_creak_long_02", "Doors/door_creak_long_03", "Doors/door_creak_long_04"), 0.8f, 0.5f, 0.6f, 0.45f, 0.25f),   // a trunk bending: its roar and its strain
                 C(Sfx.RootSnap, P("Foley/bone_break_neck_snap_crack_01", "Foley/bone_break_neck_snap_crack_02", "Foley/bone_break_neck_snap_crack_03"), 0.7f, 0.62f, 0.78f, 0.6f, 0.06f),   // roots splintering under blows
                 C(Sfx.DeepRumble, P("Cinematic Sounds/cinematic_deep_bass_rumble_01", "Cinematic Sounds/cinematic_deep_bass_rumble_02"), 0.7f, 0.9f, 1.05f, 0.3f, 0.5f),   // the ground taking its weight
+
+                // ---------------------------------------------------------------- Druid Mask (caster). Not heard by ear yet:
+                // volumes are guesses. Vines are the package's nature spells (whips, wood and leaves, nothing sparkly); the
+                // orb is the one place an energy sound belongs (the user asked for a "green energy ball").
+                C(Sfx.SpellGather, P("Magic_Spells/casting_charge_matter_grow_01", "Magic_Spells/casting_charge_matter_grow_02",
+                                     "Magic_Spells/casting_charge_matter_grow_03"), 0.5f, 0.9f, 1.05f, 0.6f, 0.15f),
+                C(Sfx.VineCast, P("Magic_Spells/nature_spell_vines_whoosh_01", "Magic_Spells/nature_spell_vines_whoosh_02",
+                                  "Magic_Spells/nature_spell_vines_whoosh_03"), 0.75f, 0.92f, 1.08f, 0.6f, 0.05f),
+                C(Sfx.VineBurst, P("Magic_Spells/nature_spell_vines_blast_impact1", "Magic_Spells/nature_spell_vines_blast_impact2",
+                                   "Magic_Spells/nature_spell_vines_blast_impact3"), 0.8f, 0.92f, 1.06f, 0.65f, 0.05f),
+                C(Sfx.OrbCharge, P("Magic_Spells/magic_conjure_charge1_01", "Magic_Spells/magic_conjure_charge1_02",
+                                   "Magic_Spells/magic_conjure_charge1_03"), 0.4f, 0.85f, 0.95f, 0.6f, 0.2f),
+                C(Sfx.OrbFire, P("Magic_Spells/energy_blast_small_01", "Magic_Spells/energy_blast_small_02",
+                                 "Magic_Spells/energy_blast_small_03"), 0.6f, 0.8f, 0.92f, 0.6f, 0.08f),
+                C(Sfx.OrbImpact, P("Magic_Spells/energy_blast_large_01", "Magic_Spells/energy_blast_large_02",
+                                   "Magic_Spells/energy_blast_large_03"), 0.7f, 0.82f, 0.95f, 0.65f, 0.08f),
             };
             foreach (var c in cues) c.layer = c.id == Sfx.Footstep ? AudioLayer.Footsteps : UiCues.Contains(c.id) ? AudioLayer.UI : AudioLayer.SFX;
             Configure(cues.SelectMany(c => c.clips).Where(c => UnityEditor.AssetDatabase.GetAssetPath(c).StartsWith(Root)), Use.OneShot);

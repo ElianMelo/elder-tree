@@ -33,6 +33,7 @@ namespace ElderTree.EditorTools
             log.AppendLine(BuildDruidBoss());
             log.AppendLine(BuildMaskSet());         // data + models the player prefab needs
             log.AppendLine(BuildSharkSet());        // the Shark's reward: shark body, long sword, crossbow, vines
+            log.AppendLine(BuildDruidMaskSet());    // the Druid's reward: druid body, staff, Vine Seeker, Verdant Orb
             log.AppendLine(BuildPrefabs());
             log.AppendLine(BuildAudio());
             log.AppendLine(RenderClubIcon());
@@ -369,7 +370,8 @@ namespace ElderTree.EditorTools
                 E(FXType.Dust, "FX_Dust", 2), E(FXType.DustSmall, "FX_DustSmall", 8), E(FXType.SlamRing, "FX_SlamRing", 2),
                 E(FXType.SlamDebris, "FX_SlamDebris", 2), E(FXType.LandDust, "FX_LandDust", 2), E(FXType.ChargeFlash, "FX_ChargeFlash", 2),
                 E(FXType.Explosion, "FX_Explosion", 6), E(FXType.BombPop, "FX_BombPop", 3), E(FXType.Smoke, "FX_Smoke", 2),
-                E(FXType.SlashHit, "FX_SlashHit", 4), E(FXType.LeafBurst, "FX_LeafBurst", 4)
+                E(FXType.SlashHit, "FX_SlashHit", 4), E(FXType.LeafBurst, "FX_LeafBurst", 4),
+                E(FXType.LeafExplosion, "FX_LeafExplosion", 4), E(FXType.OrbBurst, "FX_OrbBurst", 2), E(FXType.LeafFall, "FX_LeafFall", 8)
             };
             var audioGo = new GameObject("Audio");
             audioGo.transform.SetParent(sysRoot);
@@ -398,6 +400,7 @@ namespace ElderTree.EditorTools
             PlaceBoss(actorRoot, sys, pc, hud, spawn);
             PlaceMaskSet(envRoot, sys, pc, hud);
             PlaceSharkSet(envRoot, sys);
+            PlaceDruidSet(sys);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             // set as the only build scene + open by default

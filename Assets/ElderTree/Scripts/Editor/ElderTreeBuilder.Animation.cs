@@ -190,6 +190,17 @@ namespace ElderTree.EditorTools
             Act("SpecialThrow", K("Combat/Thrown/Rock/HumanM@ThrowBigRock01"));
             Act("CannonAim", K("Combat/Bazooka/HumanM@Bazooka_Aim01"));
             Act("CannonShoot", K("Combat/Bazooka/HumanM@Bazooka_Aim01_Shoot01"));
+            // Druid Mask (caster): the pack's spellcasting set. The Load clips loop while a spell gathers / the orb is
+            // held up; the Cast clips release it.
+            Act("Druid_CastLoad", K("Combat/Spellcasting/MagicAttacks/Directional/HumanM@MagicAttackDirect1H01_R - Load"));
+            Act("Druid_Cast", K("Combat/Spellcasting/MagicAttacks/Directional/HumanM@MagicAttackDirect1H01_R - Cast"));
+            Act("Druid_ChargeLoad", K("Combat/Spellcasting/MagicAttacks/Directional/HumanM@MagicAttackDirect2H01 - Load"));
+            Act("Druid_ChargeCast", K("Combat/Spellcasting/MagicAttacks/Directional/HumanM@MagicAttackDirect2H01 - Cast"));
+            Act("Druid_OrbAim", K("Combat/Spellcasting/MagicAttacks/Directional/HumanM@MagicAttackDirect2H02 - Load"));
+            Act("Druid_OrbCast", K("Combat/Spellcasting/MagicAttacks/Directional/HumanM@MagicAttackDirect2H02 - Cast"));
+            // Wrath of the Grove (druid special): the kick's knee-up chamber, held, then cut into the heavy landing = a stomp
+            Act("Druid_StompRaise_R", K("Combat/Unarmed/HumanM@AttackKick02_R"));
+            Act("Druid_StompRaise_L", K("Combat/Unarmed/HumanM@AttackKick02_L"));
             Act("MaskDon", K("Misc/Drink/HumanM@Drink01_R"));
             Act("MaskScream", K("Social/Emotions/HumanM@Pain01"));
             Act("MaskRoar", K("Social/Emotions/HumanM@Angry01"));

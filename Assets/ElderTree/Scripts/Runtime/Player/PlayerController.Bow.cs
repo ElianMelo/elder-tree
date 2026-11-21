@@ -43,7 +43,7 @@ namespace ElderTree.Player
         BowData Bow => (CurrentForm != null && CurrentForm.bow != null) ? CurrentForm.bow : bowData;
 
         public bool BowRaised => State == PlayerState.Aim;
-        public BowPhase CurrentBowPhase => State == PlayerState.Aim && !cannonMode ? bowPhase : BowPhase.None;
+        public BowPhase CurrentBowPhase => State == PlayerState.Aim && !cannonMode && !orbMode ? bowPhase : BowPhase.None;
         public float BowPhaseProgress { get; private set; }
         /// <summary>Gameplay draw amount 0..1 (eased). With the cannon: readiness of the next shot.</summary>
         public float BowDraw { get; private set; }
@@ -54,7 +54,9 @@ namespace ElderTree.Player
         public bool AimOnTarget { get; private set; }
         public int ArrowsLoosed { get; private set; }
         /// <summary>Mana one shot of the raised ranged weapon costs.</summary>
-        public float RangedManaCost => CurrentForm != null && CurrentForm.rangedKind == RangedKind.Cannon && CurrentForm.cannon != null
+        public float RangedManaCost => CurrentForm != null && CurrentForm.rangedKind == RangedKind.Orb && CurrentForm.orb != null
+            ? CurrentForm.orb.manaPerShot
+            : CurrentForm != null && CurrentForm.rangedKind == RangedKind.Cannon && CurrentForm.cannon != null
             ? CurrentForm.cannon.manaPerShot
             : CurrentForm != null && CurrentForm.rangedKind == RangedKind.Crossbow && CurrentForm.crossbow != null
                 ? CurrentForm.crossbow.manaPerShot : (Bow != null ? Bow.manaPerShot : 0f);
@@ -92,6 +94,7 @@ namespace ElderTree.Player
 
         bool TryEnterAim()
         {
+            if (CurrentForm != null && CurrentForm.rangedKind == RangedKind.Orb) return TryEnterOrbAim();
             if (CurrentForm != null && (CurrentForm.rangedKind == RangedKind.Cannon || CurrentForm.rangedKind == RangedKind.Crossbow)) return TryEnterCannonAim();
             if (!input.GameplayEnabled || !input.AimHeld || arrowPrefab == null || bowRig == null || Bow == null) return false;
             EndSwing();
@@ -121,8 +124,9 @@ namespace ElderTree.Player
             drawLinear = 0f;
             fireQueued = false;
             holdPlaying = false;
-            bool wasCannon = cannonMode;
+            bool wasCannon = cannonMode || orbMode;
             cannonMode = false;
+            if (orbMode) { orbMode = false; DropHeldOrb(); }
             if (State == PlayerState.Aim) ReturnToLocomotion(wasCannon ? 0.3f : 0.25f);
         }
 
@@ -130,11 +134,14 @@ namespace ElderTree.Player
         void UpdateBowAnimator(float dt)
         {
             bool aiming = State == PlayerState.Aim;
+            bool casting = State == PlayerState.Cast;
+            bool squared = cannonMode || orbMode || casting;      // square stance: the clip faces the root, no archer hips turn
             bool moving = motor.PlanarVelocity.sqrMagnitude > 0.04f;
-            // the cannon stance keeps its own legs while standing; the walk layer only steps when moving
-            float target = aiming ? (cannonMode ? (moving ? 1f : 0f) : 1f) : 0f;
+            // the cannon / orb / casting stances keep their own legs while standing; the walk layer only steps when moving
+            float target = aiming || casting ? (squared ? (moving ? 1f : 0f) : 1f) : 0f;
             bowLegsWeight = Mathf.MoveTowards(bowLegsWeight, target, dt / (target > bowLegsWeight ? 0.15f : 0.2f));
             animator.SetLayerWeight(BowLegsLayer, bowLegsWeight);
+            if (casting) { DriveAimLegs(dt, true); return; }
             if (!aiming) return;
 
             Vector3 from = transform.position + Vector3.up * 1.38f;
@@ -142,7 +149,7 @@ namespace ElderTree.Player
             float pitch = Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
             animator.SetFloat(HAimPitch, Mathf.Clamp(pitch, -50f, 40f), 0.06f, dt);
 
-            if (!cannonMode)
+            if (!cannonMode && !orbMode)
             {
                 // draw: the Load clip reaches full draw at loadFullDrawTime; scrub it with the gameplay draw
                 float drawT = bowPhase == BowPhase.Draw ? BowDraw * loadFullDrawTime : 0f;
@@ -154,10 +161,15 @@ namespace ElderTree.Player
                 }
             }
 
-            // legs: move direction in the stance's hips frame, walk ring 0..1
+            DriveAimLegs(dt, squared);
+        }
+
+        /// <summary>Legs layer: move direction in the stance's hips frame, walk ring 0..1.</summary>
+        void DriveAimLegs(float dt, bool squared)
+        {
             Vector3 v = motor.PlanarVelocity;
             float speed = v.magnitude;
-            Vector3 local = Quaternion.Euler(0f, cannonMode ? 0f : -archerHipsYaw, 0f) * transform.InverseTransformDirection(v);
+            Vector3 local = Quaternion.Euler(0f, squared ? 0f : -archerHipsYaw, 0f) * transform.InverseTransformDirection(v);
             Vector2 dir2 = speed > 0.05f ? new Vector2(local.x, local.z).normalized * Mathf.Clamp01(SpeedToRing(speed)) : Vector2.zero;
             animator.SetFloat(HBowMoveX, dir2.x, 0.1f, dt);
             animator.SetFloat(HBowMoveZ, dir2.y, 0.1f, dt);
@@ -213,6 +225,7 @@ namespace ElderTree.Player
         void UpdateAim(float dt)
         {
             if (cannonMode) { UpdateCannonAim(dt); return; }
+            if (orbMode) { UpdateOrbAim(dt); return; }
             var b = Bow;
             if (!AimCommon(dt, b.aimMoveSpeed, stanceYaw)) return;
 
@@ -276,7 +289,7 @@ namespace ElderTree.Player
 
         void UpdateAimPoint()
         {
-            float openSky = UsingCrossbow ? Crossbow.openSkyDistance : Bow != null ? Bow.openSkyDistance : 60f;
+            float openSky = UsingCrossbow ? Crossbow.openSkyDistance : Orb != null ? Orb.openSkyDistance : Bow != null ? Bow.openSkyDistance : 60f;
             if (cam == null) { AimPoint = transform.position + transform.forward * openSky; AimOnTarget = false; return; }
             Vector3 origin = cam.transform.position;
             Vector3 fwd = cam.transform.forward;

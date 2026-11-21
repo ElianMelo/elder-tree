@@ -37,47 +37,51 @@ namespace ElderTree.EditorTools
         static void BuildDruidArt()
         {
             var Hex = (System.Func<string, Color>)TextureForge.Hex;
-            // old bark: long vertical plates split by deep black furrows, moss in the hollows, a few lichen spots
+            // pale old wood (user's call, 2026-11-20: light wood, not dark bark): weathered ash-grey / honey plates split
+            // by brown furrows, a little moss in the hollows, a few lichen spots
             var bark = TextureForge.SavePsx("T_DruidBark", 128, (u, v, x, y) =>
             {
                 float plates = TextureForge.Fbm(u, v, 10, 2, 4, 801);
                 float furrow = Mathf.Abs(plates - 0.5f) * 2f;
                 float grain = TextureForge.Fbm(u, v, 24, 5, 3, 802);
-                var c = Mx(Hex("#2B2320"), Hex("#5A4A3C"), 0.2f + 0.65f * grain);
-                c *= Mathf.Lerp(0.42f, 1.04f, Sstep(0.04f, 0.38f, furrow));
+                var c = Mx(Hex("#8A7258"), Hex("#C4AE8C"), 0.2f + 0.65f * grain);
+                c = Mx(c, Hex("#4A3A2C"), (1f - Sstep(0.04f, 0.3f, furrow)) * 0.8f);             // furrows: brown, not black
                 c *= 0.92f + 0.16f * (H2(x, y, 803) - 0.5f);
-                float moss = Sstep(0.56f, 0.74f, TextureForge.Fbm(u, v, 4, 4, 4, 804)) * (1.1f - furrow * 0.5f);
-                c = Mx(c, Mx(Hex("#2E3A22"), Hex("#4C5A30"), H2(x / 2, y / 2, 805)), moss * 0.85f);
+                float moss = Sstep(0.62f, 0.78f, TextureForge.Fbm(u, v, 4, 4, 4, 804)) * (1.1f - furrow * 0.5f);
+                c = Mx(c, Mx(Hex("#5C7032"), Hex("#7C8E44"), H2(x / 2, y / 2, 805)), moss * 0.7f);
                 TextureForge.Worley(u, v, 6, 806, out float f1, out _, out int id);
-                if (id % 7 == 0 && f1 < 0.045f) c = Mx(c, Hex("#6E7466"), 0.55f);
+                if (id % 7 == 0 && f1 < 0.045f) c = Mx(c, Hex("#A9B09A"), 0.55f);
                 return c;
             }, mips: false);
-            // root bark: warmer and knottier, caked with dirt from being in the ground
+            // root bark: a shade warmer and knottier, caked with dirt from being in the ground
             var root = TextureForge.SavePsx("T_DruidRoot", 128, (u, v, x, y) =>
             {
                 float plates = TextureForge.Fbm(u, v, 6, 3, 4, 811);
                 float furrow = Mathf.Abs(plates - 0.5f) * 2f;
-                var c = Mx(Hex("#3A2E24"), Hex("#6B5A48"), 0.25f + 0.6f * TextureForge.Fbm(u, v, 16, 8, 3, 812));
-                c *= Mathf.Lerp(0.5f, 1.05f, Sstep(0.05f, 0.35f, furrow));
+                var c = Mx(Hex("#755E46"), Hex("#AE9570"), 0.25f + 0.6f * TextureForge.Fbm(u, v, 16, 8, 3, 812));
+                c = Mx(c, Hex("#3E3024"), (1f - Sstep(0.05f, 0.32f, furrow)) * 0.75f);
                 c *= 0.9f + 0.2f * (H2(x, y, 813) - 0.5f);
                 float dirt = Sstep(0.5f, 0.7f, TextureForge.Fbm(u, v, 5, 5, 4, 814));
-                c = Mx(c, Hex("#2E2620") * (0.9f + 0.2f * H2(x, y, 815)), dirt * 0.75f);
+                c = Mx(c, Hex("#4A3C30") * (0.9f + 0.2f * H2(x, y, 815)), dirt * 0.7f);
                 TextureForge.Worley(u, v, 5, 816, out float f1, out _, out int id);
                 if (id % 4 == 0 && f1 < 0.06f) c *= 0.6f;                                  // knots
                 return c;
             }, mips: false);
-            // leaves: a 2x2 atlas of hanging sprays, stems at the top of each cell, dark greens with a few dying ones
+            // leaves: a 2x2 atlas of hanging sprays, stems at the top of each cell. Bottom row (cells 0, 1): light fresh
+            // greens with a few yellowing leaves. Top row (cells 2, 3): dark greens, the shadow layer under the clumps.
+            // The Druid Mask form shares this atlas (build_druid.py / build_druid_form.py pick cells by row).
             var specs = new List<(int cell, Vector2 at, float ang, float len, float wid, Color col)>();
             var rnd = new System.Random(821);
             float R() => (float)rnd.NextDouble();
-            Color[] greens = { Hex("#2E3A22"), Hex("#3A4A26"), Hex("#4C5A30"), Hex("#34401F"), Hex("#56562C"), Hex("#4A3A22") };
+            Color[] light = { Hex("#7EA83E"), Hex("#90B848"), Hex("#A4C454"), Hex("#88AE42"), Hex("#B8CC66"), Hex("#A8A24E") };
+            Color[] dark = { Hex("#26391A"), Hex("#2F4620"), Hex("#3A5226"), Hex("#22331A"), Hex("#405028"), Hex("#3A3420") };
             for (int cell = 0; cell < 4; cell++)
                 for (int k = 0; k < 10; k++)
                 {
                     float ang = Mathf.Lerp(-80f, 80f, (k + R() * 0.7f) / 10f) * Mathf.Deg2Rad;
                     var at = new Vector2(0.5f + (R() - 0.5f) * 0.2f, 0.93f - R() * 0.3f);
-                    int ci = R() < 0.12f ? 5 : R() < 0.15f ? 4 : rnd.Next(4);
-                    specs.Add((cell, at, ang, 0.3f + 0.17f * R(), 0.075f + 0.045f * R(), greens[ci]));
+                    int ci = R() < 0.1f ? 5 : R() < 0.15f ? 4 : rnd.Next(4);
+                    specs.Add((cell, at, ang, 0.3f + 0.17f * R(), 0.075f + 0.045f * R(), (cell < 2 ? light : dark)[ci]));
                 }
             var leaf = TextureForge.SavePsx("T_DruidLeaf", 128, (u, v, x, y) =>
             {

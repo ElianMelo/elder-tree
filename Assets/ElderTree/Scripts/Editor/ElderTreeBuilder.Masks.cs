@@ -623,7 +623,8 @@ namespace ElderTree.EditorTools
 
             // ---- controller + mask system
             var shark = AttachSharkForm(visual, pc);
-            pc.rigs = shark != null ? new[] { elder, croc, shark } : new[] { elder, croc };
+            var druid = AttachDruidForm(visual, pc);
+            pc.rigs = new[] { elder, croc, shark, druid }.Where(r => r != null).ToArray();
             pc.baseForm = AssetDatabase.LoadAssetAtPath<FormData>(FormElderPath);
             pc.bowData = AssetDatabase.LoadAssetAtPath<BowData>(BowDataPath);
             pc.shellPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShellPrefabPath)?.GetComponent<CannonShell>();
@@ -633,6 +634,7 @@ namespace ElderTree.EditorTools
             ms.slots = new MaskData[4];
             ms.slots[0] = AssetDatabase.LoadAssetAtPath<MaskData>(MaskAlligatorPath);
             ms.slots[1] = AssetDatabase.LoadAssetAtPath<MaskData>(MaskSharkPath);
+            ms.slots[2] = AssetDatabase.LoadAssetAtPath<MaskData>(MaskDruidPath);
         }
 
         /// <summary>

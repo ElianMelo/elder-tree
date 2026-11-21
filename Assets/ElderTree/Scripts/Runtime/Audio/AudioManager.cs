@@ -15,7 +15,8 @@ namespace ElderTree.Audio
         SharkRoar, SneakerSqueak, Burrow,
         BladeWhoosh, BladeHit, VineCut, VineRustle, CrossbowFire, CrossbowReload, SpinWhirl,
         BladeRing, GroundGrind,
-        WoodGroan, RootSnap, DeepRumble
+        WoodGroan, RootSnap, DeepRumble,
+        SpellGather, VineCast, VineBurst, OrbCharge, OrbFire, OrbImpact
     }
 
     /// <summary>

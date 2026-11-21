@@ -25,16 +25,21 @@ namespace ElderTree.Combat
             public int breakPower;
             public GameObject source;
             public ImpactWeight weight;
+            /// <summary>No fire, ring or bang: the caller draws its own effect (vine squeeze, druid orb).</summary>
+            public bool silent;
         }
 
         /// <summary>Detonate; returns how many targets took damage.</summary>
         public static int Detonate(in Blast b, IDamageable skip = null)
         {
-            FXManager.Spawn(b.fxScale >= 0.8f ? FXType.Explosion : FXType.BombPop, b.center + Vector3.up * 0.1f, Quaternion.identity, b.fxScale);
-            FXManager.Spawn(FXType.SlamRing, b.center + Vector3.up * 0.05f, Quaternion.identity, b.radius * 0.6f);
-            if (b.fxScale > 1.2f) FXManager.Spawn(FXType.SlamDebris, b.center, Quaternion.identity, b.fxScale * 0.7f);
-            AudioManager.Play(b.fxScale >= 0.8f ? Sfx.Explosion : Sfx.BombPop, b.center, Mathf.Clamp01(0.55f + b.fxScale * 0.35f),
-                Random.Range(0.94f, 1.06f) / Mathf.Max(0.8f, Mathf.Sqrt(b.fxScale)));
+            if (!b.silent)
+            {
+                FXManager.Spawn(b.fxScale >= 0.8f ? FXType.Explosion : FXType.BombPop, b.center + Vector3.up * 0.1f, Quaternion.identity, b.fxScale);
+                FXManager.Spawn(FXType.SlamRing, b.center + Vector3.up * 0.05f, Quaternion.identity, b.radius * 0.6f);
+                if (b.fxScale > 1.2f) FXManager.Spawn(FXType.SlamDebris, b.center, Quaternion.identity, b.fxScale * 0.7f);
+                AudioManager.Play(b.fxScale >= 0.8f ? Sfx.Explosion : Sfx.BombPop, b.center, Mathf.Clamp01(0.55f + b.fxScale * 0.35f),
+                    Random.Range(0.94f, 1.06f) / Mathf.Max(0.8f, Mathf.Sqrt(b.fxScale)));
+            }
 
             var pc = PlayerController.Instance;
             if (pc != null)

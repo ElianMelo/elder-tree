@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fded510b14f25074f9cd079c4a597699, type: 3}
+  m_Name: Orb_Verdant
+  m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Equipment.OrbData
+  displayName: Verdant Orb
+  icon: {fileID: 2800000, guid: 7ec8d95a194424144af6978f819b8597, type: 3}
+  manaPerShot: 18
+  fireInterval: 1.25
+  raiseTime: 0.4
+  aimMoveSpeed: 1.6
+  speed: 17
+  gravity: 0
+  range: 70
+  radius: 0.32
+  openSkyDistance: 55
+  leadFactor: 0.8
+  directDamage: 96
+  directPoise: 34
+  burstRadius: 2.6
+  burstDamage: 44
+  burstPoise: 18
+  recoil: 0.8
+  shake: 0.2
+  fovKick: 2
+  colour: {r: 0.5, g: 1, b: 0.32, a: 1}

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a5e79678acb10c42a215bf564514ea0, type: 3}
+  m_Name: Mask_Druid
+  m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Equipment.MaskData
+  id: druid
+  displayName: Druid Mask
+  description: 'Carved from the felled Druid''s face, still sprouting. Wear it to
+    become the druid: vines that hunt down what you point at, and a ball of the forest''s
+    green fire.'
+  icon: {fileID: 2800000, guid: 5f1dca4d61cc83143becbda18fee8de0, type: 3}
+  form: {fileID: 11400000, guid: 223026fef56ac2a41b1e145f4243b962, type: 2}
+  maskModel: {fileID: 919132149155446097, guid: 39384affec56e644889befe1db806e57, type: 3}
+  quickTransformTime: 0.6
+  vortexA: {r: 0.46, g: 0.68, b: 0.22, a: 1}
+  vortexB: {r: 0.12, g: 0.26, b: 0.08, a: 1}
+  vortexC: {r: 0.03, g: 0.06, b: 0.03, a: 1}
+  receivedTitle: DRUID MASK
+  receivedLine: "You put on the Druid Mask.\nThe forest answers you now.\nRB / RT:
+    cast (hold RT to charge) \xB7 LT + RT: Verdant Orb \xB7 RB + RT: Wrath of the
+    Grove"

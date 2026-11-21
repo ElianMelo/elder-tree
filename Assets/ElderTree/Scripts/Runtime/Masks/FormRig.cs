@@ -26,6 +26,14 @@ namespace ElderTree.Masks
         public BowRig bowRig;
         [Tooltip("Shouldered ranged weapon: the cannon, or the crossbow (same rig: stowed on the back, raised to the shoulder).")]
         public CannonRig cannonRig;
+        [Header("Magic (caster forms)")]
+        [Tooltip("Where spells leave the staff (the glowing seed in the crook).")]
+        public Transform spellFocus;
+        [Tooltip("Motes and leaves spiralling into the focus while a spell gathers.")]
+        public ParticleSystem spellGather;
+        public Light focusLight;
+        [Tooltip("The swaying leaf cover (stirred by casting and hits).")]
+        public LeafSway leafSway;
         [Header("Face (mask cinematic)")]
         [Tooltip("Where a mask sits on this body's face (child of the head bone).")]
         public Transform faceSocket;

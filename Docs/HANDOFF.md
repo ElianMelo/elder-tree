@@ -1,5 +1,44 @@
 # Handoff — Elder Tree soulslike slice
 
+## 00000000000000000. Druid Mask (Druid reward) + a lighter, leafier Druid
+
+**Boss look (your call: light wood, more and lighter leaves, dark leaves as shadow).** This deliberately breaks ART_DIRECTION's "dark bark" rule for the Druid set only.
+- **Wood:** `T_DruidBark` is now pale, weathered ash/honey wood with brown furrows instead of black ones, a little moss and lichen. `T_DruidRoot` is a shade warmer.
+- **Leaves:** **184 clumps** (was 101), about 1.4× bigger. Each clump's back card, lying against the bark, is a **dark leaf** (the shadow layer). The two fanned cards are **light leaves**, except on undersides and in about 14% of clumps, which stay dark all through. That gives the cover depth. `T_DruidLeaf` is one 2×2 atlas: the bottom row holds light greens, the top row dark greens.
+- **Budget:** 3,664 tris (1,104 of them leaf cards). The root feet are left bare on purpose: they're the weak point.
+- Shot: `Docs/Screenshots/26_druid_boss_light_wood.png`.
+
+**Reward:** felling the Druid drops the **Druid Mask** (`DruidBoss.rewardMask`, set by `PlaceDruidSet`). The first pickup plays the usual cinematic in forest greens, and the received card lists the controls. Afterwards it lives in **slot 3 / D-pad ↓**.
+
+| Druid form | What it does |
+|---|---|
+| Body | `DruidForm.fbx` uses the same skeleton as the Elder Tree, so all pack clips work. It's a small cousin of the boss: pale wood, the drooping Patapim nose, a scowling brow, green eyes, an antler crown, twig fingers, root feet, a root belt with glowing seed charms and a seed necklace. **124 leaf clumps** cover about 80% of it like a robe: mantle, chest, back, a skirt to the knees, arms, crown and hood. The leaves never stop moving (`FX/LeafSway.cs`). Each clump sways on its own and stirs harder when the druid walks, casts or throws. Its tint drifts lighter and darker with the sway, so the cover shimmers between the two greens. 2,416 body tris plus 744 in leaf cards. |
+| Staff | A gnarled pale-wood staff, held upright in the right fist (grip calibrated on the 1H idle). Three branches twist into a crook that cradles a glowing seed. Spells leave from its `Focus`. |
+| **Magic** (replaces melee): **Vine Seeker** | **RB:** Elden Ring rules. The druid slows to a walk (1.1 m/s) while the spell gathers for 0.55 s: green motes and leaves spiral into the seed, the seed light swells and the leaves stir. It then releases (`MagicAttackDirect1H01_R` Load → Cast). **FP is spent on release**, so a roll during the wind-up cancels it at no cost. A bundle of **3 leafy vines** leaves the staff. They bow apart mid-flight, writhing, then curl back in onto the target (lock-on target, else the nearest foe within 32° of the aim), so the spell reads even from behind. Homing ramps from 210 to 420°/s. **On hit:** a leaf explosion, then **vines burst out of the struck spot**. They stick to it (they ride a moving boss), arch out, coil in and **squeeze** once more (a second hit in 1.6 m), then wither. Light: 72 + 22 squeeze, 14 FP. Casts chain if you press again in the follow-through. |
+| **Charged Vine Seeker** | **RT, hold:** a longer gather (`MagicAttackDirect2H01`) that keeps charging while held, for up to 1.1 s. 4–5 thicker vines, up to ×1.9 damage, a bigger burst, 20–26 FP. |
+| **Ranged: Verdant Orb** | **LT** raises both hands (`MagicAttackDirect2H02`) and a ball of green energy gathers between them, growing as it readies. **RT** throws it. It's **slow** (17 m/s, versus 34–88 for arrows and bolts) and **slower to cycle** (1.25 s), flies straight with no homing, and is **big and glowing**: a faceted core, two spinning leafy vine rings, a green light that lights the ground it passes, and a trail of motes. **On impact:** a big green flash and burst, 96 direct + 44 splash in 2.6 m. 18 FP. |
+| **Special: Wrath of the Grove** | **RB + RT:** the druid roars (`Angry01`) and **swells to 2.2× its size** over 0.65 s, with a little overshoot, leaves thrashing and the camera pulling back. It then **stomps twice**, right foot then left. Each stomp is the kick's knee-up chamber (`AttackKick02_R/_L`, held at 30%) cut into the heavy landing. Every stomp sends a **ring of vines rising out of the ground from the foot**. The ring spreads to 7.5 m at 6 m/s. Wherever its front passes, vines shoot up, writhe and sink back, so you see a rolling band of vines, and the second stomp's ring follows the first like a ripple. Everything the front reaches on the ground is struck once per ring: 72, then ×1.35 on the last stomp (169 total on a dummy). Then the druid shrinks back. 45 FP, hyper armour throughout. A hit that does land, or a form swap, ends it and the druid eases back to normal size. |
+
+**Tuning** (created once, your edits survive rebuilds): `Data/Equipment/Spell_VineSeeker` (cast time, walk speed, charge, homing, fan, damage, burst), `Data/Equipment/Orb_Verdant`, `Data/Equipment/Special_WrathOfTheGrove` (size, stomps, raise time, ring radius / speed, vine height / life, damage, camera), `Data/Forms/Form_Druid`, `Data/Masks/Mask_Druid`. Fan shape and strand look are on the `VineSeeker` prefab (`fanShare`, `points`, `width`).
+
+**Code map:** `Player/PlayerController.Druid.cs` (new `PlayerState.Cast`, cast / charge / release, target pick, orb aim and throw). Casters get no melee, run, jump or roll attacks: those inputs cast instead or do nothing. `Combat/VineSeeker.cs`, `Combat/VineBurst.cs`, `Combat/DruidOrb.cs`, `Combat/VineRing.cs` (the stomp ring), `FX/LeafSway.cs`. New data types: `SpellData`, `OrbData`, `GrowthStompData` (a `SpecialData`; the special's size is applied as a scale on the player's Visual, `PlayerController.GrowScale`). The druid's leaf puffs use their own `FX_LeafFall` (real leaves) instead of the Shark set's chip squares. `FormData` gained `magic` and `orb`, and `RangedKind.Orb` was added. `FormRig` gained `spellFocus`, `spellGather`, `focusLight` and `leafSway`. `Explosions.Blast` gained `silent` (damage without the fire FX). Builder: `Editor/ElderTreeBuilder.DruidMask.cs` (menu **8c**, part of `BuildAll()` after the Shark set). Model: `Tools/Blender/build_druid_form.py -- <abs Art/Models/DruidMask>` (body, leaves, staff, orb, mask). New FX: `LeafExplosion`, `OrbBurst`, and `FX_SpellGather` (on the staff). New SFX, appended: `SpellGather`, `VineCast`, `VineBurst` (the package's nature-spell vine clips), `OrbCharge`, `OrbFire`, `OrbImpact` (energy blasts, since you asked for an energy ball). **None heard by ear yet.**
+
+**Verified in play mode (AutoPilot):**
+- **Light cast:** gather → release → vines fan out and curl into a training dummy (93 = 72 + 22 squeeze).
+- **Charged cast:** 5 vines, 151–153 damage, vines burst out of the dummy.
+- **Roll during the wind-up:** cast cancelled, FP unchanged (120 → 120).
+- **Two chained casts:** 28 FP, 166 damage.
+- **Orbs:** thrown, flying and bursting, with the ball re-gathering between the hands.
+- **Mask:** pickup → cinematic → card → druid worn in slot 3.
+- **Console:** `BuildAll()` and play mode, 0 errors (the one warning is the old `BossEncounter.primaryFelled`).
+- **Special:** grow → stomp → ring → stomp → second ring → shrink. Both rings hit the dummy (72 + 97).
+- **Shots:** `22`–`27` in `Docs/Screenshots` (`27` is the two vine rings).
+
+**Not verified:** feel on a pad (cast time, walk speed while casting, orb speed), the sounds, walking while casting (the legs layer is wired like the cannon's but wasn't watched), and the full kill → drop path (the debug spawn uses the same pickup).
+
+**Questions:**
+1. The control hints panel still says "Light attack / Heavy attack" in every form. Should the hints follow the form?
+
 ## 0000000000000000. Boss: Druid (giant dryad, root feet, topple to hit the face)
 
 **Start it:** pause menu → **Summon Druid** (under Summon Shark), or F1 → row 3. It stands still at the arena edge like a tree with its arms raised, its eyes light up, it tears each root foot out of the dirt, then roars.

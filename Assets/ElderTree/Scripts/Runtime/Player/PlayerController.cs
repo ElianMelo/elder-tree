@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace ElderTree.Player
 {
-    public enum PlayerState { Locomotion, Air, Landing, Attack, Dodge, Hit, Dead, Aim, Special, Transform, Cinematic, Held }
+    public enum PlayerState { Locomotion, Air, Landing, Attack, Dodge, Hit, Dead, Aim, Special, Transform, Cinematic, Held, Cast }
 
     /// <summary>
     /// Souls-like player brain. Locomotion (free + lock-on strafing), sprint, jump, roll/backstep with
@@ -153,6 +153,7 @@ namespace ElderTree.Player
                 case PlayerState.Transform: UpdateTransform(dt); break;
                 case PlayerState.Cinematic: UpdateCinematic(dt); break;
                 case PlayerState.Held: UpdateHeld(dt); break;
+                case PlayerState.Cast: UpdateCast(dt); break;
             }
             if (State != PlayerState.Special) UpdateThrownHammer(dt);
 
@@ -160,6 +161,7 @@ namespace ElderTree.Player
             if (motor.Grounded) lastGroundedTime = Time.time;
             UpdateGuardLayer(dt);
             UpdateTwoHand(dt);
+            UpdateGrowScale(dt);
             UpdateSpirit(dt);
             UpdateBowAnimator(dt);
             UpdateLean(dt);
@@ -181,6 +183,7 @@ namespace ElderTree.Player
             UpdateBladeRoll(Time.deltaTime);
             if (weapon && !HammerThrown) weapon.Tick();
             if (weapon) slashPrevTip = weapon.TipWorld;
+            UpdateHeldOrb();
             UpdateVisualRoll();
         }
 
@@ -221,6 +224,9 @@ namespace ElderTree.Player
             // a special cut short (hit, death) gives the camera back; after a blast its own release stands
             if (State == PlayerState.Special && s != PlayerState.Special) CameraDirector.Instance?.ReleaseFocus(0.35f);
             if (State == PlayerState.Special && s != PlayerState.Special && spinMode) AbortSpin();
+            if (State == PlayerState.Special && s != PlayerState.Special && growMode) AbortGrowth();
+            // a cast cut short (roll, hit, death, swap) drops its gather glow
+            if (State == PlayerState.Cast && s != PlayerState.Cast) EndCastFx();
             // raising a ranged weapon drops the lock (free crosshair aim); lowering it picks the target back up
             if (s == PlayerState.Aim && State != PlayerState.Aim) SuspendLockForAim();
             else if (State == PlayerState.Aim && s != PlayerState.Aim) ResumeLockAfterAim(s != PlayerState.Dead);
@@ -289,6 +295,12 @@ namespace ElderTree.Player
             {
                 input.ConsumeSkill();
                 if (TryStartSpecial()) return true;
+            }
+            if (IsCaster)
+            {
+                // a caster's light / heavy cast spells instead of swinging (no running or roll attacks)
+                if (input.HasBufferedLight) { input.ConsumeLight(); if (TryStartCast(false)) return true; }
+                if (input.HasBufferedHeavy) { input.ConsumeHeavy(); if (TryStartCast(true)) return true; }
             }
             if (input.HasBufferedLight)
             {
@@ -399,7 +411,7 @@ namespace ElderTree.Player
             if (input.GameplayEnabled && (input.HasBufferedLight || input.HasBufferedHeavy) && stateTime > 0.08f)
             {
                 input.ConsumeLight(); input.ConsumeHeavy();
-                if (StartAttack(moveset.jumpAttack)) return;
+                if (!IsCaster && StartAttack(moveset.jumpAttack)) return;
             }
 
             if (motor.LandedThisFrame || (motor.Grounded && stateTime > 0.1f)) Land();
@@ -486,7 +498,7 @@ namespace ElderTree.Player
             visualRoot.localRotation = Quaternion.Euler(leanPitch, 0, leanRoll + SpinVisualLean);
             visualRoot.localPosition = SpinVisualLift;
             float s = squash;
-            visualRoot.localScale = new Vector3(1f + s * 0.6f, 1f - s, 1f + s * 0.6f);
+            visualRoot.localScale = new Vector3(1f + s * 0.6f, 1f - s, 1f + s * 0.6f) * growNow;
         }
     }
 }

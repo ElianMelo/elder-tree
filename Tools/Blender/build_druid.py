@@ -43,7 +43,7 @@ else:
     bpy.context.window.scene = scene
 
 MAT_RGB = {
-    "M_DruidBark": (0.20, 0.16, 0.13), "M_DruidRoot": (0.27, 0.21, 0.16), "M_DruidLeaf": (0.17, 0.24, 0.11),
+    "M_DruidBark": (0.55, 0.46, 0.36), "M_DruidRoot": (0.47, 0.38, 0.29), "M_DruidLeaf": (0.4, 0.52, 0.22),
     "M_DruidEye": (0.55, 0.75, 0.25), "M_DruidHollow": (0.05, 0.04, 0.035),
 }
 TILE = {"M_DruidBark": 2.2, "M_DruidRoot": 1.6, "M_DruidHollow": 1.0}
@@ -256,9 +256,9 @@ PELVIS = [(4.7, 1.0, 0.78, 0.0), (5.2, 1.22, 0.92, 0.0), (5.75, 1.18, 0.9, 0.0),
 pelvis = Part("Druid_Pelvis", V(0, 0, HIP_Z))
 pelvis.loft(ellipse_rings(PELVIS, 9, 3, 0.07), "M_DruidBark")
 objects.append(pelvis.finish())
-for i in range(9):
-    a = 2 * math.pi * i / 9 + rng.uniform(-0.2, 0.2)
-    p, n = ring_surface(PELVIS, rng.uniform(5.0, 5.95), a)
+for i in range(16):
+    a = 2 * math.pi * i / 16 + rng.uniform(-0.2, 0.2)
+    p, n = ring_surface(PELVIS, rng.uniform(4.85, 5.95), a)
     leaf_jobs.append(("Pelvis", p, (n + Vector((0, 0, 0.2))).normalized(), rng.uniform(0.85, 1.1)))
 
 # =====================================================================================  TORSO
@@ -278,15 +278,15 @@ for (lat, z, f_dir) in ((0.6, 7.3, 1), (-0.75, 6.6, 1), (0.25, 6.2, -1), (-0.4, 
     torso.branch([p - n * 0.15, p + n * 0.35 + Vector((0, 0, 0.12)), p + n * 0.62 + Vector((0, 0, 0.3))],
                  [0.2, 0.13, 0.04], "M_DruidBark", sides=5, jag=0.15, seed=int(z * 10))
 objects.append(torso.finish())
-for i in range(28):
-    a = 2 * math.pi * i / 28 + rng.uniform(-0.15, 0.15)
-    z = 5.95 + (i * 0.618 % 1.0) * 2.4
+for i in range(58):
+    a = 2 * math.pi * i / 58 * 3 + rng.uniform(-0.15, 0.15)
+    z = 5.95 + (i * 0.618 % 1.0) * 2.45
     p, n = ring_surface(TORSO, z, a)
     leaf_jobs.append(("Torso", p, (n + Vector((0, 0, 0.3))).normalized(), rng.uniform(0.85, 1.15)))
 # mantle of leaves over the shoulders
 for s in SIDES:
-    for k in range(3):
-        c = SHOULDER[s] + V(s * rng.uniform(-0.3, 0.2), rng.uniform(-0.45, 0.45), 0.45)
+    for k in range(6):
+        c = SHOULDER[s] + V(s * rng.uniform(-0.35, 0.25), rng.uniform(-0.5, 0.5), 0.42)
         leaf_jobs.append(("Torso", c, V(s * 0.4, rng.uniform(-0.3, 0.3), 1).normalized(), rng.uniform(0.9, 1.15)))
 
 # =====================================================================================  HEAD
@@ -331,7 +331,7 @@ for k, (lat, f, lean) in enumerate(((-0.5, 0.3, -0.5), (0.55, 0.35, 0.5), (-0.15
     fork = m + (t - m) * 0.4
     head.branch([fork, fork + V(-lean * 0.4, rng.uniform(-0.3, 0.3), 0.55)], [0.06, 0.02], "M_DruidBark", sides=4, seed=50 + k)
 objects.append(head.finish())
-for i in range(14):    # leafy crown, swept back off the face
+for i in range(22):    # leafy crown, swept back off the face
     a = math.radians(rng.uniform(-200, 20))      # right side, back, left side: never the front
     z = rng.uniform(9.75, 10.35)
     p, n = ring_surface(HEADS, z, a)
@@ -347,13 +347,13 @@ for s in SIDES:
     mid = (SHOULDER[s] + ELBOW[s]) * 0.5 + V(s * 0.06, -0.05, 0)
     up.branch([SHOULDER[s], mid, ELBOW[s] + V(0, 0, -0.1)], [0.36, 0.3, 0.28], "M_DruidBark", sides=6, jag=0.12, seed=60 + s)
     objects.append(up.finish())
-    leaves_on_tube(f"UpperArm_{n}", SHOULDER[s], ELBOW[s], 0.3, 5, 0.9, arc=(-0.6, 3.6) if s > 0 else (-0.6, 3.6))
+    leaves_on_tube(f"UpperArm_{n}", SHOULDER[s], ELBOW[s], 0.3, 9, 0.9, arc=(-0.6, 3.6) if s > 0 else (-0.6, 3.6))
 
     fo = Part(f"Druid_Forearm_{n}", ELBOW[s])
     mid = (ELBOW[s] + WRIST[s]) * 0.5 + V(s * 0.08, 0.04, 0)
     fo.branch([ELBOW[s] + V(0, 0, 0.12), mid, WRIST[s]], [0.3, 0.25, 0.2], "M_DruidBark", sides=6, jag=0.14, seed=70 + s)
     objects.append(fo.finish())
-    leaves_on_tube(f"Forearm_{n}", ELBOW[s], WRIST[s], 0.25, 3, 0.75)
+    leaves_on_tube(f"Forearm_{n}", ELBOW[s], WRIST[s], 0.25, 6, 0.75)
 
     # hand: palm faces the thigh (inward), width along the forward axis; long curled twig fingers
     hd = Part(f"Druid_Hand_{n}", WRIST[s])
@@ -381,7 +381,7 @@ for s in SIDES:
     th.branch([HIP[s] + V(0, 0, 0.3), mid, KNEE[s] + V(0, 0, -0.05)], [0.78, 0.66, 0.58], "M_DruidBark", sides=8,
               jag=0.1, seed=100 + s)
     objects.append(th.finish())
-    leaves_on_tube(f"Thigh_{n}", HIP[s], KNEE[s], 0.62, 8, 0.85, up_bias=0.15)
+    leaves_on_tube(f"Thigh_{n}", HIP[s], KNEE[s], 0.62, 14, 0.85, up_bias=0.15)
 
     sh = Part(f"Druid_Shin_{n}", KNEE[s])
     mid = (KNEE[s] + ANKLE[s]) * 0.5 + V(0, 0.08, 0)
@@ -391,7 +391,7 @@ for s in SIDES:
     sh.branch([KNEE[s] + V(0, 0.25, 0.25), KNEE[s] + V(0, 0.48, 0.0), KNEE[s] + V(0, 0.3, -0.35)], [0.22, 0.3, 0.18],
               "M_DruidBark", sides=6, jag=0.15, seed=120 + s)
     objects.append(sh.finish())
-    leaves_on_tube(f"Shin_{n}", KNEE[s], ANKLE[s], 0.52, 3, 0.7, arc=(0.2, 2.9))
+    leaves_on_tube(f"Shin_{n}", KNEE[s], ANKLE[s], 0.52, 6, 0.7, arc=(-0.4, 3.5))
 
     ft = Part(f"Druid_Foot_{n}", ANKLE[s])
     a = ANKLE[s]
@@ -421,17 +421,20 @@ for s in SIDES:
 
 # =====================================================================================  LEAF CLUMPS
 CELLS = [(0, 0), (0.5, 0), (0, 0.5), (0.5, 0.5)]
+LIGHT_CELLS, DARK_CELLS = CELLS[:2], CELLS[2:]   # T_DruidLeaf: bottom row light leaves, top row dark (shadow) leaves
 
 
-def card(clump, c, right, down, w, h):
-    cu, cv = CELLS[rng.randrange(4)]
+def card(clump, c, right, down, w, h, dark=False):
+    cu, cv = (DARK_CELLS if dark else LIGHT_CELLS)[rng.randrange(2)]
     vs = [clump.v(c - right * w + down * h), clump.v(c + right * w + down * h), clump.v(c + right * w - down * h * 0.2),
           clump.v(c - right * w - down * h * 0.2)]
     clump.face(vs, "M_DruidLeaf", uv=[(cu, cv), (cu + 0.5, cv), (cu + 0.5, cv + 0.5), (cu, cv + 0.5)])
 
 
+LEAF_SCALE = 1.4     # big sprays: the cover has to read on an 11 m giant from across the arena
 for idx, (pname, p, nrm, size) in enumerate(leaf_jobs):
     # a clump hangs from where it grows: one shingle card lying along the bark, two cards fanned out from it
+    size *= LEAF_SCALE if not pname.startswith(("Foot", "Shin")) else 1.1
     clump = Part(f"Druid_Leaf_{pname}_{idx:02d}", p)
     n = nrm.normalized()
     down = Vector((0, 0, -1)) - n * (-n.z)
@@ -440,11 +443,14 @@ for idx, (pname, p, nrm, size) in enumerate(leaf_jobs):
     down.normalize()
     right = down.cross(n).normalized()
     root = p + n * size * 0.1
-    card(clump, root, right, (down * 0.85 + n * 0.3).normalized(), size * 0.5, size * 0.85)
+    # the shingle against the bark is a dark leaf (the shadow under the clump); the fanned cards are light, except on
+    # undersides and a few random clumps that stay dark all through, so the cover reads in layers
+    shade = n.z < -0.3 or rng.random() < 0.14
+    card(clump, root, right, (down * 0.85 + n * 0.3).normalized(), size * 0.55, size * 0.9, dark=True)
     for sgn in (-1, 1):
         r2 = (right * math.cos(0.9) + n * math.sin(0.9) * 0.6 * sgn).normalized()
         d2 = (down * 0.7 + n * 0.55 + right * 0.25 * sgn).normalized()
-        card(clump, root + n * size * 0.05, r2, d2, size * 0.42, size * 0.75)
+        card(clump, root + n * size * 0.08, r2, d2, size * 0.44, size * 0.78, dark=shade)
     objects.append(clump.finish())
 
 

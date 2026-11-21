@@ -46,9 +46,23 @@ namespace ElderTree.UI
                 player.FullDrawReached += () => fullDrawPulse = 1f;
             }
             ArrowProjectile.HitTarget += OnArrowHit;
+            VineSeeker.HitTarget += OnSpellHit;
+            DruidOrb.HitTarget += OnOrbHit;
+            VineRing.HitTarget += OnRingHit;
         }
 
-        void OnDisable() => ArrowProjectile.HitTarget -= OnArrowHit;
+        void OnDisable()
+        {
+            ArrowProjectile.HitTarget -= OnArrowHit;
+            VineSeeker.HitTarget -= OnSpellHit;
+            DruidOrb.HitTarget -= OnOrbHit;
+            VineRing.HitTarget -= OnRingHit;
+        }
+
+        void OnRingHit(VineRing r, IDamageable target, DamageInfo info) { hitFlash = 1f; hitWasFull = true; }
+
+        void OnSpellHit(VineSeeker v, IDamageable target, DamageInfo info) { hitFlash = 1f; hitWasFull = v != null && v.Power > 0.6f; }
+        void OnOrbHit(DruidOrb o, IDamageable target, DamageInfo info) { hitFlash = 1f; hitWasFull = true; }
 
         void OnArrowHit(ArrowProjectile a, IDamageable target, DamageInfo info)
         {

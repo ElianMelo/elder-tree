@@ -97,6 +97,8 @@ namespace ElderTree.Player
             twoHandW = twoHandArmsW = 0f;
             ResetSpirit();
             spinMode = false;
+            growMode = false;
+            growNow = 1f;
             moveset = form.moveset != null ? form.moveset : (baseForm != null ? baseForm.moveset : moveset);
             walkSpeed = baseWalk * form.moveSpeedMultiplier;
             runSpeed = baseRun * form.moveSpeedMultiplier;
@@ -304,8 +306,9 @@ namespace ElderTree.Player
         bool TryStartSpecial()
         {
             var special = CurrentForm != null ? CurrentForm.special : null;
-            if (special == null) return moveset.skill != null && StartAttack(moveset.skill);
+            if (special == null) return !IsCaster && moveset.skill != null && StartAttack(moveset.skill);
             if (special is SpinSlashData spin) return TryStartSpin(spin);
+            if (special is GrowthStompData gs) return TryStartGrowth(gs);
             if (!(special is SpecialAttackData s)) return false;
             if (weapon == null || HammerThrown) return false;
             if (!stats.HasMana(s.manaCost))
@@ -353,6 +356,7 @@ namespace ElderTree.Player
         void UpdateSpecial(float dt)
         {
             if (spinMode) { UpdateSpin(dt); return; }
+            if (growMode) { UpdateGrowth(dt); return; }
             spT += dt;
             motor.SetDesiredPlanarVelocity(Vector3.zero, 12f, dt);
             switch (spPhase)
