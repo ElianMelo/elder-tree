@@ -383,7 +383,7 @@ namespace ElderTree.EditorTools
                 hitStart = 0.16f, hitEnd = 0.32f, comboOpen = 0.5f, cancelOpen = 0.5f, exitTime = 0.72f, trackUntil = 0.16f,
                 windupSpeed = 1.2f, activeSpeed = 1.3f, recoverySpeed = 1.3f, lungeDistance = 1.2f, lungeStart = 0.0f, lungeEnd = 0.3f,
                 hitStop = 0.06f, shake = 0.3f, next = "Light2" };
-            ms.skill = new AttackData { id = "Skill", state = "Skill", damage = 110, poiseDamage = 70, staminaCost = 20, manaCost = 30,
+            ms.skill = new AttackData { id = "Skill", state = "Skill", damage = 110, poiseDamage = 70, staminaCost = 20,
                 weight = ImpactWeight.Slam, hitStart = 0.32f, hitEnd = 0.45f, comboOpen = 0.7f, cancelOpen = 0.7f, exitTime = 0.86f,
                 trackUntil = 0.30f, windupSpeed = 0.9f, activeSpeed = 1.2f, recoverySpeed = 1.15f, lungeDistance = 2.4f, lungeStart = 0.05f,
                 lungeEnd = 0.36f, hitStop = 0.16f, shake = 1.3f, rumbleLow = 1f, rumbleHigh = 0.8f, slamRadius = 3.2f, slamDamageScale = 0.7f,

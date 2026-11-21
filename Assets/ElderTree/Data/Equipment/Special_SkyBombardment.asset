@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: Special_SkyBombardment
   m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Equipment.SpecialAttackData
   displayName: Sky Bombardment
-  manaCost: 45
   staminaCost: 25
   crouchTime: 0.22
   riseHeight: 5.5

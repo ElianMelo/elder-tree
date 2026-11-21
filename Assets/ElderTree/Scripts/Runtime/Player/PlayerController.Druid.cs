@@ -370,14 +370,14 @@ namespace ElderTree.Player
 
         bool TryStartGrowth(GrowthStompData s)
         {
-            if (!stats.HasMana(s.manaCost))
+            if (!stats.HasSpecialCharge)
             {
-                stats.TrySpendMana(s.manaCost);   // raises ManaDenied for the HUD
+                stats.TrySpendSpecialCharge();   // raises SpecialDenied for the HUD
                 AudioManager.Play2D(Sfx.ManaEmpty, 0.8f);
                 return false;
             }
             if (!stats.TrySpendStamina(s.staminaCost)) return false;
-            stats.TrySpendMana(s.manaCost);
+            stats.TrySpendSpecialCharge();
             EndSwing();
             if (State == PlayerState.Aim) ExitAim();
             grow = s;

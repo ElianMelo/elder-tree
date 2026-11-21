@@ -57,6 +57,8 @@ namespace ElderTree.Combat
         bool flying;
 
         public float Power => power;
+        /// <summary>Who cast it.</summary>
+        public Transform Owner => owner;
 
         /// <summary>power: 0 for a light cast, up to 1 for a full charge (bigger, brighter, thicker bundle).</summary>
         public void Launch(Vector3 pos, Vector3 direction, SpellData d, float charge, int strandCount, float dmgMul, Targetable seek, Transform shooter)

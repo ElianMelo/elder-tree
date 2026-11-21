@@ -203,6 +203,7 @@ namespace ElderTree.Dev
                         ms.SetWorn(m, true);
                         break;
                     }
+                    case "charge": PlayerController.Instance?.stats.DevSetSpecialCharge(F(1, 2)); break;
                     case "spirit": PlayerController.Instance?.DevFillSpirit(p.Length > 1 ? (int)F(1, 0) : -1); break;
                     case "hurt":
                     {
@@ -226,7 +227,7 @@ namespace ElderTree.Dev
             {
                 sb.Append($"t={Time.time:F2} state={pc.State} pos={pc.transform.position.ToString("F2")} yaw={pc.transform.eulerAngles.y:F0} ");
                 sb.Append($"vel={pc.motor.PlanarVelocity.magnitude:F2} grounded={pc.motor.Grounded} sprint={pc.IsSprinting} ");
-                sb.Append($"stam={pc.stats.Stamina:F0} mana={pc.stats.Mana:F0} atk={(pc.CurrentAttack != null ? pc.CurrentAttack.id : "-")} ");
+                sb.Append($"stam={pc.stats.Stamina:F0} mana={pc.stats.Mana:F0} charge={pc.stats.SpecialCharge:F2} atk={(pc.CurrentAttack != null ? pc.CurrentAttack.id : "-")} ");
                 sb.Append($"lock={(pc.lockOn.Current != null ? pc.lockOn.Current.name : "-")} ");
             }
             var boss = FocusBoss;

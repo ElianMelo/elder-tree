@@ -6,12 +6,12 @@ namespace ElderTree.Equipment
     /// "Shark Tornado": the wearer coils with the blade low, then whirls on the spot several turns,
     /// drifting with the stick (or toward the lock target). Every turn the blade sweeps a full circle:
     /// each enemy in reach is cut once per pass, vines and other cuttables in the ring are severed, and
-    /// the last turn ends in a wider, heavier finishing cut. Triggered by light + heavy, paid with mana.
+    /// the last turn ends in a wider, heavier finishing cut. Triggered by light + heavy, paid with a special charge.
     /// </summary>
     [CreateAssetMenu(menuName = "Elder Tree/Equipment/Special Attack (Spin Slash)", fileName = "Special_")]
     public class SpinSlashData : SpecialData
     {
-        void Reset() { displayName = "Shark Tornado"; manaCost = 40f; staminaCost = 30f; }
+        void Reset() { displayName = "Shark Tornado"; staminaCost = 30f; }
 
         [Header("Wind-up")]
         [Tooltip("Coil with the blade drawn back low before the first turn.")]

@@ -476,7 +476,7 @@ namespace ElderTree.EditorTools
             var xbow = DataAsset<CrossbowData>(DataDir + "/Equipment/Crossbow_Shark.asset", d => { d.displayName = "Shark Crossbow"; });
             var spin = DataAsset<SpinSlashData>(DataDir + "/Equipment/Special_SharkTornado.asset", d =>
             {
-                d.displayName = "Shark Tornado"; d.manaCost = 40f; d.staminaCost = 30f;
+                d.displayName = "Shark Tornado"; d.staminaCost = 30f;
             });
             var form = DataAsset<FormData>(FormSharkPath, d =>
             {

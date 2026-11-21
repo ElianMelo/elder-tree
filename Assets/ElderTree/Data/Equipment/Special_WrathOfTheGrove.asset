@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: Special_WrathOfTheGrove
   m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Equipment.GrowthStompData
   displayName: Wrath of the Grove
-  manaCost: 45
   staminaCost: 25
   growScale: 2.2
   growTime: 0.65

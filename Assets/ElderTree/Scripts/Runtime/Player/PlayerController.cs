@@ -103,9 +103,14 @@ namespace ElderTree.Player
             if (weapon) weapon.OnHit = OnWeaponHit;
             prevYaw = transform.eulerAngles.y;
             InitForms();
+            VineSeeker.HitTarget += OnVineSeekerHit;
         }
 
-        void OnDestroy() { if (Instance == this) Instance = null; }
+        void OnDestroy()
+        {
+            VineSeeker.HitTarget -= OnVineSeekerHit;
+            if (Instance == this) Instance = null;
+        }
 
         void Start() => cam = Camera.main;
 

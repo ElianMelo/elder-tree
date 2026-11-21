@@ -5,8 +5,10 @@ namespace ElderTree.Player
 {
     /// <summary>HP / Mana / Stamina with Elden Ring style stamina rules: any positive stamina lets an
     /// action start (it may go negative), regeneration waits for a short delay after spending.
-    /// Mana pays for the ranged weapons and special attacks: it refills on its own over time, but
-    /// every spend stops the clock for <see cref="manaRegenDelay"/> seconds first.</summary>
+    /// Mana pays for the ranged weapons and spells: it refills on its own over time, but
+    /// every spend stops the clock for <see cref="manaRegenDelay"/> seconds first.
+    /// Special attacks are paid with charges instead: light and heavy hits on an enemy fill them, each
+    /// special spends one, and a boss fight starts empty and allows at most <see cref="specialsPerBoss"/>.</summary>
     public class PlayerStats : MonoBehaviour
     {
         public float maxHealth = 620f;
@@ -21,9 +23,33 @@ namespace ElderTree.Player
         [Tooltip("After mana is spent, regeneration stops for this long before it resumes.")]
         public float manaRegenDelay = 2f;
 
+        [Header("Special charges")]
+        [Tooltip("Charges that can be banked at once. Each special attack spends one.")]
+        public int maxSpecialCharges = 2;
+        [Tooltip("Specials allowed per boss fight: once this many are spent, hits stop filling charges until the fight ends.")]
+        public int specialsPerBoss = 2;
+        [Tooltip("Charge gained per light-attack hit (0.05 = 20 hits per charge, about a quarter of a boss's health).")]
+        public float chargePerLightHit = 0.05f;
+        [Tooltip("Charge gained per heavy-attack hit (0.1 = 10 hits per charge; heavies deal about twice a light's damage).")]
+        public float chargePerHeavyHit = 0.1f;
+        [Tooltip("Charge per light spell (Vine Seeker) hit: a cast deals about a heavy swing's damage.")]
+        public float chargePerSpellHit = 0.1f;
+        [Tooltip("Charge per charged spell hit.")]
+        public float chargePerChargedSpellHit = 0.15f;
+
         public float Health { get; private set; }
         public float Mana { get; private set; }
         public float Stamina { get; private set; }
+        /// <summary>Special charge, 0..<see cref="maxSpecialCharges"/>; the whole part is what can be spent.</summary>
+        public float SpecialCharge { get; private set; }
+        public int SpecialChargesReady => Mathf.FloorToInt(SpecialCharge + 0.001f);
+        /// <summary>True during a boss fight (specials there are capped at <see cref="specialsPerBoss"/>).</summary>
+        public bool InBossFight { get; private set; }
+        public int SpecialsUsedThisFight { get; private set; }
+        /// <summary>How far the charge can fill right now: the bank size, or what the boss fight still allows.</summary>
+        public float SpecialChargeCap => InBossFight
+            ? Mathf.Clamp(specialsPerBoss - SpecialsUsedThisFight, 0, maxSpecialCharges)
+            : maxSpecialCharges;
         public bool Guarding { get; set; }
         /// <summary>True while the post-spend pause holds mana regeneration.</summary>
         public bool ManaRegenPaused => Time.time - lastManaSpend < manaRegenDelay;
@@ -33,6 +59,10 @@ namespace ElderTree.Player
         public event System.Action Changed;
         /// <summary>A spend failed for lack of mana (HUD flashes the bar).</summary>
         public event System.Action ManaDenied;
+        /// <summary>A special was refused for lack of a charge (HUD shakes the charge slots).</summary>
+        public event System.Action SpecialDenied;
+        /// <summary>A charge slot just filled (HUD flashes it).</summary>
+        public event System.Action SpecialChargeReady;
 
         void Awake()
         {
@@ -75,6 +105,58 @@ namespace ElderTree.Player
             return true;
         }
 
+        public bool HasSpecialCharge => SpecialCharge >= 1f - 0.001f;
+
+        /// <summary>Fill the special charge from a landed light / heavy hit (see the chargePer* fields).</summary>
+        public void GainSpecialCharge(float amount)
+        {
+            float cap = SpecialChargeCap;
+            if (amount <= 0f || SpecialCharge >= cap) return;
+            int before = SpecialChargesReady;
+            SpecialCharge = Mathf.Min(cap, SpecialCharge + amount);
+            if (SpecialChargesReady > before) SpecialChargeReady?.Invoke();
+            Changed?.Invoke();
+        }
+
+        /// <summary>Spend one charge on a special; false (and the HUD is told) when none is ready.</summary>
+        public bool TrySpendSpecialCharge()
+        {
+            if (!HasSpecialCharge)
+            {
+                SpecialDenied?.Invoke();
+                return false;
+            }
+            SpecialCharge = Mathf.Max(0f, SpecialCharge - 1f);
+            if (InBossFight) SpecialsUsedThisFight++;
+            SpecialCharge = Mathf.Min(SpecialCharge, SpecialChargeCap);
+            Changed?.Invoke();
+            return true;
+        }
+
+        /// <summary>A boss fight begins: charges start empty, and only <see cref="specialsPerBoss"/> can be used.</summary>
+        public void BeginBossFight()
+        {
+            InBossFight = true;
+            SpecialsUsedThisFight = 0;
+            SpecialCharge = 0f;
+            Changed?.Invoke();
+        }
+
+        /// <summary>The boss fight is over (won, lost or dismissed): the per-fight cap lifts.</summary>
+        public void EndBossFight()
+        {
+            InBossFight = false;
+            SpecialsUsedThisFight = 0;
+            Changed?.Invoke();
+        }
+
+        /// <summary>Debug: set the charge directly (clamped to the current cap).</summary>
+        public void DevSetSpecialCharge(float value)
+        {
+            SpecialCharge = Mathf.Clamp(value, 0f, SpecialChargeCap);
+            Changed?.Invoke();
+        }
+
         public void TakeDamage(float dmg)
         {
             Health = Mathf.Max(0f, Health - dmg);
@@ -83,7 +165,7 @@ namespace ElderTree.Player
 
         public void RestoreAll()
         {
-            Health = maxHealth; Mana = maxMana; Stamina = maxStamina;
+            Health = maxHealth; Mana = maxMana; Stamina = maxStamina; SpecialCharge = 0f;
             Changed?.Invoke();
         }
 

@@ -21,7 +21,6 @@ MonoBehaviour:
     damage: 42
     poiseDamage: 15
     staminaCost: 14
-    manaCost: 0
     weight: 0
     hitStart: 0.29
     hitEnd: 0.44
@@ -62,7 +61,6 @@ MonoBehaviour:
     damage: 42
     poiseDamage: 15
     staminaCost: 14
-    manaCost: 0
     weight: 0
     hitStart: 0.29
     hitEnd: 0.44
@@ -103,7 +101,6 @@ MonoBehaviour:
     damage: 40
     poiseDamage: 14
     staminaCost: 14
-    manaCost: 0
     weight: 0
     hitStart: 0.24
     hitEnd: 0.35
@@ -144,7 +141,6 @@ MonoBehaviour:
     damage: 50
     poiseDamage: 19
     staminaCost: 16
-    manaCost: 0
     weight: 1
     hitStart: 0.15
     hitEnd: 0.29
@@ -186,7 +182,6 @@ MonoBehaviour:
     damage: 72
     poiseDamage: 32
     staminaCost: 20
-    manaCost: 0
     weight: 1
     hitStart: 0.25
     hitEnd: 0.34
@@ -227,7 +222,6 @@ MonoBehaviour:
     damage: 76
     poiseDamage: 34
     staminaCost: 21
-    manaCost: 0
     weight: 2
     hitStart: 0.26
     hitEnd: 0.38
@@ -268,7 +262,6 @@ MonoBehaviour:
     damage: 82
     poiseDamage: 36
     staminaCost: 23
-    manaCost: 0
     weight: 2
     hitStart: 0.44
     hitEnd: 0.52
@@ -309,7 +302,6 @@ MonoBehaviour:
     damage: 92
     poiseDamage: 40
     staminaCost: 25
-    manaCost: 0
     weight: 1
     hitStart: 0.17
     hitEnd: 0.3
@@ -351,7 +343,6 @@ MonoBehaviour:
     damage: 56
     poiseDamage: 22
     staminaCost: 20
-    manaCost: 0
     weight: 1
     hitStart: 0.25
     hitEnd: 0.33
@@ -393,7 +384,6 @@ MonoBehaviour:
     damage: 72
     poiseDamage: 34
     staminaCost: 20
-    manaCost: 0
     weight: 2
     hitStart: 0.4
     hitEnd: 0.52
@@ -435,7 +425,6 @@ MonoBehaviour:
     damage: 46
     poiseDamage: 16
     staminaCost: 16
-    manaCost: 0
     weight: 0
     hitStart: 0.15
     hitEnd: 0.29
@@ -477,7 +466,6 @@ MonoBehaviour:
     damage: 92
     poiseDamage: 40
     staminaCost: 25
-    manaCost: 0
     weight: 1
     hitStart: 0.17
     hitEnd: 0.3

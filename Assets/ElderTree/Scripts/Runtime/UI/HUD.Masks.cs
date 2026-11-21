@@ -167,7 +167,7 @@ namespace ElderTree.UI
                 maskSlots[i].style.translate = new Translate(Mathf.Sin(maskShake[i] * 40f) * 6f * maskShake[i], 0f);
             }
 
-            // mana bar blinks when a shot / special is refused
+            // mana bar blinks when a shot / spell is refused
             manaDeny = Mathf.MoveTowards(manaDeny, 0f, dt * 2.5f);
             if (fp != null) fp.frame.style.borderTopColor = fp.frame.style.borderBottomColor = fp.frame.style.borderLeftColor =
                 fp.frame.style.borderRightColor = Color.Lerp(new Color(0.85f, 0.7f, 0.42f, 0.55f), new Color(0.55f, 0.75f, 1f, 1f), manaDeny * (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 30f)));

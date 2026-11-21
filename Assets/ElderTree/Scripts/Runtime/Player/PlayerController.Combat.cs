@@ -35,12 +35,16 @@ namespace ElderTree.Player
         public bool StartAttack(AttackData a)
         {
             if (a == null) return false;
-            if (a.manaCost > 0f && !stats.TrySpendMana(a.manaCost))
+            // the base form's special (the moveset skill) is paid with a special charge
+            bool special = a == moveset.skill;
+            if (special && !stats.HasSpecialCharge)
             {
-                AudioManager.Play2D(Sfx.UIBack, 0.5f, 0.8f);
+                stats.TrySpendSpecialCharge();   // raises SpecialDenied for the HUD
+                AudioManager.Play2D(Sfx.ManaEmpty, 0.8f);
                 return false;
             }
             if (!stats.TrySpendStamina(a.staminaCost)) return false;
+            if (special) stats.TrySpendSpecialCharge();
 
             EndSwing();
             bool fromRun = State == PlayerState.Locomotion && (IsSprinting || motor.PlanarVelocity.magnitude > runSpeed);
@@ -380,6 +384,7 @@ namespace ElderTree.Player
             }
             hitsThisSwing++;
             GainSpirit(attack, IsHeavy(attack));
+            GainSpecialCharge(attack, target);
             HitLanded?.Invoke(info, target);
             TryWeaponBlast(point, target);
 
@@ -412,6 +417,23 @@ namespace ElderTree.Player
                 AudioManager.Play(Sfx.Knock, point, 1f, attack.weight == ImpactWeight.Light ? 1.05f : 0.85f);
             }
             if (attack.weight != ImpactWeight.Light || charged) AudioManager.Play(Sfx.ImpactHeavy, point, 0.9f);
+        }
+
+        /// <summary>Light and heavy hits on an enemy (a boss or a training dummy) fill the special charge;
+        /// the special itself, and props like rocks or bombs, give nothing.</summary>
+        void GainSpecialCharge(AttackData a, IDamageable target)
+        {
+            if (a == null || a == moveset.skill || !ChargesSpecial(target)) return;
+            stats.GainSpecialCharge(IsHeavy(a) ? stats.chargePerHeavyHit : stats.chargePerLightHit);
+        }
+
+        static bool ChargesSpecial(IDamageable target) => target is Enemies.BossBase || target is Enemies.TrainingDummy;
+
+        /// <summary>The druid's light / heavy are spells: a Vine Seeker landing on an enemy fills the charge too.</summary>
+        void OnVineSeekerHit(VineSeeker v, IDamageable target, DamageInfo info)
+        {
+            if (v == null || v.Owner != transform || !ChargesSpecial(target)) return;
+            stats.GainSpecialCharge(v.Power > 0f ? stats.chargePerChargedSpellHit : stats.chargePerSpellHit);
         }
 
         void DoSlam(AttackData a)

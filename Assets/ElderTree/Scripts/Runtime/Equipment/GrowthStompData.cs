@@ -11,7 +11,7 @@ namespace ElderTree.Equipment
     [CreateAssetMenu(menuName = "Elder Tree/Equipment/Special (Growth Stomp)", fileName = "Special_")]
     public class GrowthStompData : SpecialData
     {
-        void Reset() { displayName = "Wrath of the Grove"; manaCost = 45f; staminaCost = 25f; }
+        void Reset() { displayName = "Wrath of the Grove"; staminaCost = 25f; }
 
         [Header("Growth")]
         [Tooltip("How big the druid gets (x its normal size).")]

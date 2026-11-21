@@ -5,12 +5,12 @@ namespace ElderTree.Equipment
     /// <summary>
     /// "Sky Bombardment": the wearer leaps straight up, hangs at the top, hurls the weapon down at the
     /// ground in front (or at the lock target) and it detonates in a huge blast, then flies back to the hand.
-    /// Triggered by light + heavy pressed together, paid with mana.
+    /// Triggered by light + heavy pressed together, paid with a special charge.
     /// </summary>
     [CreateAssetMenu(menuName = "Elder Tree/Equipment/Special Attack (Sky Bombardment)", fileName = "Special_")]
     public class SpecialAttackData : SpecialData
     {
-        void Reset() { displayName = "Sky Bombardment"; manaCost = 45f; staminaCost = 25f; }
+        void Reset() { displayName = "Sky Bombardment"; staminaCost = 25f; }
 
         [Header("Rise")]
         public float crouchTime = 0.22f;

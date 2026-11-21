@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: Special_SharkTornado
   m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Equipment.SpinSlashData
   displayName: Shark Tornado
-  manaCost: 40
   staminaCost: 30
   windupTime: 0.32
   turns: 4

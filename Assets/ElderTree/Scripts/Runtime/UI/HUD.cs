@@ -140,6 +140,7 @@ namespace ElderTree.UI
             spiritPips = El("spirit__pips", spirit.frame);
             for (int i = 0; i < 3; i++) El("spirit__pip", spiritPips);
             spirit.frame.style.display = DisplayStyle.None;
+            BuildCharges();
         }
 
         void TickSpirit(float dt)
@@ -235,6 +236,7 @@ namespace ElderTree.UI
                 TickBar(fp, stats.Mana / stats.maxMana, dt);
                 TickBar(st, Mathf.Max(0f, stats.Stamina) / stats.maxStamina, dt);
                 TickSpirit(dt);
+                TickCharges(dt);
             }
 
             // reticle
@@ -271,7 +273,7 @@ namespace ElderTree.UI
         {
             new Hint { pad = "RB", kbm = "LMB", label = "Light attack" },
             new Hint { pad = "RT", kbm = "Shift + LMB", label = "Heavy attack (hold to charge)" },
-            new Hint { pad = "RB + RT", kbm = "Shift + RMB", label = "Special attack (mana)" },
+            new Hint { pad = "RB + RT", kbm = "Shift + RMB", label = "Special attack (1 charge, from hits)" },
             new Hint { pad = "LT", kbm = "RMB", label = "Ranged: hold to aim" },
             new Hint { pad = "LT + RT", kbm = "RMB + LMB", label = "Shoot (mana per shot)" },
             new Hint { pad = "LB", kbm = "Alt", label = "Guard" },

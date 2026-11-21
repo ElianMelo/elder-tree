@@ -473,7 +473,7 @@ namespace ElderTree.EditorTools
         {
             var spell = DataAsset<SpellData>(SpellVineSeekerPath, d => { d.displayName = "Vine Seeker"; });
             var orb = DataAsset<OrbData>(OrbVerdantPath, d => { d.displayName = "Verdant Orb"; });
-            var grove = DataAsset<GrowthStompData>(SpecialGrovePath, d => { d.displayName = "Wrath of the Grove"; d.manaCost = 45f; d.staminaCost = 25f; });
+            var grove = DataAsset<GrowthStompData>(SpecialGrovePath, d => { d.displayName = "Wrath of the Grove"; d.staminaCost = 25f; });
             var form = DataAsset<FormData>(FormDruidPath, d =>
             {
                 d.displayName = "Druid"; d.rigId = "Druid"; d.rangedKind = RangedKind.Orb;

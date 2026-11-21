@@ -96,7 +96,13 @@ namespace ElderTree.Enemies
             if (b == null) return;
             if (player != null && player.IsDead) return;
             if (ending != null) { StopCoroutine(ending); ending = null; }
-            if (!Active) { primaryFelled = false; felled.Clear(); }
+            if (!Active)
+            {
+                primaryFelled = false;
+                felled.Clear();
+                // special charges start empty each fight, and only so many specials are allowed per boss
+                if (player != null) player.stats.BeginBossFight();
+            }
             Active = true;
             AudioManager.SetMusic(MusicMood.Boss);
             SetDummies(false);
@@ -128,6 +134,7 @@ namespace ElderTree.Enemies
         {
             if (ending != null) { StopCoroutine(ending); ending = null; }
             Active = false;
+            if (player != null) player.stats.EndBossFight();
             AudioManager.SetMusic(MusicMood.Explore);
             if (!keepWreck) ResetAllBosses();
             foreach (var l in LivingBomb.Active.ToArray()) l.Despawn();
@@ -183,6 +190,7 @@ namespace ElderTree.Enemies
             yield return new WaitForSeconds(0.8f);
             hud?.HideBossBar();
             Active = false;
+            if (player != null) player.stats.EndBossFight();
             AudioManager.SetMusic(MusicMood.Explore);
             yield return new WaitForSeconds(6f);
             SetDummies(true);
@@ -239,6 +247,7 @@ namespace ElderTree.Enemies
             yield return new WaitForSeconds(4.2f);
             if (hud != null) yield return hud.FadeScreen(1f, 0.9f);
             Active = false;
+            if (player != null) player.stats.EndBossFight();
             ResetAllBosses();
             foreach (var l in LivingBomb.Active.ToArray()) l.Despawn();
             hud?.HideBossBar();
