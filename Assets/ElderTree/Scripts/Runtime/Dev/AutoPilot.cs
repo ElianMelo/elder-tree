@@ -233,7 +233,7 @@ namespace ElderTree.Dev
             var boss = FocusBoss;
             if (boss != null && boss.gameObject.activeInHierarchy)
                 sb.Append($"[BOSS {boss.name} {boss.StateLabel} move={boss.CurrentMove} hp={boss.Health:F0} poise={boss.Poise:F0} p2={boss.PhaseTwo} pos={boss.transform.position.ToString("F1")}] ");
-            if (pc != null) sb.Append($"php={pc.stats.Health:F0} ");
+            if (pc != null) sb.Append($"php={pc.stats.Health:F0} pot={pc.stats.Potions} ");
             if (Enemies.AerialBomb.Live.Count > 0 && pc != null)
             {
                 float best = 999f;

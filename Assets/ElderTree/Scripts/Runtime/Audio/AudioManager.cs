@@ -16,7 +16,8 @@ namespace ElderTree.Audio
         BladeWhoosh, BladeHit, VineCut, VineRustle, CrossbowFire, CrossbowReload, SpinWhirl,
         BladeRing, GroundGrind,
         WoodGroan, RootSnap, DeepRumble,
-        SpellGather, VineCast, VineBurst, OrbCharge, OrbFire, OrbImpact
+        SpellGather, VineCast, VineBurst, OrbCharge, OrbFire, OrbImpact,
+        PotionDrink
     }
 
     /// <summary>

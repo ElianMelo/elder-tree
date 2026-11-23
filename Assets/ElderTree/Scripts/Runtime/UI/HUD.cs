@@ -203,6 +203,7 @@ namespace ElderTree.UI
             var down = El("equip__slot equip__slot--down", cross);
             Lbl("—", "equip__empty", down);
             BuildBowSlot(cross);
+            BuildPotionSlot(cross);
             var name = Lbl("Elder Club", "equip__name", root);
             ApplySerif(name);
             equipName = name;
@@ -237,6 +238,7 @@ namespace ElderTree.UI
                 TickBar(st, Mathf.Max(0f, stats.Stamina) / stats.maxStamina, dt);
                 TickSpirit(dt);
                 TickCharges(dt);
+                TickPotion(dt);
             }
 
             // reticle
@@ -277,6 +279,7 @@ namespace ElderTree.UI
             new Hint { pad = "LT", kbm = "RMB", label = "Ranged: hold to aim" },
             new Hint { pad = "LT + RT", kbm = "RMB + LMB", label = "Shoot (mana per shot)" },
             new Hint { pad = "LB", kbm = "Alt", label = "Guard" },
+            new Hint { pad = "X", kbm = "R", label = "Drink health potion" },
             new Hint { pad = "B", kbm = "Space", label = "Roll / backstep · hold: sprint" },
             new Hint { pad = "A", kbm = "F", label = "Jump" },
             new Hint { pad = "R3", kbm = "Q / MMB", label = "Lock on · reset camera" },

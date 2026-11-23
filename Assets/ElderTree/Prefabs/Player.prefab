@@ -5093,11 +5093,11 @@ MonoBehaviour:
   hardLandingSpeed: 9
   rollDistance: 3.7
   rollDuration: 0.8
-  rollIFrames: {x: 0.03, y: 0.46}
+  rollIFrames: {x: 0.02, y: 0.62}
   rollClipRange: {x: 0.02, y: 0.8}
   backstepDistance: 2.1
   backstepDuration: 0.46
-  backstepIFrames: {x: 0.02, y: 0.26}
+  backstepIFrames: {x: 0.02, y: 0.36}
   dodgeStamina: 16
   dodgeClipLength: 1.3000001
   backstepClipLength: 1.0666667

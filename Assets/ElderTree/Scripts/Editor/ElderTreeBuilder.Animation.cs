@@ -279,6 +279,9 @@ namespace ElderTree.EditorTools
             hold2H.motion = K("Combat/2H/HumanM@CombatIdle2H01");
             asm.defaultState = hold2H;
 
+            // ---------------- Drink (upper body, on top of everything): the health potion
+            AddDrinkLayer(ac);
+
             // IK pass on the base layer: the bow places both hands on the aim line (BowRig.OnAnimatorIK)
             var layers = ac.layers;
             layers[0].iKPass = true;
@@ -289,6 +292,54 @@ namespace ElderTree.EditorTools
             BuildMoveset();
             AssetDatabase.SaveAssets();
             return $"Animator built: {ac.layers.Length} layers, {sm.states.Length} states";
+        }
+
+        /// <summary>
+        /// Health potion: the pack's left-handed drink on the upper body (the right hand keeps the weapon) while the legs
+        /// keep the locomotion of the base layer. Last layer, so it wins over the guard and the two-hand hold. Weighted by
+        /// PlayerController; "DrinkSpeed" is its playback speed.
+        /// </summary>
+        static void AddDrinkLayer(AnimatorController ac)
+        {
+            if (ac.layers.Any(l => l.name == "Drink")) return;
+            if (!ac.parameters.Any(p => p.name == "DrinkSpeed"))
+            {
+                ac.AddParameter("DrinkSpeed", AnimatorControllerParameterType.Float);
+                ac.parameters = ac.parameters.Select(p => { if (p.name == "DrinkSpeed") p.defaultFloat = 1f; return p; }).ToArray();
+            }
+            var layer = new AnimatorControllerLayer
+            {
+                name = "Drink",
+                defaultWeight = 0f,
+                // spine, head and the left arm: the right arm keeps the weapon pose from the base layer
+                avatarMask = Mask("M_DrinkUpper", p =>
+                    p == AvatarMaskBodyPart.Body || p == AvatarMaskBodyPart.Head ||
+                    p == AvatarMaskBodyPart.LeftArm || p == AvatarMaskBodyPart.LeftFingers),
+                blendingMode = AnimatorLayerBlendingMode.Override,
+                stateMachine = new AnimatorStateMachine { name = "Drink", hideFlags = HideFlags.HideInHierarchy }
+            };
+            AssetDatabase.AddObjectToAsset(layer.stateMachine, ac);
+            ac.AddLayer(layer);
+            var dsm = ac.layers[ac.layers.Length - 1].stateMachine;
+            var empty = dsm.AddState("Empty", new Vector3(300, 0));
+            dsm.defaultState = empty;
+            var drink = dsm.AddState("Drink", new Vector3(300, 80));
+            drink.motion = K("Misc/Drink/HumanM@Drink01_L");
+            drink.speedParameter = "DrinkSpeed";
+            drink.speedParameterActive = true;
+            EditorUtility.SetDirty(ac);
+        }
+
+        /// <summary>Adds the drink layer to the existing controller (no rebuild, so references to it survive).</summary>
+        [MenuItem("Elder Tree/Dev/Add Drink Layer To Animator")]
+        public static string EnsureDrinkLayer()
+        {
+            var ac = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
+            if (ac == null) return "No controller";
+            bool had = ac.layers.Any(l => l.name == "Drink");
+            AddDrinkLayer(ac);
+            AssetDatabase.SaveAssets();
+            return had ? "Drink layer already there" : $"Drink layer added: {ac.layers.Length} layers";
         }
 
         /// <summary>

@@ -144,6 +144,9 @@ namespace ElderTree.EditorTools
                                  "Magic_Spells/energy_blast_small_03"), 0.6f, 0.8f, 0.92f, 0.6f, 0.08f),
                 C(Sfx.OrbImpact, P("Magic_Spells/energy_blast_large_01", "Magic_Spells/energy_blast_large_02",
                                    "Magic_Spells/energy_blast_large_03"), 0.7f, 0.82f, 0.95f, 0.65f, 0.08f),
+
+                // ---------------------------------------------------------------- health potion (the gulp). Not heard by ear yet.
+                C(Sfx.PotionDrink, P("Magic_Spells/potion_heal_flask_spell_01", "Magic_Spells/potion_heal_flask_spell_02"), 0.6f, 0.9f, 1f, 0.3f, 0.2f),
             };
             foreach (var c in cues) c.layer = c.id == Sfx.Footstep ? AudioLayer.Footsteps : UiCues.Contains(c.id) ? AudioLayer.UI : AudioLayer.SFX;
             Configure(cues.SelectMany(c => c.clips).Where(c => UnityEditor.AssetDatabase.GetAssetPath(c).StartsWith(Root)), Use.OneShot);

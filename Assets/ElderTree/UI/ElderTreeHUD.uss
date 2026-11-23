@@ -91,6 +91,22 @@
     color: rgba(237, 230, 214, 0.35);
 }
 
+.equip__potion {
+    width: 60px;
+    height: 60px;
+    rotate: -45deg;
+}
+
+.equip__potion-count {
+    position: absolute;
+    left: 132px;
+    top: 168px;
+    font-size: 22px;
+    color: rgb(244, 223, 166);
+    -unity-text-outline-width: 0.6px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.8);
+}
+
 .equip__name {
     position: absolute;
     left: 268px;
@@ -580,6 +596,39 @@
 }
 .dbg__title { font-size: 24px; letter-spacing: 8px; color: rgb(244, 223, 166); }
 .dbg__tag { font-size: 13px; letter-spacing: 3px; color: rgb(154, 146, 127); }
+
+.dbg__tabs {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom-width: 1px;
+    border-color: rgba(216, 180, 106, 0.2);
+}
+.dbg__tab {
+    flex-grow: 1;
+    font-size: 17px;
+    letter-spacing: 2px;
+    -unity-text-align: middle-center;
+    color: rgb(154, 146, 127);
+    padding: 6px 0;
+    border-bottom-width: 2px;
+    border-color: rgba(0, 0, 0, 0);
+}
+.dbg__tab--active {
+    color: rgb(244, 223, 166);
+    border-color: rgb(216, 180, 106);
+    background-color: rgba(216, 180, 106, 0.08);
+}
+.dbg__tabkey {
+    font-size: 12px;
+    color: rgb(154, 146, 127);
+    padding: 2px 6px;
+    margin: 0 6px;
+    border-width: 1px;
+    border-radius: 3px;
+    border-color: rgba(154, 146, 127, 0.5);
+}
 
 .dbg__row {
     flex-direction: row;

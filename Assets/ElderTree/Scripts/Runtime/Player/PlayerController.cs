@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace ElderTree.Player
 {
-    public enum PlayerState { Locomotion, Air, Landing, Attack, Dodge, Hit, Dead, Aim, Special, Transform, Cinematic, Held, Cast }
+    public enum PlayerState { Locomotion, Air, Landing, Attack, Dodge, Hit, Dead, Aim, Special, Transform, Cinematic, Held, Cast, Drink }
 
     /// <summary>
     /// Souls-like player brain. Locomotion (free + lock-on strafing), sprint, jump, roll/backstep with
@@ -50,13 +50,14 @@ namespace ElderTree.Player
         public float rollDistance = 3.7f;
         [Tooltip("Roll state length (seconds). The Roll01 clip is played from rollClipRange.x to .y over this time.")]
         public float rollDuration = 0.8f;
-        [Tooltip("Elden Ring medium roll: 13 i-frames @30fps ≈ 0.43s.")]
-        public Vector2 rollIFrames = new Vector2(0.03f, 0.46f);
+        [Tooltip("Invulnerable window of the roll (seconds into it). 0.02-0.62 ≈ 18 frames @30fps: more forgiving than Elden Ring's 13.")]
+        public Vector2 rollIFrames = new Vector2(0.02f, 0.62f);
         [Tooltip("Normalized part of the Roll01 clip the roll plays: tuck-in to back on the feet.")]
         public Vector2 rollClipRange = new Vector2(0.02f, 0.8f);
         public float backstepDistance = 2.1f;
         public float backstepDuration = 0.46f;
-        public Vector2 backstepIFrames = new Vector2(0.02f, 0.26f);
+        [Tooltip("Invulnerable window of the backstep (seconds into it).")]
+        public Vector2 backstepIFrames = new Vector2(0.02f, 0.36f);
         public float dodgeStamina = 16f;
         [Tooltip("Roll clip length (Roll01), filled by the builder.")]
         public float dodgeClipLength = 1.3f;
@@ -159,12 +160,14 @@ namespace ElderTree.Player
                 case PlayerState.Cinematic: UpdateCinematic(dt); break;
                 case PlayerState.Held: UpdateHeld(dt); break;
                 case PlayerState.Cast: UpdateCast(dt); break;
+                case PlayerState.Drink: UpdateDrink(dt); break;
             }
             if (State != PlayerState.Special) UpdateThrownHammer(dt);
 
             if (State != PlayerState.Held) motor.Tick(dt);     // held in a fist: the grabber places the body
             if (motor.Grounded) lastGroundedTime = Time.time;
             UpdateGuardLayer(dt);
+            UpdateDrinkLayer(dt);
             UpdateTwoHand(dt);
             UpdateGrowScale(dt);
             UpdateSpirit(dt);
@@ -190,6 +193,7 @@ namespace ElderTree.Player
             if (weapon) slashPrevTip = weapon.TipWorld;
             UpdateHeldOrb();
             UpdateVisualRoll();
+            UpdateFlask(Time.deltaTime);
         }
 
         // ------------------------------------------------------------------ lock-on while aiming
@@ -295,6 +299,7 @@ namespace ElderTree.Player
         {
             if (!input.GameplayEnabled) return false;
             if (input.HasBufferedDodge && TryDodge()) return true;
+            if (input.HasBufferedUseItem && TryDrink()) return true;
             if (input.AimHeld && motor.Grounded && TryEnterAim()) return true;
             if (input.HasBufferedSkill)
             {

@@ -1,5 +1,19 @@
 # Handoff — Elder Tree soulslike slice
 
+## 0000000000000000000. F1 menu tabs, Druid sinks away when felled
+
+- **F1 menu** (`HUD.Debug.cs`) now has tabs **Boss / Mask / World / Consumable**, switched with Q / E, LB / RB or Left / Right (`PlayerInputReader.TabLeftPressed / TabRightPressed`, the UI map's existing TabLeft / TabRight). 1-9 runs a row of the current tab; 0 = Despawn all on the Boss tab. Consumable has **Restore potion flasks** (`PlayerStats.RefillPotions`). The menu calls `BringToFront()` when it opens, so it draws above the mask bar, letterbox and every other HUD layer.
+- **Druid** (`DruidBoss.DeathRoutine`): after lying still for 3 s it sinks 9 m into the earth over 3.2 s (dust, falling leaves, deep rumble), then `ResetBoss()` takes it out of the arena. `sinkDepth` lowers both `Place` and the hull's keep-off-ground floor. Crocodile and Shark still leave their wrecks until the fight is reset.
+
+## 000000000000000000. Longer dodge i-frames + health potions
+
+- **I-frames:** roll 0.02–0.62 s (was 0.03–0.46, ~18 frames @30 fps instead of 13), backstep 0.02–0.36 s (was 0.02–0.26). `PlayerController.rollIFrames / backstepIFrames`, also on `Player.prefab`.
+- **Health potions** (`PlayerController.Potion.cs`, `PlayerStats.maxPotions = 5`, `potionHeal = 260` ≈ 42% of 620 HP). X / R (the existing `UseItem` action). Elden Ring flask rules: the potion is spent on the press, you keep walking at 60% walk speed, the heal lands at the gulp (`drinkHealAt` 0.5 of the clip). A hit before the gulp wastes it. A roll can cut in from 0.72, any action from 0.86. Death / revive refills (`RestoreAll`). Pressing with none left plays a dull knock and shakes the HUD slot.
+- **Animation:** pack `HumanM@Drink01_L` on a new last animator layer `Drink` (mask `M_DrinkUpper`: spine, head, left arm, so the right arm keeps the weapon pose), speed param `DrinkSpeed`. Added to the existing controller with `Elder Tree/Dev/Add Drink Layer To Animator`, and `BuildAnimator` now creates it too. A 6-sided low-poly crimson flask is built in code and rides the left hand during the drink (`flaskLocalPos/Euler/Scale`).
+- **HUD:** the down slot of the equipment cross (the quick item) shows a flask drawn with Painter2D and the count; it pulses on use and goes dark at 0. Controls list has "X / R: Drink health potion".
+- **Audio:** new cue `Sfx.PotionDrink` = `Magic_Spells/potion_heal_flask_spell_01/02`, volume 0.6. **Not heard by ear yet.**
+- Tested with AutoPilot (tree and Shark forms): heal +260, walking 1.1 m/s while drinking, roll-cancel after the gulp, empty press. AutoPilot's log now prints `pot=`.
+
 ## 00000000000000000. Druid Mask (Druid reward) + a lighter, leafier Druid
 
 **Boss look (your call: light wood, more and lighter leaves, dark leaves as shadow).** This deliberately breaks ART_DIRECTION's "dark bark" rule for the Druid set only.

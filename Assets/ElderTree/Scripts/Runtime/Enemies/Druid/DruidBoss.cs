@@ -126,6 +126,8 @@ namespace ElderTree.Enemies
 
         // ------------------------------------------------------------------ kinematics
         float yaw, groundY;
+        /// <summary>How far the felled body has sunk into the earth (0 while alive).</summary>
+        float sinkDepth;
         Vector3 vel;
 
         // pose targets (set by moves) and smoothed values (applied in LateUpdate)
@@ -251,6 +253,7 @@ namespace ElderTree.Enemies
             forcedMove = null;
             gameObject.SetActive(true);
             groundY = Blast.Floor(arenaCenter).y;
+            sinkDepth = 0f;
             State = Mode.Stalking;
             brain = StartCoroutine(Brain(true));
         }
@@ -262,6 +265,7 @@ namespace ElderTree.Enemies
             State = Mode.Dormant;
             health = maxHealth;
             footing = 0f;
+            sinkDepth = 0f;
             gameObject.SetActive(false);
         }
 
@@ -414,7 +418,7 @@ namespace ElderTree.Enemies
                 p = arenaCenter + rel.normalized * limit;
                 vel -= Vector3.Project(vel, rel.normalized) * (Vector3.Dot(vel, rel) > 0f ? 1f : 0f);
             }
-            p.y = groundY;
+            p.y = groundY - sinkDepth;
             transform.position = p;
             transform.rotation = Quaternion.Euler(0f, yaw, 0f);
         }
@@ -1164,6 +1168,30 @@ namespace ElderTree.Enemies
                 Place(transform.position);
                 yield return null;
             }
+
+            // the giant returns to the earth: it sinks out of sight in a fall of leaves, then leaves the arena
+            AudioManager.Play(Sfx.DeepRumble, transform.position, 0.8f, 0.8f);
+            Groan(0.5f, 0.7f);
+            const float SinkTime = 3.2f, SinkTo = 9f;
+            t = 0f;
+            float dustAt = 0f;
+            while (t < SinkTime)
+            {
+                float dt = Time.deltaTime;
+                t += dt;
+                sinkDepth = SinkTo * Ease.InOutCubic(Mathf.Clamp01(t / SinkTime));
+                agitation = 0.5f;
+                if (Random.value < dt * 14f) Shed(1, 1.4f);
+                if (t >= dustAt)
+                {
+                    dustAt = t + 0.45f;
+                    Vector3 at = Ground(transform.position + Random.insideUnitSphere * 4f);
+                    FXManager.Spawn(FXType.Dust, at, Quaternion.identity, 2f);
+                }
+                Place(transform.position);
+                yield return null;
+            }
+            ResetBoss();
         }
 
         // ================================================================== damage
@@ -1434,7 +1462,7 @@ namespace ElderTree.Enemies
             float minY = float.MaxValue;
             foreach (var h in hull)
                 if (h.bone) minY = Mathf.Min(minY, h.bone.TransformPoint(h.local).y);
-            float deficit = groundY + 0.05f - minY;
+            float deficit = groundY - sinkDepth + 0.05f - minY;
             if (deficit > 0f) pivot.position += Vector3.up * deficit;
         }
 

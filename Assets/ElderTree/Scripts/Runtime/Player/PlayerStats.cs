@@ -37,7 +37,14 @@ namespace ElderTree.Player
         [Tooltip("Charge per charged spell hit.")]
         public float chargePerChargedSpellHit = 0.15f;
 
+        [Header("Health potions")]
+        [Tooltip("Potions carried. Dying or resting refills them all.")]
+        public int maxPotions = 5;
+        [Tooltip("Health one potion restores (620 max HP: ~42%).")]
+        public float potionHeal = 260f;
+
         public float Health { get; private set; }
+        public int Potions { get; private set; }
         public float Mana { get; private set; }
         public float Stamina { get; private set; }
         /// <summary>Special charge, 0..<see cref="maxSpecialCharges"/>; the whole part is what can be spent.</summary>
@@ -63,10 +70,15 @@ namespace ElderTree.Player
         public event System.Action SpecialDenied;
         /// <summary>A charge slot just filled (HUD flashes it).</summary>
         public event System.Action SpecialChargeReady;
+        /// <summary>A potion was uncorked (HUD pulses the flask slot).</summary>
+        public event System.Action PotionUsed;
+        /// <summary>Tried to drink with none left (HUD shakes the flask slot).</summary>
+        public event System.Action PotionDenied;
 
         void Awake()
         {
             Health = maxHealth;
+            Potions = maxPotions;
             Mana = maxMana;
             Stamina = maxStamina;
         }
@@ -163,9 +175,37 @@ namespace ElderTree.Player
             Changed?.Invoke();
         }
 
+        public void Heal(float amount)
+        {
+            if (amount <= 0f) return;
+            Health = Mathf.Min(maxHealth, Health + amount);
+            Changed?.Invoke();
+        }
+
+        /// <summary>Spend one potion (the heal itself lands later, at the gulp). False when none are left.</summary>
+        public bool TryUsePotion()
+        {
+            if (Potions <= 0)
+            {
+                PotionDenied?.Invoke();
+                return false;
+            }
+            Potions--;
+            PotionUsed?.Invoke();
+            Changed?.Invoke();
+            return true;
+        }
+
+        public void RefillPotions()
+        {
+            Potions = maxPotions;
+            Changed?.Invoke();
+        }
+
         public void RestoreAll()
         {
             Health = maxHealth; Mana = maxMana; Stamina = maxStamina; SpecialCharge = 0f;
+            Potions = maxPotions;
             Changed?.Invoke();
         }
 

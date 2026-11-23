@@ -40,7 +40,7 @@ namespace ElderTree.InputHandling
         int pendingMask = -1;
         InputAction navigate, submit, cancel, tabLeft, tabRight;
 
-        float lightAt = -99, heavyAt = -99, skillAt = -99, dodgeAt = -99, jumpAt = -99, fireAt = -99;
+        float lightAt = -99, heavyAt = -99, skillAt = -99, dodgeAt = -99, jumpAt = -99, fireAt = -99, itemAt = -99;
         float dodgePressedTime = -99;
         bool dodgeHeldSprint;
         bool heavyFromModifier;
@@ -98,6 +98,7 @@ namespace ElderTree.InputHandling
                 dodgeHeldSprint = false;
             };
             jump.performed += _ => jumpAt = Time.unscaledTime;
+            useItem.performed += _ => itemAt = Time.unscaledTime;
             lockOn.performed += _ => lockOnPressed = true;
             pause.performed += _ => pausePressed = true;
             help.performed += _ => helpPressed = true;
@@ -253,7 +254,10 @@ namespace ElderTree.InputHandling
         public bool HasBufferedFire => Peek(fireAt, bufferWindow);
         public void ClearFire() => fireAt = -99;
         public void ClearAttackBuffers() { lightAt = heavyAt = skillAt = -99; }
-        public void ClearAll() { lightAt = heavyAt = skillAt = dodgeAt = jumpAt = fireAt = -99; lockOnPressed = false; pendingSwitch = 0; pendingMask = -1; }
+        /// <summary>Use-item (potion) press: X / R.</summary>
+        public bool ConsumeUseItem() => Consume(ref itemAt, bufferWindow * 0.6f);
+        public bool HasBufferedUseItem => Peek(itemAt, bufferWindow * 0.6f);
+        public void ClearAll() { lightAt = heavyAt = skillAt = dodgeAt = jumpAt = fireAt = itemAt = -99;lockOnPressed = false; pendingSwitch = 0; pendingMask = -1; }
 
         /// <summary>Mask slot pressed this frame or earlier (0-3), or -1.</summary>
         public int ConsumeMaskSlot() { int v = pendingMask; pendingMask = -1; return v; }
@@ -281,6 +285,9 @@ namespace ElderTree.InputHandling
 
         public bool SubmitPressed => submit.WasPressedThisFrame();
         public bool CancelPressed => cancel.WasPressedThisFrame();
+        /// <summary>Menu tabs: Q / LB and E / RB.</summary>
+        public bool TabLeftPressed => tabLeft.WasPressedThisFrame();
+        public bool TabRightPressed => tabRight.WasPressedThisFrame();
         /// <summary>Works even while the gameplay map is disabled (title screen).</summary>
         public bool AnyGameplayButtonPressed
         {
