@@ -242,12 +242,23 @@ namespace ElderTree.UI
             string run = debugTab == DebugTab.Boss ? "Spawn / despawn" : "Run";
             debugRoot.Q<Label>("dbg-foot").text = pad
                 ? $"LB RB  Tab      D-Pad  Choose      A  {run}      B  Close"
-                : $"Q E  Tab      ↑ ↓  Choose      Enter / 1-9  {run}      F1 / Esc  Close";
+                : $"Q E  Tab      ↑ ↓  Choose      Enter / 1-9  {run}      F1 / Esc  Close      F2  Boss select";
         }
+
+        bool leavingToBossSelect;
 
         void TickDebugMenu(float dt)
         {
             var kb = Keyboard.current;
+            // F2 (debug): straight back to the boss select screen from any arena, paused or not
+            if (kb != null && kb.f2Key.wasPressedThisFrame && !leavingToBossSelect)
+            {
+                leavingToBossSelect = true;
+                if (DebugMenuOpen) SetDebugMenu(false);
+                AudioManager.Play2D(Sfx.UISelect, 0.7f);
+                StartCoroutine(SceneFlow.FadeAndLoad(this, SceneFlow.BossSelect));
+                return;
+            }
             if (kb != null && kb.f1Key.wasPressedThisFrame) { SetDebugMenu(!DebugMenuOpen); return; }
             if (!DebugMenuOpen || input == null) return;
 

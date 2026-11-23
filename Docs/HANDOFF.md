@@ -9,6 +9,7 @@
   - **By the kit:** 9 standing lanterns at the three tent doors, the two gun nests, the pillbox roof, the two AA guns and the watchtower deck.
   - Intensity 3–4, range 6.5–8, gentle flicker; all light the fog.
 - Play mode: ~113 fps in the editor, 0 errors. Shots: `Docs/Screenshots/35_swamp_lanterns_play.png`, `36_swamp_lanterns_views.png`.
+- **Debug: F2** in any arena (also while paused or with the F1 menu open) fades straight to the boss select screen (`HUD.Debug.cs`). The F1 menu footer lists it.
 
 ## 000000000000000000000. Swamp feedback: steady puddles, a closed-in forest, clouds
 
