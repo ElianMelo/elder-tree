@@ -603,7 +603,7 @@ namespace ElderTree.EditorTools
         }
 
         // ------------------------------------------------------------------ scene
-        static void PlaceSharkSet(Transform envRoot, GameObject systems)
+        static void PlaceSharkSet(Transform envRoot, GameObject systems, bool yardProps = true)
         {
             // Shark now drops the Shark Mask
             var enc = systems.GetComponent<BossEncounter>();
@@ -613,6 +613,7 @@ namespace ElderTree.EditorTools
                     if (b is SharkBoss t) { t.rewardMask = mask; EditorUtility.SetDirty(t); }
 
             // a vine curtain hangs in the other gap of the arena ring; thickets choke a few spots in the yard
+            if (!yardProps) return;
             var curtain = AssetDatabase.LoadAssetAtPath<GameObject>(VineCurtainPrefabPath);
             if (curtain != null)
             {

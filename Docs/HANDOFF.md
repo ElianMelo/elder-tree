@@ -1,5 +1,60 @@
 # Handoff — Elder Tree soulslike slice
 
+## 0000000000000000000000. Swamp lights: dimmer, spread out, lanterns in the trees
+
+- **Dimmer:** torches 12 → 8 (range 10), burn barrels 9 → 6, floodlights 48 → 34, searchlights 90 → 70.
+- **Spread:** the 10 torches now alternate between the ring (r ≈ 15.5) and the middle of the clearing (r ≈ 11–12.5) instead of sitting in one ring, and none lands in a pool.
+- **Lanterns** (new `Lantern` / `TreeLantern` in `build_swamp.py`: tin base, glowing globe, wire guard, bail; the tree version hangs off an iron bracket):
+  - **In the trees:** 15 on cypress trunks, 2.6–3.8 m up, facing the clearing: up to 14 on the inner ring (r < 34, spaced ≥ 19°) plus up to 8 deeper in (r 34–46), dimmer, for depth between the trunks. The builder turns each bracket away from its trunk.
+  - **By the kit:** 9 standing lanterns at the three tent doors, the two gun nests, the pillbox roof, the two AA guns and the watchtower deck.
+  - Intensity 3–4, range 6.5–8, gentle flicker; all light the fog.
+- Play mode: ~113 fps in the editor, 0 errors. Shots: `Docs/Screenshots/35_swamp_lanterns_play.png`, `36_swamp_lanterns_views.png`.
+
+## 000000000000000000000. Swamp feedback: steady puddles, a closed-in forest, clouds
+
+- **Flickering puddles:** three causes, all fixed. The lily pads floated only 1 cm above the water plane, so they z-fought; they're now 4.5 cm up. The water quad was PSX vertex-snapped, while the ground snaps differently, so the shoreline swam; the water no longer snaps. The shore grazed the water level; `SwampHeight` now keeps the ground at least 9 cm above or below the water (`WaterLevel` = -0.14). On top of that, the lowest ground-fog shell sits above the dry mud (0.06 m) with a wider soft fade, and the duckweed no longer thins out right at the pool edge.
+- **View beyond the swamp:** a second, denser treeline (150 cypresses in total, r 36–64 m, scaled 1.15–1.7). There are also **190 underbrush thickets** (`SwampBush_A/B`, new in `build_swamp.py`: leaf clumps at eye height plus reeds) filling the gaps between trunks, and the far banks now rise 4.5 m. The north stays low (short cypresses only) so the moon still shows over the camp. Unity fog went up slightly (0.017). Play mode: ~123 fps in the editor, 0 errors.
+- **Clouds:** `NightSky.shader` has a new **cloud deck** (`_CloudLayer`, `_CloudCover`, `_CloudScale`, `_CloudSpeed`, `_CloudLitColor`) over the whole dome. It drifts slowly, is ragged at the edges, crosses in front of the moon, and the edges facing the moon get a silver lining. Elsewhere the clouds show as dark masses against a slightly lifted green zenith. It's off by default, so the training yard's sky is unchanged.
+- Shots: `Docs/Screenshots/33_swamp_closed_treeline.png`, `34_swamp_clouds.png`.
+
+## 00000000000000000000. Boss select (Megaman style) + the Crocodile's arena: "Drowned Garrison"
+
+**Flow.** The game now starts on **BossSelect** (build index 0). It's a 3×3 grid: the Elder Tree sits in the middle and leads to the training yard. Crocodile is top, Shark left, Druid right, and the five other slots are **SEALED** for future bosses. A boss you haven't felled shows only its **silhouette** (black with a sickly-green rim) and "? ? ?". Once it's felled, it shows its **in-game portrait** with a red FELLED tag. Choosing a boss plays a stage-intro band: the portrait slides in, the name types out, the epithet appears, then the screen fades into the arena. Controls are D-pad / stick / arrows / WASD to move (one step per push, repeats when held), A / Start / Enter / Space to confirm, or hover and click with the mouse.
+- **Crocodile** → `Swamp_Crocodile` (its own arena). **Shark / Druid** → the training yard `Arena`, with the boss summoned on arrival (`SceneFlow.PendingBoss`), until they get arenas of their own.
+- In a boss arena, `BossArena` summons the boss 2.2 s after the title card. Dying respawns you and the boss comes back. Felling it, picking up its mask (and watching the cinematic), then waiting 3.5 s fades you back to the select screen. The pause menu has a new **Boss Select** item (Quit moved down to index 8).
+- Progress: `Progress.MarkFelled` (PlayerPrefs `ElderTree.Bosses.Felled`) is written by `BossEncounter` whenever a boss falls. Owning a boss's mask also counts as felled, so **your current save already shows all three revealed**.
+- **Portraits are in-game renders** (`Elder Tree/9c`): each boss stands in its arena, faces the moon, and is shot through the game camera with lighting, fog, post-processing, vertex snap and dither, at 144 px so the pixels stay chunky. Each one is framed on its head bone. A second render of the boss alone gives the mask that the silhouette is built from. The files are `UI/Portraits/Portrait_*.png` and `Silhouette_*.png`. Shot: `Docs/Screenshots/31_boss_portraits.png`.
+
+**The arena** (`Scenes/Swamp_Crocodile.unity`, built by `Elder Tree/9b`). It's a night swamp holding a WWII-era garrison, based on your six references.
+- **Clearing:** firm mud with a few black pools kept off the middle, ringed at 18.6 m by **sandbag walls** with gaps. In those gaps sit a hexagonal concrete **pillbox** half-sunk in an earth berm, two **sandbag gun nests** with tripod MGs, and an open stretch to the water. Outside the ring are a curve of **concertina wire**, **Czech hedgehogs**, **cheval-de-frise spike barriers** and two **AA field guns** pointing at the sky.
+- **Camp:** north, on dry land: three olive **tents**, supply piles, duckboards, a **watchtower** and a 16 m **radio mast** with a red beacon. An invisible ring wall at 22.6 m keeps the fight inside.
+- **Swamp:** 48 huge **bald cypresses** (fluted buttress feet, drooping limbs, feathery clumps, **Spanish moss** curtains) close off the view, with knees, stumps, fallen logs, lily rafts with white water lilies, reeds and ferns. The trees are short and sparse in the north, so the moon clears them above the camp.
+- **Sky / light:** a sickly **green sky**, a big **white moon** (NNE, 31°) that is also the key light (hard shadows), and a green-black post grade. Warm light spots come from **8 spare torches** inside the ring (real fire particles, flicker) and **4 burn barrels**. **Military lighting:** three **floodlights** aimed into the clearing (two cast shadows), plus two **searchlights** (watchtower + south-west wall) that sweep the clearing and, during the fight, the watchtower one hunts the player.
+- **Water** (`SwampWater.shader`): black, murky over the mud, drifting **duckweed** rafts (reference 3), a fresnel sky reflection, a hard moon glint and glints from every lamp.
+
+**Fog: three layers** (research notes below).
+1. **Unity fog:** exponential², dark green, for distance.
+2. **Volumetric haze** (`FX/VolumetricFog.cs` volume override + `VolumetricFogFeature` renderer feature on `PC_Renderer` / `Mobile_Renderer`, `VolumetricFog.shader`). It's a ray march (28 jittered steps) through an exponential height fog with drifting noise, lit by the moon **through its shadow map** (light shafts between the trees) and by every `FogLight` (torch halos, searchlight beams). It's idle in any scene whose profile doesn't enable it, so the training yard is unchanged.
+3. **Ground fog** (`FX/GroundFog.cs` + `GroundFog.shader`): the OoT-remake piece. It's 14 shader shells that fake a volume, hugging the ground (a baked ray-cast height map, so it pools in hollows). A 96×96 CPU fluid field holds "cleared" + flow. **Bodies push it** (player, bosses when low, walking cannonballs) and leave eddies, the flow drags the noise, and it **slowly flows back**. **Explosions, slams and landings blow it out in a ring** (hooked in `FXManager.Spawn`). It's lit by the moon's shadow map and the fog lights. The field is shared with the volumetric haze, which also parts near the ground.
+
+**Research (Ocarina of Time remake fog).** Nintendo hasn't published how the Switch 2 remake's fog works. Reviews describe "soft global lighting, volumetric fog". Players on ResetEra compare it to UE5's global volumetric fog, applied everywhere (heavy in Kokiri Forest and Hyrule Field). The closest technical source is AtSaturn's CC0 Godot recreation of the remake's *ground* fog. It is "a mesh with a shader faking it" that ray-casts the ground to follow terrain. Bodies clear it and "it slowly flows back", leaving "little eddies", and impacts go "poof in a ring". That's exactly the structure built here (haze = layer 2, ground fog = layer 3). Sources: [80.lv](https://80.lv/articles/free-ocarina-of-time-remake-style-ground-fog-in-godot), [itch.io page](https://oddpotatodev.itch.io/godot-cheap-ground-fog), [ResetEra thread](https://www.resetera.com/threads/does-it-bother-anyone-else-how-much-haze-fog-effect-is-in-ocarina-of-time-remake.1630975/).
+
+**Assets.** `Tools/Blender/build_swamp.py -- <abs Art/Models/Swamp>` (headless) exports 25 PSX props, 16–1,244 tris (the cypresses are 507–573). New textures (`TextureForge`-style, 15-bit dithered, point filtered): swamp bark, flora atlas (moss / foliage / lily pad / reeds, cutout), sandbag burlap, olive canvas, olive paint, concrete, swamp mud, duckweed. `FX_TorchFire` = flame + embers + smoke. The terrain is a generated mesh (`Models/Swamp/SwampGround.asset`, 144 m, mounds under every tree).
+
+**Builder:** `Elder Tree/9. Build Boss Select + Swamp (all)` = 9a art → 9b arena → 9c portraits → 9d select scene. It runs as part of `BuildAll()`, right after the training yard. `BuildScene` was split into shared helpers (`SetupPsxPipeline`, `BuildCommon` for player / camera / HUD / bosses, `RegisterBuildScenes`); the yard builds the same as before, plus a `BossArena`. The HUD title card is now per scene (`HUD.titleKicker / titleMain / titleSub`); the swamp reads "Lair of the Crocodile / DROWNED / GARRISON".
+
+**Gotcha found:** `Lit()` turns on "smoothness from albedo alpha" whenever it is given a texture, and Simple Lit then forces alpha to 1. Cutout materials must pass `smoothFromAlbedo: false` (the flora atlas rendered as solid slabs until this was fixed).
+
+**Verified (AutoPilot, play mode):** select → cursor → Crocodile intro band → swamp → title → the fight starts by itself (cannonballs, explosions lit orange, torches). Shark picked → yard → Shark summoned. The ground-fog field was live (≈1,100 cells cleared by bombs and the player), with 16 fog lights uploaded. `BuildBossStages()` and play: **0 errors, 0 warnings**. Your PlayerPrefs were backed up, set to "only Shark owned" to see the silhouettes, and restored. Shots: `Docs/Screenshots/28`–`32`.
+
+**Not verified / your call:**
+- The **victory → return to select** path: the timing is coded, but a full kill wasn't run.
+- How the ground-fog push **looks in motion** (screenshots can't show it well). Tune it on `M_GroundFog` (`_Density` 0.09 per shell, `_Height`, `_MoonScatter`) and on `GroundFog` (`refill`, `pushStrength`).
+- **Performance** on your GPU: the haze is 28 steps at the 0.4 render scale.
+- Whether the croc's flight path clips the tallest canopies (trees start at r = 22.5 m).
+- The arena has **no ambience of its own yet** (it uses the shared wind bed and music). Frogs and insects would need new `SoundPicks` (Gamemaster has swamp beds), but the rules say crickets were distracting, so I left it alone.
+- **Questions:** (1) Should felled bosses stay re-fightable from the select screen (they are now)? (2) Do you want the Shark and Druid to get their own arenas next, built the same way?
+
 ## 0000000000000000000. F1 menu tabs, Druid sinks away when felled
 
 - **F1 menu** (`HUD.Debug.cs`) now has tabs **Boss / Mask / World / Consumable**, switched with Q / E, LB / RB or Left / Right (`PlayerInputReader.TabLeftPressed / TabRightPressed`, the UI map's existing TabLeft / TabRight). 1-9 runs a row of the current tab; 0 = Despawn all on the Boss tab. Consumable has **Restore potion flasks** (`PlayerStats.RefillPotions`). The menu calls `BringToFront()` when it opens, so it draws above the mask bar, letterbox and every other HUD layer.

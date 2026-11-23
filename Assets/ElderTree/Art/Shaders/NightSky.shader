@@ -16,6 +16,12 @@ Shader "ElderTree/NightSky"
         _HaloStrength ("Halo", Range(0, 2)) = 0.55
         _CloudColor ("Cloud Color", Color) = (0.22, 0.27, 0.38, 1)
         _CloudStrength ("Clouds", Range(0, 1)) = 0.45
+        [Header(Cloud deck)]
+        _CloudLayer ("Cloud Deck", Range(0, 1)) = 0
+        _CloudCover ("Deck Cover", Range(0, 1)) = 0.5
+        _CloudScale ("Deck Scale", Float) = 1.6
+        _CloudSpeed ("Deck Drift", Float) = 0.012
+        _CloudLitColor ("Deck Moonlit Edge", Color) = (0.6, 0.7, 0.6, 1)
     }
     SubShader
     {
@@ -33,6 +39,8 @@ Shader "ElderTree/NightSky"
             float4 _ZenithColor, _HorizonColor, _GroundColor, _MoonColor, _CloudColor;
             float4 _MoonDir;
             float _HorizonSharpness, _StarDensity, _StarBrightness, _MoonSize, _HaloStrength, _CloudStrength;
+            float4 _CloudLitColor;
+            float _CloudLayer, _CloudCover, _CloudScale, _CloudSpeed;
             CBUFFER_END
 
             struct Attributes { float4 positionOS : POSITION; };
@@ -77,6 +85,21 @@ Shader "ElderTree/NightSky"
                 return s * twinkle * lerp(0.4, 1.0, frac(h * 91.7));
             }
 
+            float fbm2(float2 p)
+            {
+                float a = 0.5, s = 0;
+                for (int k = 0; k < 5; k++) { s += a * noise3(float3(p, k * 3.1)); p = p * 2.07 + 13.7; a *= 0.5; }
+                return s / 0.97;
+            }
+
+            // A drifting deck of clouds over the whole dome (planar projection), thick in the middle,
+            // ragged at the edges; edges facing the moon catch a silver lining.
+            float deckDensity(float2 uv)
+            {
+                float n = fbm2(uv);
+                return smoothstep(1.0 - _CloudCover, 1.0 - _CloudCover + 0.32, n);
+            }
+
             half4 frag(Varyings i) : SV_Target
             {
                 float3 d = normalize(i.dir);
@@ -107,6 +130,20 @@ Shader "ElderTree/NightSky"
                 // clouds lit by the moon
                 float lit = 0.5 + 0.5 * saturate(mdot);
                 col = lerp(col, _CloudColor.rgb * lit, clouds * (1 - disc));
+
+                // cloud deck (drawn over the moon: it drifts in front of it)
+                if (_CloudLayer > 0.001 && up > -0.02)
+                {
+                    float2 uv = d.xz / (max(up, 0.0) + 0.12) * _CloudScale * 0.25 + _Time.y * _CloudSpeed * float2(1.0, 0.35);
+                    float dens = deckDensity(uv);
+                    float2 toMoon = normalize(md.xz + 1e-4) * 0.06;
+                    float densM = deckDensity(uv + toMoon);
+                    float rim = saturate((dens - densM) * 3.0) * (0.55 + 0.45 * saturate(mdot * 1.3));
+                    float nearMoon = exp(-ang * 3.0);
+                    float3 cc = _CloudColor.rgb * (0.55 + 0.45 * lit) + _CloudLitColor.rgb * (rim + nearMoon * 0.5 * dens);
+                    float fade = smoothstep(-0.02, 0.18, up);
+                    col = lerp(col, cc, dens * fade * _CloudLayer);
+                }
                 return half4(col, 1);
             }
             ENDHLSL

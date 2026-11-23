@@ -47,6 +47,7 @@ namespace ElderTree.FX
 
         public static ParticleSystem Spawn(FXType type, Vector3 pos, Quaternion rot, float scale = 1f)
         {
+            PushGroundFog(type, pos, scale);
             if (Instance == null || !Instance.prefabs.ContainsKey(type)) return null;
             var q = Instance.pools[type];
             ParticleSystem ps = null;
@@ -70,6 +71,25 @@ namespace ElderTree.FX
             ps.Clear(true);
             ps.Play(true);
             return ps;
+        }
+
+        /// <summary>Impacts blow the swamp's ground fog out in a ring (no-op where there is no GroundFog).</summary>
+        static void PushGroundFog(FXType type, Vector3 pos, float scale)
+        {
+            if (GroundFog.Instance == null) return;
+            float r = type switch
+            {
+                FXType.Explosion => 5.5f,
+                FXType.SlamRing => 4.5f,
+                FXType.SlamDebris => 3.5f,
+                FXType.LandDust => 2.2f,
+                FXType.Dust => 2.0f,
+                FXType.BombPop => 3f,
+                FXType.LeafExplosion => 3f,
+                FXType.OrbBurst => 3.5f,
+                _ => 0f
+            };
+            if (r > 0f) GroundFog.Poof(pos, r * Mathf.Clamp(scale, 0.5f, 2.5f));
         }
     }
 }

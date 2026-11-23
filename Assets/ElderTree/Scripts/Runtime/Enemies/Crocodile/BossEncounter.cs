@@ -35,6 +35,8 @@ namespace ElderTree.Enemies
 
         public static BossEncounter Instance { get; private set; }
         public bool Active { get; private set; }
+        /// <summary>Raised once the victory sequence is over (banner shown, rewards dropped).</summary>
+        public event System.Action FightWon;
 
         readonly List<TrainingDummy> dummies = new();
         Coroutine ending;
@@ -161,6 +163,7 @@ namespace ElderTree.Enemies
         void OnBossFelled(BossBase b)
         {
             if (!Active) return;
+            Progress.MarkFelled(Progress.IdOf(b));
             if (b == boss) primaryFelled = true;
             if (!felled.Contains(b)) felled.Add(b);
             // others still in the air: keep fighting, move the bar to the next one
@@ -192,6 +195,7 @@ namespace ElderTree.Enemies
             Active = false;
             if (player != null) player.stats.EndBossFight();
             AudioManager.SetMusic(MusicMood.Explore);
+            FightWon?.Invoke();
             yield return new WaitForSeconds(6f);
             SetDummies(true);
             ending = null;

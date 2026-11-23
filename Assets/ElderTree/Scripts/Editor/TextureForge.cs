@@ -14,7 +14,7 @@ namespace ElderTree.EditorTools
         public const string TexDir = "Assets/ElderTree/Art/Textures";
 
         // ------------------------------------------------------------------ noise
-        static float Hash(int x, int y, int seed)
+        public static float Hash(int x, int y, int seed)
         {
             unchecked
             {

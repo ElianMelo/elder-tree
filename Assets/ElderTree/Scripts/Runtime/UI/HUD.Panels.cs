@@ -140,11 +140,11 @@ namespace ElderTree.UI
         {
             title = El("title", root);
             var col = El("title__col", title);
-            var kicker = Lbl("A Night Watch Soulslike", "title__kicker", col);
+            var kicker = Lbl(titleKicker, "title__kicker", col);
             ApplySerif(kicker);
-            var main = Lbl("ELDER", "title__main", col);
+            var main = Lbl(titleMain, "title__main", col);
             ApplySerif(main);
-            var sub = Lbl("TREE", "title__sub", col);
+            var sub = Lbl(titleSub, "title__sub", col);
             ApplySerif(sub);
             El("title__rule", col);
             titlePrompt = Lbl("Press any button", "title__prompt", col);
@@ -192,9 +192,10 @@ namespace ElderTree.UI
         int settingIndex;
         public System.Action ResetTrainingRequested;
         public System.Action QuitRequested;
+        public System.Action BossSelectRequested;
         public System.Action<bool> PauseChanged;
 
-        static readonly string[] MenuNames = { "Resume", "Controls", "Settings", "Summon Crocodile", "Summon Shark", "Summon Druid", "Reset Training", "Quit" };
+        static readonly string[] MenuNames = { "Resume", "Controls", "Settings", "Summon Crocodile", "Summon Shark", "Summon Druid", "Reset Training", "Boss Select", "Quit" };
 
         void BuildPause()
         {
@@ -322,6 +323,14 @@ namespace ElderTree.UI
                     Lbl("Press Select to reset.", "panel__text panel__text--dim", pausePanel);
                     break;
                 case 7:
+                {
+                    var t = Lbl("Choose your next foe.", "panel__flavor", pausePanel);
+                    ApplySerif(t);
+                    Lbl("Leave this place and return to the boss select screen. Felled bosses show their true face there.", "panel__text", pausePanel);
+                    Lbl("Press Select to leave.", "panel__text panel__text--dim", pausePanel);
+                    break;
+                }
+                case 8:
                     Lbl("Return to the desktop?", "panel__text", pausePanel);
                     Lbl("Press Select to quit.", "panel__text panel__text--dim", pausePanel);
                     break;
@@ -367,7 +376,8 @@ namespace ElderTree.UI
                         case 4: SetPause(false); SummonBossRequested?.Invoke(1); return;
                         case 5: SetPause(false); SummonBossRequested?.Invoke(2); return;
                         case 6: ResetTrainingRequested?.Invoke(); SetPause(false); return;
-                        case 7: QuitRequested?.Invoke(); return;
+                        case 7: SetPause(false); BossSelectRequested?.Invoke(); return;
+                        case 8: QuitRequested?.Invoke(); return;
                     }
                 }
                 if (input.CancelPressed) { SetPause(false); return; }

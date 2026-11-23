@@ -719,7 +719,7 @@ namespace ElderTree.EditorTools
         }
 
         // ------------------------------------------------------------------ scene
-        static void PlaceMaskSet(Transform envRoot, GameObject systems, PlayerController pc, UI.HUD hud)
+        static void PlaceMaskSet(Transform envRoot, GameObject systems, PlayerController pc, UI.HUD hud, bool yardProps = true)
         {
             // first-time transformation cinematic + the boss reward
             var cine = systems.AddComponent<MaskCinematic>();
@@ -736,6 +736,7 @@ namespace ElderTree.EditorTools
             }
 
             // breakable obstacles: a cracked wall plugs one gap in the ring, boulders around the yard
+            if (!yardProps) return;
             var boulder = AssetDatabase.LoadAssetAtPath<GameObject>(BoulderPrefabPath);
             var wall = AssetDatabase.LoadAssetAtPath<GameObject>(WallPrefabPath);
             if (wall != null)

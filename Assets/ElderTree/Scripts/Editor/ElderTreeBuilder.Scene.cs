@@ -39,6 +39,7 @@ namespace ElderTree.EditorTools
             log.AppendLine(RenderClubIcon());
             log.AppendLine(ImportBowIcon());
             log.AppendLine(BuildScene());
+            log.AppendLine(BuildBossStages());      // swamp arena (Crocodile), in-game portraits, boss select
             return log.ToString();
         }
 
@@ -127,23 +128,7 @@ namespace ElderTree.EditorTools
             Directory.CreateDirectory(Root + "/Settings");
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            // ---------------- render pipeline: PSX output (Docs/ART_DIRECTION.md)
-            // Low internal resolution upscaled with nearest filtering, no MSAA, hard low-res shadows.
-            // UI Toolkit draws on top at native resolution, so text stays crisp.
-            var rp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
-            if (rp != null)
-            {
-                rp.shadowDistance = 40f;
-                rp.msaaSampleCount = 1;
-                rp.renderScale = PsxRenderScale;
-                rp.upscalingFilter = UpscalingFilterSelection.Point;
-                var so = new SerializedObject(rp);
-                so.FindProperty("m_MainLightShadowmapResolution").intValue = 1024;
-                so.FindProperty("m_AdditionalLightsShadowmapResolution").intValue = 512;
-                so.FindProperty("m_SoftShadowsSupported").boolValue = false;
-                so.ApplyModifiedPropertiesWithoutUndo();
-                EditorUtility.SetDirty(rp);
-            }
+            SetupPsxPipeline();
 
             // ---------------- sky, ambient, fog
             var skyMat = AssetDatabase.LoadAssetAtPath<Material>(MatDir + "/M_NightSky.mat");
@@ -280,17 +265,30 @@ namespace ElderTree.EditorTools
             vol.sharedProfile = BuildPostProfile();
             volGo.AddComponent<PSXGlobals>();
 
-            // ---------------- actors
-            var spawn = new GameObject("PlayerSpawn").transform;
-            spawn.SetParent(actorRoot);
-            spawn.position = new Vector3(0, 0, -6f);
-            var playerGo = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PrefabDir + "/Player.prefab"));
-            playerGo.transform.SetParent(actorRoot);
-            playerGo.transform.position = spawn.position;
             var dummyPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabDir + "/TrainingDummy.prefab");
             Place(dummyPrefab, new Vector3(0f, 0, 1.5f), 180f, actorRoot, 1f, false, "TrainingDummy_A");
             Place(dummyPrefab, new Vector3(-4.6f, 0, 4.8f), 150f, actorRoot, 1f, false, "TrainingDummy_B");
             Place(dummyPrefab, new Vector3(4.8f, 0, 4.2f), 215f, actorRoot, 1f, false, "TrainingDummy_C");
+            foreach (var d in actorRoot.GetComponentsInChildren<Transform>()) d.gameObject.isStatic = false;
+            BuildCommon(sysRoot, envRoot, actorRoot, new Vector3(0, 0, -6f), 0f, true, "");
+
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            RegisterBuildScenes();
+            return "Scene built: " + ScenePath;
+        }
+
+        /// <summary>Player, camera rig, systems, HUD, bosses and masks: everything an arena needs besides its set dressing.</summary>
+        static (GameObject playerGo, PlayerController pc, HUD hud, GameObject sys, Transform spawn) BuildCommon(Transform sysRoot, Transform envRoot,
+            Transform actorRoot, Vector3 spawnPos, float spawnYaw, bool yardProps, string arenaBoss)
+        {
+            // ---------------- actors
+            var spawn = new GameObject("PlayerSpawn").transform;
+            spawn.SetParent(actorRoot);
+            spawn.position = spawnPos;
+            spawn.rotation = Quaternion.Euler(0, spawnYaw, 0);
+            var playerGo = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PrefabDir + "/Player.prefab"));
+            playerGo.transform.SetParent(actorRoot);
+            playerGo.transform.SetPositionAndRotation(spawn.position, spawn.rotation);
             foreach (var d in actorRoot.GetComponentsInChildren<Transform>()) d.gameObject.isStatic = false;
 
             // ---------------- camera rig
@@ -398,14 +396,43 @@ namespace ElderTree.EditorTools
             var boot = sys.AddComponent<GameBootstrap>();
             boot.player = pc; boot.hud = hud; boot.spawnPoint = spawn;
             PlaceBoss(actorRoot, sys, pc, hud, spawn);
-            PlaceMaskSet(envRoot, sys, pc, hud);
-            PlaceSharkSet(envRoot, sys);
+            PlaceMaskSet(envRoot, sys, pc, hud, yardProps);
+            PlaceSharkSet(envRoot, sys, yardProps);
             PlaceDruidSet(sys);
 
-            EditorSceneManager.SaveScene(scene, ScenePath);
-            // set as the only build scene + open by default
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
-            return "Scene built: " + ScenePath;
+            // Megaman-style stage flow: auto-summon this arena's boss (or the one the select screen asked for)
+            var arena = sys.AddComponent<BossArena>();
+            arena.bossName = arenaBoss; arena.encounter = sys.GetComponent<BossEncounter>(); arena.player = pc; arena.hud = hud;
+            return (playerGo, pc, hud, sys, spawn);
+        }
+
+        /// <summary>PSX output (Docs/ART_DIRECTION.md): low internal resolution upscaled with nearest filtering,
+        /// no MSAA, hard low-res shadows. UI Toolkit draws on top at native resolution, so text stays crisp.</summary>
+        static void SetupPsxPipeline()
+        {
+            var rp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+            if (rp != null)
+            {
+                rp.shadowDistance = 40f;
+                rp.msaaSampleCount = 1;
+                rp.renderScale = PsxRenderScale;
+                rp.upscalingFilter = UpscalingFilterSelection.Point;
+                var so = new SerializedObject(rp);
+                so.FindProperty("m_MainLightShadowmapResolution").intValue = 1024;
+                so.FindProperty("m_AdditionalLightsShadowmapResolution").intValue = 512;
+                so.FindProperty("m_SoftShadowsSupported").boolValue = false;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(rp);
+            }
+        }
+
+        /// <summary>Boss select first, then the training yard and every boss arena that has been built.</summary>
+        public static void RegisterBuildScenes()
+        {
+            var list = new System.Collections.Generic.List<EditorBuildSettingsScene>();
+            foreach (var path in new[] { BossSelectScenePath, ScenePath, SwampScenePath })
+                if (File.Exists(path)) list.Add(new EditorBuildSettingsScene(path, true));
+            EditorBuildSettings.scenes = list.ToArray();
         }
 
         static Light AddPointLight(Transform parent, Vector3 local, float intensity, float range, bool shadows, string name)

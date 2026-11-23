@@ -32,6 +32,10 @@ namespace ElderTree.UI
         public bool MenuOpen => PauseOpen || DebugMenuOpen;
         public bool PauseOpen => pauseRoot != null && pauseRoot.style.display == DisplayStyle.Flex;
         public bool TitleShowing { get; private set; }
+        [Header("Title card (per scene)")]
+        public string titleKicker = "A Night Watch Soulslike";
+        public string titleMain = "ELDER";
+        public string titleSub = "TREE";
 
         VisualElement root;
         Bar hp, fp, st, spirit;
