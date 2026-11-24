@@ -164,6 +164,9 @@ namespace ElderTree.EditorTools
         /// <summary>The Shark arena's bed: a calm surf on the beach instead of the wind (kept as quiet as the wind).</summary>
         public static AudioClip BeachAmbience() => Loop("Animals_Nature_Ambiences/beach_waves_ocean_calm_loop_02", Use.Ambience);
 
+        /// <summary>The Druid arena's bed: a tropical forest morning (distant birds, insects), kept as quiet as the wind. Not heard by ear yet.</summary>
+        public static AudioClip ForestAmbience() => Loop("Animals_Nature_Ambiences/birds_tropical_forrest_ambience_loop", Use.Ambience);
+
         /// <summary>Ambience bed level (AudioManager.ambienceVolume). Kept low so it sits under the fight.</summary>
         public const float AmbienceVolume = 0.3f;
 

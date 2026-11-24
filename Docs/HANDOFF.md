@@ -1,5 +1,56 @@
 # Handoff — Elder Tree soulslike slice
 
+## 0000000000000000000000000. The Druid's arena: "Verdant Cathedral"
+
+Based on your six references (the samaúma trunks, the canopy from above, the buttressed kapok, the treehouse at sunrise, the tree ferns). **Druid** now has its own stage: `Scenes/Forest_Druid.unity`, built by `Elder Tree/9h` (art: `9g`, props: `Tools/Blender/build_forest.py`). The boss select sends the Druid there instead of the training yard, and its portrait was re-shot in the new arena (sunlit face against the forest).
+
+**Layout.** An Amazonian clearing (fight ring 20.2 m, same size as the other arenas) on a floor of leaf litter, moss and roots snaking across it.
+- **The druid circle:** 12 mossy standing stones with carved spirals ring the clearing just behind the invisible wall (two have fallen). A gap faces north toward a root-swallowed **dolmen**.
+- **The great kapok (Kapok_Mother)** stands north of the clearing: 56 m tall, eight plank buttresses up to 9 m high, an umbrella crown 38 m across, and three low limbs at 17–21 m that reach out over the clearing, hung with lianas.
+- **Around it:** 15 more giant kapoks, 30 tall pale emergents, 70 understorey trees, 34 açaí palms, 34 tree ferns, 440 broad-leaf thickets, 400 ferns, 380 floor tufts, liana curtains, fallen mossy logs with shelf fungus, mossy rocks. The thickets are densest right behind the stones, so the edge reads as a wall of growth. The ground rises away from the ring so the forest closes in.
+
+**Early morning with god rays.**
+- **Sun:** low (41°) in the north-east, warm. It comes in half behind the great kapok, so its crown cuts the haze into shafts and throws dappled sun on the floor.
+- **Haze:** the volumetric fog (sun-lit through the canopy's shadow map) plus thin morning mist lying in the clearing (GroundFog shells, play mode only).
+- **Shadow range:** the shafts need canopy shadows further out than the 40 m the other stages use. A new `FX/ShadowRange` raises the shadow distance to 60 m while this scene plays and puts it back after (play mode only, so the shared pipeline asset isn't saved with it).
+- **Grade:** deep green shade, gold highlights, bloom for the sun and fireflies (`Settings/ForestPostProfile.asset`).
+- The crowns sway slowly (`PalmSway`), so the shafts drift a little.
+
+**Denser forest (your feedback: empty background).** Everything above stays exactly where it was; a "deep forest" pass adds on top:
+- **12 more giant kapoks** (38–68 m out), **190 more trees** (emergents, açaí palms, understorey trees) and **480 more thickets**, including a new 4–6 m `Thicket_Tall`.
+- **94 canopy walls** (`CanopyWall_A/B`, new in `build_forest.py`): deep bands of overlapping leaf cards from floor to canopy, with trunks and lianas. They stand in four rings at 46, 60, 76 and 94 m, facing the clearing, so every gap between trunks shows more forest instead of sky or empty haze.
+- **The god rays are protected:** nothing tall was added in the sun's corridor (north-east, ±38° out to 75 m; ±62° for the new kapoks), and the canopy walls cast no shadows. The light in the clearing is the same as before; the shafts just read stronger against the darker backdrop.
+- **Cost:** ~119 → ~110 fps in the editor, 0 errors/warnings. Shots: `Docs/Screenshots/44` (updated) and `49`.
+
+**Life.**
+- **Yellow fireflies:** 8 particle swarms that drift and blink in the shade around the edge, plus 14 brighter ones that carry a real light and glow in the haze (`FX/Firefly.cs` + `FogLight`).
+- **18 frogs** (`World/Frog.cs`; green ones, and a dark-blue poison-dart kind): they puff their throats, hop about in short arcs with the back legs kicking out, and flee in a chain of longer hops when you or the boss come within ~3 m.
+- **16 toucans** (`World/ForestBird.cs`): perched on bare low branches, with sharp head-turns, tail bobs and wing ruffles. When you come within ~7.5 m (or a boss within ~12 m), or every 25–70 s anyway, one swings its wings out and flies in an arc to another free perch (142 perches on the understorey trees and the great kapok's low limbs).
+- **5 black vultures** wheel high over the gap (`SeaBird`).
+- **Ambience:** the Gamemaster `birds_tropical_forrest_ambience_loop`, at the same quiet level as the wind (`SoundPicks.ForestAmbience`).
+
+**Assets.** `build_forest.py -- <abs Art/Models/Forest>` exports 36 PSX props, 16–2,414 tris: three kapoks, three emergents, three understorey trees, two açaí palms, two tree ferns, three thickets, two ferns, two tufts, two liana curtains, two logs, two surface roots, three menhirs, the dolmen, two mossy rocks, two frogs, the toucan and the vulture. The new 15-bit dithered textures are kapok bark, jungle bark, two cutout atlases (canopy leaves lit/shadowed, broad leaves, liana; fern, açaí frond, tuft, hanging roots), moss, carved stone, leaf litter (overlapping pointed leaves), floor moss, mud and the two frog skins.
+
+**Gotchas found.**
+- `M_FX_Firefly` already exists (the yard's green wisps and the mask motes use it). The forest's yellow fireflies use their own `M_FX_ForestFirefly`.
+- `CaptureBossPortraits` (9c) re-renders all four portraits. The croc, shark and Elder Tree PNGs were reverted, so only the Druid's changed.
+- AutoPilot on the boss select: there's no title card there, so a first `tap A` picks the Elder Tree.
+
+**Verified.**
+- **Full flow (play mode):** select → Druid (new portrait) → "Lair of the Druid / VERDANT / CATHEDRAL" → the fight starts by itself.
+- **Fight:** lock-on and the Druid's moves in the clearing.
+- **Critters:** a toucan took off when the player came close, and a frog hopped away.
+- **Health:** 0 errors, 0 warnings, ~119 fps in the editor.
+- **Shots:** `Docs/Screenshots/44`–`48`.
+
+**Not verified / your call.**
+- **Looking straight into the sun (north, which is also where you spawn facing) is a bright golden wall**, and the Druid is backlit against it. That's deliberate drama, but if it hurts readability, tune it with `vf.mainLightScatter` / `anisotropy` in `BuildForestPostProfile` or turn the sun (`sunRot`).
+- **Daylight vs. ART_DIRECTION.** Like the beach, this is a deliberate exception you asked for: early morning, lush green, kept dim in the shade.
+- **The forest ambience is unheard.** No frog croaks or bird calls were added.
+- **Not checked by eye in motion:** the toucan's wing fold/spread, the frog's leg kick, the firefly blink. They were only seen in stills.
+- **The Druid can walk a few metres past the stones** when you stand at the wall (its limit follows you, as in the yard). Bushes have no colliders, so it wades through them.
+- **Victory → select** wasn't re-run for this stage (same `BossArena` code as the other arenas).
+
 ## 000000000000000000000000. Holes in the Shark's dock
 
 Six **rotten holes** are broken through the Bleached Atoll deck. Step into one and you drop into the sea: a splash (sound: Gamemaster `water_splash_object_body`, new `Sfx.WaterSplash` appended to the enum), the screen dips to black for a moment, and you're put back on the **last solid spot you stood on**, facing away from the hole, minus **90 HP** (~15%) with a light flinch. A fall can kill you if you're that low.

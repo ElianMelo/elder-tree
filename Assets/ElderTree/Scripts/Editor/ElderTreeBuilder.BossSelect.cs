@@ -38,7 +38,8 @@ namespace ElderTree.EditorTools
             new Shot { id = "crocodile", scene = SwampScenePath, type = "CrocodileBoss", focus = "Bomber_Jaw", place = new Vector3(0, 4.5f, -3f), placeYaw = 18f, yaw = 32f, elev = 4f, span = 6.8f, lookUp = 0.3f },
             // the shark half-faces the sun (south-south-west) on its own dock, the east lagoon and the sea behind it
             new Shot { id = "shark", scene = BeachScenePath, type = "SharkBoss", focus = "Shark_Jaw", place = new Vector3(-9f, 1.25f, 3f), placeYaw = 235f, yaw = 38f, elev = 9f, span = 4.2f, lookUp = 0f },
-            new Shot { id = "druid", scene = ScenePath, type = "DruidBoss", focus = "Hurt_Face", place = new Vector3(0, 0f, -7f), placeYaw = 10f, yaw = 22f, elev = -4f, span = 6.5f, lookUp = -0.4f },
+            // the druid in its own clearing, facing the low sun (north-north-east) so the key light is on its face
+            new Shot { id = "druid", scene = ForestScenePath, type = "DruidBoss", focus = "Hurt_Face", place = new Vector3(0, 0f, -4f), placeYaw = 20f, yaw = 22f, elev = -4f, span = 6.5f, lookUp = -0.4f },
             new Shot { id = "eldertree", scene = SwampScenePath, type = "Player", focus = "Head", place = new Vector3(1f, 0f, -5f), placeYaw = 16f, yaw = 26f, elev = 4f, span = 2.3f, lookUp = 0.05f },
         };
 
@@ -265,7 +266,7 @@ namespace ElderTree.EditorTools
                 new() { id = "shark", displayName = "Shark", epithet = "It swims where there is no water", maskId = "shark",
                         scene = SceneFlow.Beach, cell = 3, portrait = Portrait("Portrait_shark"), silhouette = Portrait("Silhouette_shark") },
                 new() { id = "druid", displayName = "Druid", epithet = "The grove walks, and it is angry", maskId = "druid",
-                        scene = SceneFlow.Training, bossArg = "Druid", cell = 5, portrait = Portrait("Portrait_druid"), silhouette = Portrait("Silhouette_druid") },
+                        scene = SceneFlow.Forest, cell = 5, portrait = Portrait("Portrait_druid"), silhouette = Portrait("Silhouette_druid") },
             };
             EditorSceneManager.SaveScene(scene, BossSelectScenePath);
             RegisterBuildScenes();
@@ -280,6 +281,8 @@ namespace ElderTree.EditorTools
             log.AppendLine(BuildSwampScene());
             log.AppendLine(BuildBeachArt());
             log.AppendLine(BuildBeachScene());
+            log.AppendLine(BuildForestArt());
+            log.AppendLine(BuildForestScene());
             log.AppendLine(CaptureBossPortraits());
             log.AppendLine(BuildBossSelectScene());
             return log.ToString();

@@ -16,6 +16,7 @@ namespace ElderTree
         public const string Training = "Arena";
         public const string Swamp = "Swamp_Crocodile";
         public const string Beach = "Beach_Shark";
+        public const string Forest = "Forest_Druid";
 
         /// <summary>Boss to summon when the next arena loads (read and cleared by BossArena).</summary>
         public static string PendingBoss;
