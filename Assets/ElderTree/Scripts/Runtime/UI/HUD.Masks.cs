@@ -22,7 +22,6 @@ namespace ElderTree.UI
         Label cardTitle, cardLine, cardHint;
         float letterbox, letterTarget, flash, cardT = -1f, manaDeny;
         bool cinematicHud, maskAny;
-        static readonly string[] PadArrows = { "↑", "→", "↓", "←" };
 
         void BuildMasks()
         {
@@ -72,7 +71,7 @@ namespace ElderTree.UI
                 maskIcons[i].style.backgroundImage = own && m.icon != null ? new StyleBackground(m.icon) : new StyleBackground(StyleKeyword.None);
                 maskSlots[i].EnableInClassList("maskbar__slot--owned", own);
                 maskSlots[i].EnableInClassList("maskbar__slot--worn", own && ms.Worn == m);
-                maskKeys[i].text = pad ? PadArrows[i] : (i + 1).ToString();
+                maskKeys[i].text = ControlBindings.MaskKey(i, pad);
             }
             // nothing owned yet: keep the strip out of the way
             bool any = false;
@@ -130,7 +129,7 @@ namespace ElderTree.UI
             var ms = MaskSystem.Instance;
             int slot = ms != null ? Mathf.Max(0, ms.SlotOf(m)) : 0;
             bool pad = input != null && input.Device == InputDeviceKind.Gamepad;
-            string key = pad ? $"D-Pad {PadArrows[slot]}" : (slot + 1).ToString();
+            string key = ControlBindings.Key($"Mask{slot + 1}", pad);
             cardHint.text = $"Press {key} to wear it · press it again to return to the Elder Tree";
             cardT = 0f;
         }

@@ -16,6 +16,9 @@ namespace ElderTree.FX
         [Tooltip("Match the grid to the screen aspect so snapping steps are square.")]
         public bool matchAspect = true;
 
+        /// <summary>Player option (Settings.PsxEffect): off pushes zero snap and dither, so geometry stops wobbling and colour is no longer crushed to 15 bits.</summary>
+        public static bool Enabled = true;
+
         static readonly int SnapId = Shader.PropertyToID("_PSXSnap");
         static readonly int DitherId = Shader.PropertyToID("_PSXDither");
 
@@ -31,6 +34,12 @@ namespace ElderTree.FX
 
         void Push()
         {
+            if (!Enabled && Application.isPlaying)
+            {
+                Shader.SetGlobalVector(SnapId, Vector4.zero);
+                Shader.SetGlobalFloat(DitherId, 0f);
+                return;
+            }
             var g = snapResolution;
             if (matchAspect && g.y > 0f && Screen.height > 0)
                 g.x = g.y * Screen.width / (float)Screen.height;

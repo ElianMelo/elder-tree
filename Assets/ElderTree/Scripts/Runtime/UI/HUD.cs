@@ -275,23 +275,28 @@ namespace ElderTree.UI
         // ------------------------------------------------------------------ hints
         struct Hint { public string pad, kbm, label; }
 
-        static readonly Hint[] Hints =
+        /// <summary>Control hints built from the live bindings, so remaps show up everywhere.</summary>
+        static List<Hint> Hints()
         {
-            new Hint { pad = "RB", kbm = "LMB", label = "Light attack" },
-            new Hint { pad = "RT", kbm = "Shift + LMB", label = "Heavy attack (hold to charge)" },
-            new Hint { pad = "RB + RT", kbm = "Shift + RMB", label = "Special attack (1 charge, from hits)" },
-            new Hint { pad = "LT", kbm = "RMB", label = "Ranged: hold to aim" },
-            new Hint { pad = "LT + RT", kbm = "RMB + LMB", label = "Shoot (mana per shot)" },
-            new Hint { pad = "LB", kbm = "Alt", label = "Guard" },
-            new Hint { pad = "X", kbm = "R", label = "Drink health potion" },
-            new Hint { pad = "B", kbm = "Space", label = "Roll / backstep · hold: sprint" },
-            new Hint { pad = "A", kbm = "F", label = "Jump" },
-            new Hint { pad = "R3", kbm = "Q / MMB", label = "Lock on · reset camera" },
-            new Hint { pad = "R-Stick ←→", kbm = "Mouse flick / wheel", label = "Switch target" },
-            new Hint { pad = "D-Pad", kbm = "1 - 4", label = "Masks: wear · again to remove" },
-            new Hint { pad = "L3", kbm = "Ctrl", label = "Walk toggle" },
-            new Hint { pad = "Start", kbm = "Esc", label = "Menu" },
-        };
+            static string K(string a, bool pad, int nth = 0) => ControlBindings.Key(a, pad, nth);
+            return new List<Hint>
+            {
+                new Hint { pad = K("Light", true), kbm = K("Light", false), label = "Light attack" },
+                new Hint { pad = K("Heavy", true), kbm = $"{K("Modifier", false)} + {K("Light", false)}", label = "Heavy attack (hold to charge)" },
+                new Hint { pad = $"{K("Light", true)} + {K("Heavy", true)}", kbm = $"{K("Modifier", false)} + {K("Aim", false)}", label = "Special attack (1 charge, from hits)" },
+                new Hint { pad = K("Aim", true), kbm = K("Aim", false), label = "Ranged: hold to aim" },
+                new Hint { pad = $"{K("Aim", true)} + {K("Heavy", true)}", kbm = $"{K("Aim", false)} + {K("Light", false)}", label = "Shoot (mana per shot)" },
+                new Hint { pad = K("Guard", true), kbm = K("Guard", false), label = "Guard" },
+                new Hint { pad = K("UseItem", true), kbm = K("UseItem", false), label = "Drink health potion" },
+                new Hint { pad = K("Dodge", true), kbm = K("Dodge", false), label = "Roll / backstep · hold: sprint" },
+                new Hint { pad = K("Jump", true), kbm = K("Jump", false), label = "Jump" },
+                new Hint { pad = K("LockOn", true), kbm = $"{K("LockOn", false)} / {K("LockOn", false, 1)}", label = "Lock on · reset camera" },
+                new Hint { pad = "R-Stick ←→", kbm = "Mouse flick / wheel", label = "Switch target" },
+                new Hint { pad = ControlBindings.MaskRange(true), kbm = ControlBindings.MaskRange(false), label = "Masks: wear · again to remove" },
+                new Hint { pad = K("Walk", true), kbm = K("Walk", false), label = "Walk toggle" },
+                new Hint { pad = "Start", kbm = "Esc", label = "Menu" },
+            };
+        }
 
         void BuildHints()
         {
@@ -308,14 +313,14 @@ namespace ElderTree.UI
             if (hintsList == null) return;
             hintsList.Clear();
             bool pad = input != null && input.Device == InputDeviceKind.Gamepad;
-            foreach (var h in Hints)
+            foreach (var h in Hints())
             {
                 var row = El("hint", hintsList);
                 Lbl(pad ? h.pad : h.kbm, "glyph", row);
                 Lbl(h.label, "hint__label", row);
             }
             var toggle = El("hint hint--toggle", hintsList);
-            Lbl(pad ? "View" : "Tab", "glyph glyph--small", toggle);
+            Lbl(ControlBindings.Key("Help", pad), "glyph glyph--small", toggle);
             Lbl("Show / hide controls", "hint__label hint__label--dim", toggle);
         }
 

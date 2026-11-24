@@ -124,7 +124,7 @@ Shader "ElderTree/SwampWater"
                 col = MixFog(col, i.fog);
                 uint2 px = uint2(i.pos.xy) & 3u;
                 float b = (BAYER[px.y * 4 + px.x] + 0.5) / 16.0 - 0.5;
-                col = max(0.0, floor(col * 31.0 + 0.5 + b * _PSXDither) / 31.0);
+                if (_PSXDither > 0.0) col = max(0.0, floor(col * 31.0 + 0.5 + b * _PSXDither) / 31.0);
                 return float4(col, alpha);
             }
             ENDHLSL

@@ -31,6 +31,8 @@ namespace ElderTree.InputHandling
         public float chordWindow = 0.075f;
 
         public static PlayerInputReader Instance { get; private set; }
+        /// <summary>The control asset (shared; carries the player's remaps as binding overrides).</summary>
+        public InputActionAsset Actions => actions;
         public InputDeviceKind Device { get; private set; } = InputDeviceKind.KeyboardMouse;
         public event System.Action<InputDeviceKind> DeviceChanged;
 
@@ -58,6 +60,7 @@ namespace ElderTree.InputHandling
         void Awake()
         {
             Instance = this;
+            ControlBindings.Load(actions);
             gameplay = actions.FindActionMap("Gameplay", true);
             ui = actions.FindActionMap("UI", true);
             move = gameplay["Move"]; look = gameplay["Look"]; lightAct = gameplay["Light"]; heavy = gameplay["Heavy"];
@@ -88,8 +91,8 @@ namespace ElderTree.InputHandling
                 else if (ctx.control.device is Gamepad && now - lightAt <= chordWindow) { skillAt = now; heavyAt = lightAt = -99; }
                 else { heavyAt = now; heavyFromModifier = false; }
             };
-            // Shift + RMB keeps the keyboard skill chord (plain RMB aims)
-            aim.performed += ctx => { if (ctx.control.device is Mouse && modifier.IsPressed()) skillAt = Time.unscaledTime; };
+            // Shift + RMB keeps the keyboard skill chord (plain RMB aims); aim may be remapped to a key
+            aim.performed += ctx => { if (!(ctx.control.device is Gamepad) && modifier.IsPressed()) skillAt = Time.unscaledTime; };
             skill.performed += _ => skillAt = Time.unscaledTime;
             dodge.started += _ => { dodgePressedTime = Time.unscaledTime; dodgeHeldSprint = false; };
             dodge.canceled += _ =>
@@ -223,7 +226,7 @@ namespace ElderTree.InputHandling
             get
             {
                 if (aim == null || !aim.enabled || !aim.IsPressed()) return false;
-                return !(aim.activeControl != null && aim.activeControl.device is Mouse && modifier.IsPressed());
+                return !(aim.activeControl != null && !(aim.activeControl.device is Gamepad) && modifier.IsPressed());
             }
         }
 

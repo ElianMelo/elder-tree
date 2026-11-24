@@ -1185,7 +1185,7 @@ namespace ElderTree.Enemies
             if (lockPoint) lockPoint.localPosition = Vector3.Lerp(lockRest, new Vector3(0f, 0.7f, -0.2f), Mathf.Clamp01(sink));
 
             if (digAudio && digAudio.isPlaying)
-                digAudio.volume = Mathf.Clamp01(speed / 8f) * (AudioManager.Instance != null ? AudioManager.Instance.sfxVolume : 1f);
+                digAudio.volume = Mathf.Clamp01(speed / 8f) * (AudioManager.Instance != null ? AudioManager.Instance.SfxLevel : 1f);
 
             UpdateFlash(dt);
         }

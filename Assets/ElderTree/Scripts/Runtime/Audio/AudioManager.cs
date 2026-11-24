@@ -142,14 +142,18 @@ namespace ElderTree.Audio
             _ => sfxOutput,
         };
 
+        /// <summary>The tuned mix level of a layer times the player's option for it (UI sounds follow the effects slider).</summary>
         float LayerVolume(AudioLayer l) => l switch
         {
-            AudioLayer.UI => uiVolume,
-            AudioLayer.Footsteps => footstepVolume,
-            AudioLayer.Ambience => ambienceVolume,
-            AudioLayer.Music => musicVolume,
-            _ => sfxVolume,
+            AudioLayer.UI => uiVolume * Settings.SfxVolume,
+            AudioLayer.Footsteps => footstepVolume * Settings.FootstepVolume,
+            AudioLayer.Ambience => ambienceVolume * Settings.AmbienceVolume,
+            AudioLayer.Music => musicVolume * Settings.MusicVolume,
+            _ => sfxVolume * Settings.SfxVolume,
         };
+
+        /// <summary>Effects level for sources that play outside the voice pool (boss engines, digging).</summary>
+        public float SfxLevel => LayerVolume(AudioLayer.SFX);
 
         void Awake()
         {
@@ -176,7 +180,7 @@ namespace ElderTree.Audio
                 ambience.spatialBlend = 0f;
                 ambience.priority = Priority(AudioLayer.Ambience);
                 ambience.outputAudioMixerGroup = ambienceOutput;
-                ambience.volume = ambienceVolume;
+                ambience.volume = LayerVolume(AudioLayer.Ambience);
                 ambience.Play();
             }
             for (int i = 0; i < 2; i++)
@@ -297,7 +301,7 @@ namespace ElderTree.Audio
         {
             if (ambience != null)
             {
-                ambience.volume = ambienceVolume;
+                ambience.volume = LayerVolume(AudioLayer.Ambience);
                 ambience.outputAudioMixerGroup = ambienceOutput;
             }
             UpdateMusic(Time.unscaledDeltaTime);
@@ -329,7 +333,7 @@ namespace ElderTree.Audio
             {
                 if (v == null) return;
                 v.gain = Mathf.MoveTowards(v.gain, v.target, fade);
-                v.src.volume = v.track != null ? v.gain * v.track.volume * musicVolume : 0f;
+                v.src.volume = v.track != null ? v.gain * v.track.volume * LayerVolume(AudioLayer.Music) : 0f;
                 v.src.outputAudioMixerGroup = musicOutput;
                 if (v.target <= 0f && v.gain <= 0f && v.src.isPlaying) v.src.Stop();
             }
