@@ -814,6 +814,17 @@ namespace ElderTree.Enemies
             yield return Recover(1.5f, "Stranded", false, true);
         }
 
+        /// <summary>Burrow effects follow the ground: through a dock it tears up splinters and sea spray, not dirt.</summary>
+        static void BurrowFX(FXType t, Vector3 p, Quaternion r, float s)
+        {
+            if (World.GroundSurface.At(p) == World.SurfaceKind.Wood)
+            {
+                if (t == FXType.SlamDebris) { FXManager.Spawn(FXType.WoodChips, p, r, s * 1.4f); return; }
+                if (t == FXType.Dust || t == FXType.DustSmall) { FXManager.Spawn(FXType.Splash, p, Quaternion.identity, t == FXType.Dust ? s * 0.6f : s * 0.32f); return; }
+            }
+            FXManager.Spawn(t, p, r, s);
+        }
+
         void EnterBurrowInstant()
         {
             State = Mode.Burrowed;
@@ -845,8 +856,8 @@ namespace ElderTree.Enemies
                 {
                     splashed = true;
                     Vector3 hole = Blast.Ground(transform.position + Heading * 1.5f);
-                    FXManager.Spawn(FXType.SlamDebris, hole, Quaternion.identity, 1.5f);
-                    FXManager.Spawn(FXType.Dust, hole, Quaternion.identity, 2.2f);
+                    BurrowFX(FXType.SlamDebris, hole, Quaternion.identity, 1.5f);
+                    BurrowFX(FXType.Dust, hole, Quaternion.identity, 2.2f);
                     AudioManager.Play(Sfx.Burrow, hole, 1f, 1f);
                     CameraDirector.Instance?.Shake(0.35f, Vector3.down);
                 }
@@ -910,12 +921,12 @@ namespace ElderTree.Enemies
             if ((trailT -= dt) <= 0f)
             {
                 trailT = 0.06f;
-                FXManager.Spawn(FXType.DustSmall, fin + Vector3.up * 0.05f, Quaternion.LookRotation(-Heading + Vector3.up * 0.5f), 1.3f);
+                BurrowFX(FXType.DustSmall, fin + Vector3.up * 0.05f, Quaternion.LookRotation(-Heading + Vector3.up * 0.5f), 1.3f);
             }
             if ((chunkT -= dt) <= 0f)
             {
                 chunkT = 0.22f;
-                FXManager.Spawn(FXType.SlamDebris, fin, Quaternion.identity, 0.45f);
+                BurrowFX(FXType.SlamDebris, fin, Quaternion.identity, 0.45f);
             }
         }
 
@@ -934,9 +945,9 @@ namespace ElderTree.Enemies
                 if (Random.value < dt * 26f)
                 {
                     Vector2 c = Random.insideUnitCircle * 1.6f;
-                    FXManager.Spawn(FXType.DustSmall, spot + new Vector3(c.x, 0.05f, c.y), Quaternion.LookRotation(Vector3.up), 1f + k);
+                    BurrowFX(FXType.DustSmall, spot + new Vector3(c.x, 0.05f, c.y), Quaternion.LookRotation(Vector3.up), 1f + k);
                 }
-                if (Random.value < dt * 5f) FXManager.Spawn(FXType.SlamDebris, spot, Quaternion.identity, 0.35f + k * 0.3f);
+                if (Random.value < dt * 5f) BurrowFX(FXType.SlamDebris, spot, Quaternion.identity, 0.35f + k * 0.3f);
                 CameraDirector.Instance?.Shake(0.05f + 0.1f * k, Vector3.down);
             });
             if (digAudio) digAudio.Stop();
@@ -944,8 +955,8 @@ namespace ElderTree.Enemies
             State = Mode.Attacking;
             Roar(1.05f, 0.9f);
             AudioManager.Play(Sfx.Burrow, spot, 1f, 1.1f);
-            FXManager.Spawn(FXType.SlamDebris, spot, Quaternion.identity, 1.8f);
-            FXManager.Spawn(FXType.Dust, spot, Quaternion.identity, 2.6f);
+            BurrowFX(FXType.SlamDebris, spot, Quaternion.identity, 1.8f);
+            BurrowFX(FXType.Dust, spot, Quaternion.identity, 2.6f);
             FXManager.Spawn(FXType.SlamRing, spot + Vector3.up * 0.05f, Quaternion.identity, eruptRadius * 0.9f);
             CameraDirector.Instance?.Shake(0.6f, Vector3.up);
             bool hit = false;

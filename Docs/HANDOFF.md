@@ -1,5 +1,75 @@
 # Handoff — Elder Tree soulslike slice
 
+## 000000000000000000000000. Holes in the Shark's dock
+
+Six **rotten holes** are broken through the Bleached Atoll deck. Step into one and you drop into the sea: a splash (sound: Gamemaster `water_splash_object_body`, new `Sfx.WaterSplash` appended to the enum), the screen dips to black for a moment, and you're put back on the **last solid spot you stood on**, facing away from the hole, minus **90 HP** (~15%) with a light flinch. A fall can kill you if you're that low.
+- **Rolling doesn't save you:** it goes through the new `PlayerController.TakeHazardDamage`, which ignores i-frames and the guard.
+- **Brushing the edge is safe:** you only fall once your feet are 18 cm inside the opening (`DockHoles.margin`).
+- **Safe spots:** sampled every 0.15 s while you're grounded, at least 1.1 m clear of any hole (`safeClearance`).
+- **The holes:** two module variants from `build_beach.py` (`DockSection_HoleA` 2.0 × 1.2 m, `DockSection_HoleB` 1.4 × 2.0 m).
+  - **Look:** a jagged outline of splintered board ends and slivers, a broken board hanging toward the water, and the joist under each hole rotted through.
+  - **Mesh:** the slab is one mesh with the hole left out, so the PSX snap can't crack it.
+  - **Colliders:** four boxes ring each opening.
+- **Placement:** kept off the spawn, the arena centre (the shark measures its floor there) and the rail. They're at (-10,-6), (6,-2), (6,-14), (-6,-14), (14,2) and (-10,6) in cell centres. Edit `holeCells` in `BuildBeachScene` to move or add them.
+- **Water in shade:** the sea under the deck's shadow is darker now (`Ocean.shader`), so the holes read as dark water instead of bright blue.
+- **Crabs** never spawn in or walk into a hole. The Shark ignores them (it swims).
+- **Verified (play mode):** standing on the lip leaves you at 620 HP. Dropping into a hole → 530 HP, back on the last safe spot. 0 errors, 0 warnings. Shot: `Docs/Screenshots/43_beach_dock_holes.png`.
+- **Your call:**
+  - **Damage:** 90 HP is a guess. Tune it on the `DockHoles` object.
+  - **Holding forward after a respawn walks you back in:** you respawn facing away from the hole, but movement follows the camera. Freezing movement for a moment after the respawn would prevent it.
+  - **The Shark doesn't use the holes yet.** It could, for example, erupt out of them.
+
+## 00000000000000000000000. The Shark's arena: "Bleached Atoll"
+
+Based on your five references (the ipe boardwalk, the rope-railed pier, the lake docks, the palm beach and the dune path). **Shark** now has its own stage: `Scenes/Beach_Shark.unity`, built by `Elder Tree/9f` (art: `9e`, props: `Tools/Blender/build_beach.py`). The boss select sends Shark there instead of the training yard, and its portrait was re-shot in the new arena.
+
+**Layout.** A crescent island (an atoll) wraps a turquoise lagoon. The open sea is only to the south.
+- **The fight is on the dock:** 4 m deck modules standing on piles over the lagoon cover the south of the 19.6 m ring. Their north edge runs straight onto a broad **sandbar** at deck height, so roughly a third of the floor is sand.
+- **Around the deck:** a rope railing (posts, top rail, two sagging ropes, like reference 2), mooring pilings, and black pennants that flap in the wind. Crates, barrels, crab pots, rope coils and bollards sit along the rail, so the middle stays open.
+- **Past the rail:** three piers run out to sea, with a fisherman's shack at the end of the east one and two moored rowboats that bob on the swell.
+- **The island:** 64 **coconut palms** line the beaches and lean out over the water. Five of them frame the sandbar and lean over the arena. Their crowns sway in the wind. There are dunes with grass, rocks along the tide line, driftwood, net racks, and **47 coconuts** (fallen under the palms, piled on the sandbar, and four floating in the shallows).
+- **Dark-fantasy pieces in daylight:**
+  - a **leviathan skeleton** half-buried on the west strand, with gulls circling it like vultures;
+  - a **wrecked galleon** heeled over on the reef, trailing a black sail;
+  - craggy reef spires out to sea.
+
+**Wildlife.**
+- **22 crabs** (`World/Crab.cs`), 6 of them on the planks. They idle, scuttle **sideways** to a new spot, and wave their claws. The player or the boss coming within ~3 m sends them skittering away. They never walk into the sea.
+- **18 gulls** (`World/SeaBird.cs`): a few wingbeats, then a long glide, banked into the turn. Most circle the bones, some the wreck, and a few circle high over the arena.
+
+**Sea** (`Ocean.shader` + a generated polar grid out to the horizon):
+- **Waves:** four Gerstner swells roll in from the south. They calm down in the lagoon (the shallows are baked into the vertex colour).
+- **Colour:** murky turquoise over the sand, deep navy offshore.
+- **Foam:** it rims every pile and rock, surf bands wash up the beach, and whitecaps form out at sea.
+- **Light:** a hard sun glint, and the deck's shadow darkens the water under it.
+
+**Day, but still dark.** Cold sun from the south-south-west (38°), a heavy grey cloud deck drifting across a deep-blue sky (`NightSky` shader with day colours), thin sea haze (the volumetric fog, lit by the sun), blue-crushed shadows, desaturated grade, vignette and grain (`Settings/BeachPostProfile.asset`). The ambience bed is a calm surf loop (`SoundPicks.BeachAmbience`, same quiet level as the wind).
+
+**The Shark on a dock.** When it burrows under the planks, its fin cuts through the deck and it erupts in **sea spray and wood splinters** instead of dirt. On the sand it still throws dust. This works through a new `World/GroundSurface` tag (the deck is Wood, the terrain is Sand) checked by `SharkBoss.BurrowFX`, plus a new `FXType.Splash` (appended at the end of the enum, because the values are serialized).
+
+**Assets.** `build_beach.py -- <abs Art/Models/Beach>` exports 30 PSX props, 12–1,196 tris: four palms, coconuts, crab, gull, dock slab, edge, piling, rail, bollard, rope coil, crab pot, net rack, shack, rowboat, pennant, rocks, reef spire, dune grass, driftwood, whale bones and shipwreck. The new textures (15-bit dithered, point filtered) are palm bark, the flora atlas (green frond, dead frond, dune grass, net), coconut, bone, dock planks, piles, sea rock, driftwood, sail, crab shell, sand, wet sand and seabed.
+
+**Gotchas found.**
+- Blender → Unity axes: Blender X arrives as Unity −X and Blender +Y as Unity −Z.
+- `join()` used to keep the first part's rotation on the object, and `BP` overwrites the root rotation, so the whale stood on end. `join()` now bakes the rotation into the mesh.
+- Separate plank boxes crack open under the PSX vertex snap. Each deck module is now one slab with the boards painted into the texture, and neighbouring slabs share edges, so they snap together.
+- Fronds are faced up and the atlas uses coverage-preserving nearest mips, so palms stay solid at a distance instead of breaking into dots.
+
+**Verified (play mode, AutoPilot).**
+- The full flow: select → Shark (new portrait) → intro band → "Lair of the Shark / BLEACHED / ATOLL" → the fight starts by itself.
+- A forced Burrow: the fin travels through the deck, then dive, eruption and recovery.
+- Crabs flee from the player; gulls circle.
+- **0 errors, 0 warnings, ~121–124 fps** in the editor.
+- Shots: `Docs/Screenshots/37`–`42`.
+
+**Not verified / your call.**
+- **Daylight vs. ART_DIRECTION.** That doc is written for night. This stage is a deliberate exception you asked for: blue and readable, but kept cold and heavy. Tune it in `BuildBeachPostProfile` and the sky colours in `BuildBeachArt`.
+- **The surf ambience is unheard.** No gull calls were added (the audio rules say keep it quiet).
+- **How the swell and foam look in motion** was only seen in stills. The knobs are on `M_Ocean` (`_WaveAmp`, `_WaveLength`, `_CapAmount`, `_FoamWidth`).
+- **The Shark can swim up to ~2.5 m past the rail** over the water when you stand at the edge (its arena limit follows you, as in the yard). The player can't cross the rail.
+- **Victory → select** wasn't re-run for this stage (same `BossArena` code as the swamp).
+- **Not checked by eye:** the crab gait and the gull wingbeat close up.
+
 ## 0000000000000000000000. Swamp lights: dimmer, spread out, lanterns in the trees
 
 - **Dimmer:** torches 12 → 8 (range 10), burn barrels 9 → 6, floodlights 48 → 34, searchlights 90 → 70.
@@ -42,7 +112,7 @@
 
 **Assets.** `Tools/Blender/build_swamp.py -- <abs Art/Models/Swamp>` (headless) exports 25 PSX props, 16–1,244 tris (the cypresses are 507–573). New textures (`TextureForge`-style, 15-bit dithered, point filtered): swamp bark, flora atlas (moss / foliage / lily pad / reeds, cutout), sandbag burlap, olive canvas, olive paint, concrete, swamp mud, duckweed. `FX_TorchFire` = flame + embers + smoke. The terrain is a generated mesh (`Models/Swamp/SwampGround.asset`, 144 m, mounds under every tree).
 
-**Builder:** `Elder Tree/9. Build Boss Select + Swamp (all)` = 9a art → 9b arena → 9c portraits → 9d select scene. It runs as part of `BuildAll()`, right after the training yard. `BuildScene` was split into shared helpers (`SetupPsxPipeline`, `BuildCommon` for player / camera / HUD / bosses, `RegisterBuildScenes`); the yard builds the same as before, plus a `BossArena`. The HUD title card is now per scene (`HUD.titleKicker / titleMain / titleSub`); the swamp reads "Lair of the Crocodile / DROWNED / GARRISON".
+**Builder:** `Elder Tree/9. Build Boss Select + Arenas (all)` = 9a art → 9b arena → (9e / 9f beach, added later) → 9c portraits → 9d select scene. It runs as part of `BuildAll()`, right after the training yard. `BuildScene` was split into shared helpers (`SetupPsxPipeline`, `BuildCommon` for player / camera / HUD / bosses, `RegisterBuildScenes`); the yard builds the same as before, plus a `BossArena`. The HUD title card is now per scene (`HUD.titleKicker / titleMain / titleSub`); the swamp reads "Lair of the Crocodile / DROWNED / GARRISON".
 
 **Gotcha found:** `Lit()` turns on "smoothness from albedo alpha" whenever it is given a texture, and Simple Lit then forces alpha to 1. Cutout materials must pass `smoothFromAlbedo: false` (the flora atlas rendered as solid slabs until this was fixed).
 

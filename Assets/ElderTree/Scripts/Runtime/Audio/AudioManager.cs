@@ -17,7 +17,8 @@ namespace ElderTree.Audio
         BladeRing, GroundGrind,
         WoodGroan, RootSnap, DeepRumble,
         SpellGather, VineCast, VineBurst, OrbCharge, OrbFire, OrbImpact,
-        PotionDrink
+        PotionDrink,
+        WaterSplash
     }
 
     /// <summary>

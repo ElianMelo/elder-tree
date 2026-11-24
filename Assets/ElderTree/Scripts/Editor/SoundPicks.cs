@@ -147,6 +147,9 @@ namespace ElderTree.EditorTools
 
                 // ---------------------------------------------------------------- health potion (the gulp). Not heard by ear yet.
                 C(Sfx.PotionDrink, P("Magic_Spells/potion_heal_flask_spell_01", "Magic_Spells/potion_heal_flask_spell_02"), 0.6f, 0.9f, 1f, 0.3f, 0.2f),
+                // falling through a hole in the dock into the sea (Bleached Atoll)
+                C(Sfx.WaterSplash, P("Water/water_splash_object_body_01", "Water/water_splash_object_body_02", "Water/water_splash_object_body_03",
+                    "Water/water_splash_object_body_04", "Water/water_splash_object_body_05"), 0.85f, 0.88f, 1.02f, 0.5f, 0.2f),
             };
             foreach (var c in cues) c.layer = c.id == Sfx.Footstep ? AudioLayer.Footsteps : UiCues.Contains(c.id) ? AudioLayer.UI : AudioLayer.SFX;
             Configure(cues.SelectMany(c => c.clips).Where(c => UnityEditor.AssetDatabase.GetAssetPath(c).StartsWith(Root)), Use.OneShot);
@@ -157,6 +160,9 @@ namespace ElderTree.EditorTools
 
         /// <summary>Arena bed: a soft, low wind (no crickets: they drew attention). Played 2D by the AudioManager.</summary>
         public static AudioClip Ambience() => Loop("Animals_Nature_Ambiences/wind_general_soft_low_loop_02", Use.Ambience);
+
+        /// <summary>The Shark arena's bed: a calm surf on the beach instead of the wind (kept as quiet as the wind).</summary>
+        public static AudioClip BeachAmbience() => Loop("Animals_Nature_Ambiences/beach_waves_ocean_calm_loop_02", Use.Ambience);
 
         /// <summary>Ambience bed level (AudioManager.ambienceVolume). Kept low so it sits under the fight.</summary>
         public const float AmbienceVolume = 0.3f;

@@ -143,6 +143,36 @@ namespace ElderTree.Player
             }
         }
 
+        /// <summary>
+        /// Damage from the world, not a blow (falling through the dock): it ignores i-frames and the guard, so a
+        /// roll can't skip it. A light flinch, or death if it was the last of your health.
+        /// </summary>
+        public void TakeHazardDamage(float damage, Vector3 dir)
+        {
+            if (IsDead || !isActiveAndEnabled) return;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 1e-4f) dir = -transform.forward;
+            dir.Normalize();
+            float dmg = DevNoDamage ? 0f : damage;
+            stats.TakeDamage(dmg);
+            LastHurtTime = Time.time;
+            Hurt?.Invoke(new DamageInfo { damage = dmg, direction = dir, weight = ImpactWeight.Light, point = transform.position + Vector3.up });
+            AudioManager.Play(Sfx.PlayerHurt, transform.position + Vector3.up, 1f, Random.Range(0.92f, 1.04f));
+            CameraDirector.Instance?.Shake(0.4f, Vector3.down);
+            input.Rumble(0.5f, 0.6f, 0.25f);
+            if (stats.Health <= 0f) { Die(dir); return; }
+            if (State == PlayerState.Special || State == PlayerState.Transform || State == PlayerState.Cinematic) return;
+            EndSwing();
+            motor.GravityScale = 1f;
+            if (State == PlayerState.Aim) ExitAim();
+            IsSprinting = false;
+            SetState(PlayerState.Hit);
+            knockedDown = standingUp = false;
+            hitDuration = flinchLight; hitSharpness = 12f;
+            animator.CrossFadeInFixedTime("HitLight", 0.05f);
+            animator.SetFloat(HActionSpeed, 1.3f);
+        }
+
         void Die(Vector3 dir)
         {
             EndSwing();

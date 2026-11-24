@@ -369,7 +369,8 @@ namespace ElderTree.EditorTools
                 E(FXType.SlamDebris, "FX_SlamDebris", 2), E(FXType.LandDust, "FX_LandDust", 2), E(FXType.ChargeFlash, "FX_ChargeFlash", 2),
                 E(FXType.Explosion, "FX_Explosion", 6), E(FXType.BombPop, "FX_BombPop", 3), E(FXType.Smoke, "FX_Smoke", 2),
                 E(FXType.SlashHit, "FX_SlashHit", 4), E(FXType.LeafBurst, "FX_LeafBurst", 4),
-                E(FXType.LeafExplosion, "FX_LeafExplosion", 4), E(FXType.OrbBurst, "FX_OrbBurst", 2), E(FXType.LeafFall, "FX_LeafFall", 8)
+                E(FXType.LeafExplosion, "FX_LeafExplosion", 4), E(FXType.OrbBurst, "FX_OrbBurst", 2), E(FXType.LeafFall, "FX_LeafFall", 8),
+                E(FXType.Splash, "FX_Splash", 4)
             };
             var audioGo = new GameObject("Audio");
             audioGo.transform.SetParent(sysRoot);
@@ -430,7 +431,7 @@ namespace ElderTree.EditorTools
         public static void RegisterBuildScenes()
         {
             var list = new System.Collections.Generic.List<EditorBuildSettingsScene>();
-            foreach (var path in new[] { BossSelectScenePath, ScenePath, SwampScenePath })
+            foreach (var path in new[] { BossSelectScenePath, ScenePath, SwampScenePath, BeachScenePath })
                 if (File.Exists(path)) list.Add(new EditorBuildSettingsScene(path, true));
             EditorBuildSettings.scenes = list.ToArray();
         }
