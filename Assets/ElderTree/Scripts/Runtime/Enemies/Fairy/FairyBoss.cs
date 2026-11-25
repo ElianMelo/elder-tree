@@ -23,9 +23,9 @@ namespace ElderTree.Enemies
     /// won't flee until it's over). Stance break: her wings fold and she drops to her knees, open to criticals.
     /// Animation is procedural: rigid parts posed from pose targets, wings fluttering, the skirt and hair dragging.
     /// </summary>
-    public class FairyBoss : BossBase
+    public partial class FairyBoss : BossBase
     {
-        public enum Mode { Dormant, Hovering, Attacking, Fleeing, Spent, Staggered, Dead }
+        public enum Mode { Dormant, Hovering, Attacking, Fleeing, Spent, Staggered, Dead, Cinematic }
 
         public string displayName = "Fairy";
 
@@ -85,7 +85,7 @@ namespace ElderTree.Enemies
         public float mineDamage = 70f;
 
         public Mode State { get; private set; } = Mode.Dormant;
-        public override bool IsAlive => State != Mode.Dead && State != Mode.Dormant;
+        public override bool IsAlive => State != Mode.Dead && State != Mode.Dormant && State != Mode.Cinematic;
         public override bool IsStaggered => State == Mode.Staggered;
         public override bool PhaseTwo => phaseTwo;
         public override float Health => health;
@@ -127,6 +127,11 @@ namespace ElderTree.Enemies
         float tWingOpen, tWingAmp = 26f, tWingFreq = 7f, tWingDroop;
         float wingOpen, wingAmp = 26f, wingFreq = 7f, wingDroop, wingPhase;
         float skirtPitch, skirtRoll, hairPitch, hairRoll, bob;
+        // dance (intro cinematic): leg turnout round the vertical (passé, à la seconde), the upper arm rolled about its own
+        // length so the elbows curve inward (port de bras), head tilt / spotting, how airborne she is, toe-on-floor contact
+        readonly float[] tTurn = new float[2], turn = new float[2], tArmRoll = new float[2], armRoll = new float[2];
+        float tHeadTilt, headTilt, tAir = 1f, air = 1f, contact;
+        float headSpot = float.NaN;
         float glowBase = 1f, glowBoost, dustBase = 10f;
 
         // rest rotations relative to the pivot
@@ -163,6 +168,7 @@ namespace ElderTree.Enemies
                 Cap(upperArm[i]); Cap(forearm[i]); Cap(hand[i]); Cap(thigh[i]); Cap(shin[i]); Cap(foot[i]);
                 Cap(wingUp[i]); Cap(wingDown[i]);
             }
+            CaptureDanceRest();
             rigReady = true;
         }
 
@@ -192,6 +198,7 @@ namespace ElderTree.Enemies
             health = maxHealth;
             poise = maxPoise;
             if (model) model.localScale = modelRestScale;
+            HideIntroMoon();
             gameObject.SetActive(false);
         }
 
@@ -210,7 +217,8 @@ namespace ElderTree.Enemies
             RestPose();
             tHover = hover = hoverHeight;
             lean = bank = lift = torsoPitch = twist = headPitch = 0f;
-            for (int i = 0; i < 2; i++) { elev[i] = tElev[i]; azim[i] = tAzim[i]; elbow[i] = tElbow[i]; hip[i] = tHip[i]; knee[i] = tKnee[i]; }
+            for (int i = 0; i < 2; i++) { elev[i] = tElev[i]; azim[i] = tAzim[i]; elbow[i] = tElbow[i]; hip[i] = tHip[i]; knee[i] = tKnee[i]; turn[i] = tTurn[i]; armRoll[i] = tArmRoll[i]; }
+            air = tAir; headTilt = tHeadTilt; contact = 0f; headSpot = float.NaN;
             vel = Vector3.zero;
             glowBoost = 0f;
         }
@@ -221,6 +229,7 @@ namespace ElderTree.Enemies
             tLean = 4f; tBank = 0f; tLift = 0f; tTorso = 0f; tTwist = 0f; tHeadPitch = 0f; tHeadTrack = 1f; sharp = s;
             Arms(-78f, 14f, 18f, -78f, 14f, 18f);
             tHip[0] = 16f; tKnee[0] = 36f; tHip[1] = 6f; tKnee[1] = 14f;
+            tTurn[0] = tTurn[1] = 0f; tArmRoll[0] = tArmRoll[1] = 0f; tHeadTilt = 0f; tAir = 1f;
             Wings(0f, 26f, 7f, 0f);
             tHover = hoverHeight;
         }
@@ -1136,10 +1145,15 @@ namespace ElderTree.Enemies
                 elev[i] = Mathf.Lerp(elev[i], tElev[i], k);
                 azim[i] = Mathf.LerpAngle(azim[i], tAzim[i], k);
                 elbow[i] = Mathf.Lerp(elbow[i], tElbow[i], k);
-                hip[i] = Mathf.Lerp(hip[i], tHip[i], Ease.Damp(4f, dt));
-                knee[i] = Mathf.Lerp(knee[i], tKnee[i], Ease.Damp(4f, dt));
+                float lk = Ease.Damp(Mathf.Max(4f, legSharp), dt);
+                hip[i] = Mathf.Lerp(hip[i], tHip[i], lk);
+                knee[i] = Mathf.Lerp(knee[i], tKnee[i], lk);
+                turn[i] = Mathf.Lerp(turn[i], tTurn[i], lk);
+                armRoll[i] = Mathf.Lerp(armRoll[i], tArmRoll[i], k);
             }
-            if (State != Mode.Fleeing && State != Mode.Staggered && State != Mode.Dead && currentMove != "Swoop")
+            headTilt = Mathf.Lerp(headTilt, tHeadTilt, k);
+            air = Mathf.Lerp(air, tAir, Ease.Damp(3f, dt));
+            if (State != Mode.Fleeing && State != Mode.Staggered && State != Mode.Dead && State != Mode.Cinematic && currentMove != "Swoop")
                 hover = Mathf.Lerp(hover, tHover, Ease.Damp(3f, dt));
             float wk = Ease.Damp(5f, dt);
             wingOpen = Mathf.Lerp(wingOpen, tWingOpen, Ease.Damp(sharp, dt));
@@ -1150,19 +1164,31 @@ namespace ElderTree.Enemies
 
             float t = Time.time;
             bool aloft = State != Mode.Staggered && State != Mode.Dead;
-            bob = aloft ? Mathf.Sin(t * 1.5f) * 0.09f + Mathf.Sin(wingPhase) * 0.012f * wingAmp / 26f : 0f;
+            bob = aloft ? (Mathf.Sin(t * 1.5f) * 0.09f + Mathf.Sin(wingPhase) * 0.012f * wingAmp / 26f) * air : 0f;
 
             // body: hover height, a slow bob, lean/bank (+ a gentle sway)
             pivot.localPosition = pivotRestLocal + Vector3.up * (lift + bob);
-            float sway = aloft ? Mathf.Sin(t * 1.1f) * 2.5f : 0f;
+            if (danceW > 0f || danceTarget > 0f)
+            {
+                SampleDance(dt);
+                pivot.localPosition += danceHip * danceW;     // the dance's hip sway (the knee bends come from the toe contact)
+            }
+            bool dancing = danceW > 0.001f;
+            float sway = aloft ? Mathf.Sin(t * 1.1f) * 2.5f * air : 0f;
             pivot.localRotation = Quaternion.Euler(lean + sway * 0.4f, 0f, bank + sway);
 
             Quaternion P = pivot.rotation;
             Quaternion Ax(float a, Vector3 axis) => Quaternion.AngleAxis(a, axis);
-            void Pose(Transform tr, Quaternion o) { if (tr && rest.TryGetValue(tr, out var r)) tr.rotation = P * o * r; }
+            void Pose(Transform tr, Quaternion o)
+            {
+                if (!tr || !rest.TryGetValue(tr, out var r)) return;
+                if (dancing && danceO.TryGetValue(tr, out var d)) o = Quaternion.Slerp(o, d, danceW);
+                tr.rotation = P * o * r;
+            }
 
             // torso + head (the head tracks you)
             Quaternion oT = Ax(twist, Vector3.up) * Ax(torsoPitch, Vector3.right);
+            if (dancing) oT = Quaternion.Slerp(oT, danceTorso, danceW);
             Pose(pelvis, Quaternion.identity);
             Pose(torso, oT);
             float wantYaw = 0f, wantPitch = 0f;
@@ -1174,11 +1200,17 @@ namespace ElderTree.Enemies
             }
             headYawCur = Mathf.Lerp(headYawCur, wantYaw * headTrack, Ease.Damp(6f, dt));
             headPitchCur = Mathf.Lerp(headPitchCur, wantPitch * headTrack, Ease.Damp(6f, dt));
-            Quaternion oH = oT * Ax(headYawCur, Vector3.up) * Ax(headPitchCur + headPitch, Vector3.right);
+            // spotting (pirouettes): the head holds a fixed direction, then whips round, no smoothing
+            float headYawNow = float.IsNaN(headSpot) ? headYawCur : headSpot;
+            Quaternion oH = oT * Ax(headYawNow, Vector3.up) * Ax(headPitchCur + headPitch, Vector3.right) * Ax(headTilt, Vector3.forward);
+            if (dancing) oH = Quaternion.Slerp(oH, danceHead, danceW);
             Pose(head, oH);
 
             // hair and skirt drag behind the motion and swing with the body
             float tp = Mathf.Clamp(localVel.z * 3.2f + lean * 0.3f, -10f, 40f), tr = Mathf.Clamp(-localVel.x * 3.2f - bank * 0.3f, -30f, 30f);
+            // a fast turn swings the hair out and the hem lifts
+            float spinSwing = Mathf.Clamp(Mathf.Abs(spinRate) / 1400f, 0f, 1f);
+            tp += spinSwing * 22f;
             skirtPitch = Mathf.Lerp(skirtPitch, tp + (aloft ? Mathf.Sin(t * 2.3f) * 2f : 0f), Ease.Damp(5f, dt));
             skirtRoll = Mathf.Lerp(skirtRoll, tr + (aloft ? Mathf.Sin(t * 1.7f) * 2f : 0f), Ease.Damp(5f, dt));
             hairPitch = Mathf.Lerp(hairPitch, Mathf.Clamp(tp * 0.6f - headPitchCur * 0.4f, -8f, 30f), Ease.Damp(4f, dt));
@@ -1190,7 +1222,8 @@ namespace ElderTree.Enemies
             for (int i = 0; i < 2; i++)
             {
                 float s = i == 0 ? -1f : 1f;
-                Quaternion oU = oT * Ax(s * azim[i], Vector3.up) * Ax(-(elev[i] + 90f), Vector3.right);
+                // armRoll: the upper arm turns about its own length, so the elbow bends toward the body's midline (rounded arms)
+                Quaternion oU = oT * Ax(s * azim[i], Vector3.up) * Ax(-(elev[i] + 90f), Vector3.right) * Ax(-s * armRoll[i], Vector3.up);
                 Pose(upperArm[i], oU);
                 Quaternion oF = oU * Ax(-elbow[i], Vector3.right);
                 Pose(forearm[i], oF);
@@ -1200,13 +1233,17 @@ namespace ElderTree.Enemies
             // legs dangle: hips forward/back, knees bend back, toes pointed; a slow paddling sway while aloft
             for (int i = 0; i < 2; i++)
             {
-                float paddle = aloft ? Mathf.Sin(t * 1.5f + i * 1.9f) * 5f : 0f;
-                Quaternion oTh = Ax(-(hip[i] + paddle), Vector3.right);
+                float paddle = aloft ? Mathf.Sin(t * 1.5f + i * 1.9f) * 5f * air : 0f;
+                float s = i == 0 ? -1f : 1f;
+                // turnout: the raised leg swings out to the side round the vertical (développé à la seconde, passé)
+                Quaternion oTh = Ax(s * turn[i], Vector3.up) * Ax(-(hip[i] + paddle), Vector3.right);
                 Pose(thigh[i], oTh);
                 Quaternion oSh = oTh * Ax(knee[i] + paddle * 0.8f, Vector3.right);
                 Pose(shin[i], oSh);
                 Pose(foot[i], oSh);
             }
+
+            if (State == Mode.Cinematic) KeepToesOnFloor();
 
             // wings: sweep forward/back round the root (flutter), tips dip and rise a little out of phase
             for (int i = 0; i < 2; i++)
@@ -1226,6 +1263,7 @@ namespace ElderTree.Enemies
                 bodyLight.intensity = Mathf.Lerp(bodyLight.intensity, target, Ease.Damp(8f, dt));
             }
             UpdateFlash(dt);
+            UpdateIntroMoon(dt);
         }
 
         void UpdateFlash(float dt)

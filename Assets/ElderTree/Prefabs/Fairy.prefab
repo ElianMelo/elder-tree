@@ -5798,6 +5798,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Enemies.FairyBoss
   rewardMask: {fileID: 0}
+  danceRig: {fileID: 919132149155446097, guid: 1841c298173cdad4db8df8602c8f1c8d, type: 3}
+  danceClips:
+  - {fileID: -6542603290117523292, guid: 7f59c9081cea9e843b9cf24fb8afe8f9, type: 3}
+  - {fileID: 7616386032197109528, guid: 5853856f4938db64db6b4f6b9ddf934d, type: 3}
+  - {fileID: 3308106896734678155, guid: b84e8a84faa933b45bb85068ae6e0ef5, type: 3}
+  - {fileID: -9176061034306744629, guid: 0bf9cbfc3ef5eaa40beccc66ce71f580, type: 3}
+  introEpithet: Moon Dancer of the Starlit Grotto
+  introMoonMaterial: {fileID: 2100000, guid: 02eb194363512c9479ac542deeeea2e3, type: 2}
+  introHaloMaterial: {fileID: 2100000, guid: 09a2f733755cb914c8a97ee875f517c5, type: 2}
+  introMusic: {fileID: 8300000, guid: 800028ab827bd554284b052dc022f8bb, type: 3}
+  introMusicVolume: 0.5
+  introRevealClip: {fileID: 8300000, guid: 615435ff9e90d3448a7c5be643c23b20, type: 3}
+  introMoonColor: {r: 0.6, g: 0.64, b: 0.76, a: 1}
+  introMoonSize: 4.1
   displayName: Fairy
   pivot: {fileID: 5529859068744825625}
   model: {fileID: 3733356126680643534}

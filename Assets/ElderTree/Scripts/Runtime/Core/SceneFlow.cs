@@ -41,6 +41,7 @@ namespace ElderTree
     {
         const string Key = "ElderTree.Bosses.Felled";
         const string MaskKey = "ElderTree.Masks.Owned";
+        const string IntroKey = "ElderTree.Bosses.IntroSeen";
 
         static HashSet<string> Read(string key)
         {
@@ -50,7 +51,7 @@ namespace ElderTree
             return s;
         }
 
-        /// <summary>Stable id of a boss: "crocodile", "shark", "druid".</summary>
+        /// <summary>Stable id of a boss: "crocodile", "shark", "druid", "fairy".</summary>
         public static string IdOf(Enemies.BossBase b) => b == null ? "" : b.GetType().Name.Replace("Boss", "").ToLowerInvariant();
 
         public static bool IsFelled(string bossId, string maskId = null) =>
@@ -65,9 +66,29 @@ namespace ElderTree
             PlayerPrefs.Save();
         }
 
+        /// <summary>Has this boss's first-meeting cinematic been seen (it plays once per save)?</summary>
+        public static bool IntroSeen(string bossId) => Read(IntroKey).Contains(bossId);
+
+        public static void MarkIntroSeen(string bossId)
+        {
+            if (string.IsNullOrEmpty(bossId)) return;
+            var s = Read(IntroKey);
+            if (!s.Add(bossId)) return;
+            PlayerPrefs.SetString(IntroKey, string.Join(",", s));
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>Debug: every boss plays its intro cinematic again on the next meeting.</summary>
+        public static void ForgetIntros()
+        {
+            PlayerPrefs.DeleteKey(IntroKey);
+            PlayerPrefs.Save();
+        }
+
         public static void ResetAll()
         {
             PlayerPrefs.DeleteKey(Key);
+            PlayerPrefs.DeleteKey(IntroKey);
             PlayerPrefs.Save();
         }
     }

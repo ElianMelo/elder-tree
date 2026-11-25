@@ -124,8 +124,19 @@ namespace ElderTree.UI
 
         public void Flash(float strength) => flash = Mathf.Max(flash, strength);
 
+        /// <summary>A boss's name during its first-meeting cinematic (the mask card's band, in the cold moonlit colours).</summary>
+        public void ShowBossIntro(string name, string epithet)
+        {
+            cardTitle.text = name;
+            cardTitle.style.color = new Color(0.82f, 0.88f, 1f);
+            cardLine.text = epithet;
+            cardHint.text = "";
+            cardT = 0f;
+        }
+
         public void ShowMaskReceived(MaskData m)
         {
+            cardTitle.style.color = StyleKeyword.Null;
             cardTitle.text = m.receivedTitle;
             cardLine.text = m.receivedLine;
             var ms = MaskSystem.Instance;

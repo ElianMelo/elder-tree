@@ -189,6 +189,12 @@ namespace ElderTree.EditorTools
         public static AudioManager.MusicTrack BossMusic() =>
             Music("Ω_Bonus_Music_16bit44kOnly/music_epic_fallen_empire", 0.25f, 1f, 92f);
 
+        /// <summary>The Fairy's first-meeting ballet: a slow harp (the cinematic's own track, not a fight mood). Not heard by ear yet.</summary>
+        public static AudioClip FairyIntroMusic() => Loop("Ω_Bonus_Music_16bit44kOnly/music_harp_peaceful_loop", Use.Ambience);
+
+        /// <summary>The moon rising on the Fairy's back at the end of her ballet: a deep, low swell. Not heard by ear yet.</summary>
+        public static AudioClip FairyIntroReveal() => Loop("Cinematic Sounds/cinematic_deep_low_whoosh_impact_02", Use.OneShot);
+
         static AudioManager.MusicTrack Music(string rel, float volume, float loopStart, float loopEnd) =>
             new() { clip = Loop(rel, Use.Ambience), volume = volume, loopStart = loopStart, loopEnd = loopEnd };
 

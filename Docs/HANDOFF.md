@@ -1,5 +1,48 @@
 # Handoff — Elder Tree soulslike slice
 
+## 00000000000000000000000000000. Boss intro cinematics (first meeting only), starting with the Fairy's ballet
+
+**When it plays:** the first time you reach a boss's stage, after the title card. It plays **once per save** (`Progress.IntroSeen`, PlayerPrefs key `ElderTree.Bosses.IntroSeen`) and is marked as seen as soon as it starts. Retries after a death and later visits skip it and the boss makes its usual entrance. Summoning from the pause / F1 menu never plays it. **Skip:** A / Enter or B / Esc after 1.2 s (a quick dip to black). **Replay:** F1 → World → "Boss intro cinematics → Forget", or the AutoPilot command `forgetintros`, then reload the stage.
+
+**System (reusable for the other bosses):**
+- `Enemies/BossCinematic.cs` is the director. It takes the camera from Cinemachine, letterboxes the HUD, freezes the player (invulnerable, turned to watch) and handles the skip. `Shot(pos, lookAt, fov, roll)` moves the camera.
+- `BossBase` hooks: `HasIntroCinematic`, `IntroCinematic(director)`, `SkipIntroCinematic()`, `BeginFightAfterIntro()`.
+- `BossArena` plays it, then calls `BossEncounter.Spawn(boss, afterIntro: true)`.
+- `AudioManager.PlayCinematicMusic` / `PlayClip2D` play a cutscene's own track and stings.
+- `HUD.ShowBossIntro(name, epithet)` shows the name card.
+
+**The Fairy's ballet** (`Enemies/Fairy/FairyBoss.Intro.cs`, ~24 s). **There are no ballet clips in the project.** The pack's 18 female dance loops and 7 pose holds are club/pop steps, none of them spin, and she is a procedural rigid rig anyway. So the ballet is choreographed on her own rig, which gained leg turnout, upper-arm roll (rounded arms), head tilt and spotting, and toes kept on the floor for pointe work:
+1. She drifts down the grotto's moonbeam (shot over the player's shoulder).
+2. On her toes: port de bras (bras bas → first → fifth en haut → second) while the wings open.
+3. Arabesque, turned slowly on one pointe until her back and wings face you.
+4. A turn back through passé, then a développé to the side.
+5. Preparation in fourth, a double pirouette spotting you, then a long accelerating spin (5 turns, arms pulled up) that lifts her off the floor in a spiral of dust.
+6. She stops dead facing you, arms and wings open, and **a pale moon fades in on her back** (`T_FX_MoonDisc` / `M_FX_FairyIntroMoon`, additive, with a rim light). Then the name card: **FAIRY: Moon Dancer of the Starlit Grotto**.
+7. The fight starts. She eases into her hover and the moon fades away.
+
+**Pack dance steps woven in (your pick: HumanF@Dance05, 09, 12, 17).** She has no skeleton, so `FairyBoss.Dance.cs` keeps a **hidden copy of the pack's female model** (`HumanF_Model.fbx`). It plays the clip through a manual PlayableGraph, and every frame each of her parts takes the direction of its bone (bone axis plus a side vector), blended over the procedural pose with a cross-fade:
+- **Matched by direction,** so her arms-down rest and the pack's T-pose line up.
+- **Feet stay pointed:** they follow the shins, and the toe contact turns the clip's knee bends into dips. The hips' sideways sway carries over.
+- **Where each clip plays:**
+  - Dance09: the landing sway.
+  - Dance05: after the port de bras.
+  - Dance17, then Dance12: the build-up into the pirouettes.
+- **Length:** about 33 s in total (each step is 2.2–2.6 s).
+- **Reuse:** `StartDance(i)` / `StopDance()` / `danceClips` work for any humanoid clip.
+
+Music: `music_harp_peaceful_loop` (the cutscene's own track). Moon sting: `cinematic_deep_low_whoosh_impact_02`. Builder: `Elder Tree/7d2` patches the prefab (also part of 7d). Tuning lives on the prefab: `introEpithet`, `introMoonColor`, `introMoonSize`, `introMusicVolume`.
+
+**Verified (play mode, Cave_Fairy):**
+- The full sequence runs, with 0 errors and 0 warnings.
+- The poses read: arabesque, passé, développé, pirouettes.
+- The moon and the name card show, and the fight starts after the cinematic.
+- A second meeting skips the cinematic.
+
+**Not verified / your call:**
+- **Framing:** widened after the first pass cropped her head, and checked again with the dance steps in: full body in every shot, and a softer moon.
+- **Not heard by ear:** the harp track and the sting.
+- **Accidental skips:** skip shares A with dismissing the title card. If you skip by accident, raise `BossCinematic.skipAfter` (MaskCinematic uses 2.5 s).
+
 ## 0000000000000000000000000000. The Fairy's arena: "Starlit Grotto"
 
 Based on your three reference paintings (the tall tiered mushrooms under a starry sky, the mushroom houses with lit windows, the spotted caps along a glowing path). The **Fairy** now has her own stage: `Scenes/Cave_Fairy.unity`, built by `Elder Tree/9j` (art: `9i`, props: `Tools/Blender/build_cave.py`). The boss select sends her there instead of the training yard, owning the Fairy Mask now counts as having felled her (`maskId = "fairy"`), and her portrait was re-shot in the grotto.

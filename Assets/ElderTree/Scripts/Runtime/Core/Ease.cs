@@ -10,6 +10,7 @@ namespace ElderTree
         public static float OutCubic(float t) => 1f - Mathf.Pow(1f - t, 3f);
         public static float InCubic(float t) => t * t * t;
         public static float InOutCubic(float t) => t < 0.5f ? 4f * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 3f) / 2f;
+        public static float InOutSine(float t) => 0.5f - 0.5f * Mathf.Cos(Mathf.Clamp01(t) * Mathf.PI);
         public static float OutQuart(float t) => 1f - Mathf.Pow(1f - t, 4f);
         public static float OutExpo(float t) => t >= 1f ? 1f : 1f - Mathf.Pow(2f, -10f * t);
 

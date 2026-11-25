@@ -141,6 +141,8 @@ namespace ElderTree.UI
 
         void BuildWorldRows()
         {
+            DebugTool("Boss intro cinematics", "Forget", Progress.ForgetIntros,
+                () => Progress.IntroSeen("fairy") ? "Seen: bosses just arrive (reload the stage after forgetting)" : "Not seen: the next first meeting plays it");
             DebugTool("Restore breakables + vines", "Restore", () => { World.Breakable.RestoreAll(); World.Cuttable.RestoreAll(); }, () =>
             {
                 int broken = 0, cut = 0;

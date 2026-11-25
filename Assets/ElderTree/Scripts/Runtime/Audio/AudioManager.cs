@@ -29,7 +29,7 @@ namespace ElderTree.Audio
     public enum AudioLayer { SFX, UI, Footsteps, Ambience, Music }
 
     /// <summary>What the music should be doing. Bosses switch to <see cref="Boss"/> for the fight.</summary>
-    public enum MusicMood { None, Explore, Boss }
+    public enum MusicMood { None, Explore, Boss, Cinematic }
 
     /// <summary>
     /// The game's audio: pooled one-shots with per-cue variation (random clip, pitch, volume), mixed in layers,
@@ -119,6 +119,8 @@ namespace ElderTree.Audio
         readonly MusicVoice[] music = new MusicVoice[2];
         int musicCur;
         MusicMood mood;
+        MusicTrack cinematicMusic;
+        AudioSource clipSource;
 
         // lower = more important (Unity keeps high-priority sources when real voices run out)
         static int Priority(AudioLayer l) => l switch
@@ -227,6 +229,32 @@ namespace ElderTree.Audio
 
         public static MusicMood CurrentMusic => Instance != null ? Instance.mood : MusicMood.None;
 
+        /// <summary>A cutscene's own track (crossfades in like any other mood; leave with <see cref="SetMusic"/>).</summary>
+        public static void PlayCinematicMusic(AudioClip clip, float volume)
+        {
+            if (Instance == null || clip == null) return;
+            Instance.cinematicMusic = new MusicTrack { clip = clip, volume = volume };
+            Instance.mood = MusicMood.Cinematic;
+        }
+
+        /// <summary>A cutscene's own one-shot (a sting, a swell), played flat on the SFX layer.</summary>
+        public static void PlayClip2D(AudioClip clip, float volume = 1f, float pitch = 1f)
+        {
+            if (Instance == null || clip == null) return;
+            var i = Instance;
+            if (i.clipSource == null)
+            {
+                i.clipSource = new GameObject("CinematicClips").AddComponent<AudioSource>();
+                i.clipSource.transform.SetParent(i.transform, false);
+                i.clipSource.playOnAwake = false;
+                i.clipSource.spatialBlend = 0f;
+                i.clipSource.priority = Priority(AudioLayer.UI);
+            }
+            i.clipSource.outputAudioMixerGroup = i.Output(AudioLayer.SFX);
+            i.clipSource.pitch = pitch;
+            i.clipSource.PlayOneShot(clip, volume * i.LayerVolume(AudioLayer.SFX));
+        }
+
         void PlayInternal(Sfx id, Vector3 pos, float volumeScale, float pitchScale, bool force2D = false)
         {
             if (!map.TryGetValue(id, out var cue) || cue.clips.Length == 0) return;
@@ -309,7 +337,7 @@ namespace ElderTree.Audio
 
         MusicTrack TrackFor(MusicMood m)
         {
-            var t = m switch { MusicMood.Explore => exploreMusic, MusicMood.Boss => bossMusic, _ => null };
+            var t = m switch { MusicMood.Explore => exploreMusic, MusicMood.Boss => bossMusic, MusicMood.Cinematic => cinematicMusic, _ => null };
             return t != null && t.clip != null ? t : null;
         }
 

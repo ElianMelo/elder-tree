@@ -1,3 +1,4 @@
+using System.Collections;
 using ElderTree.Combat;
 using ElderTree.Equipment;
 using UnityEngine;
@@ -45,5 +46,15 @@ namespace ElderTree.Enemies
         /// <summary>Remove anything the boss spawned into the world (bombs, walkers...).</summary>
         public virtual void ClearProjectiles() { }
         public abstract bool ReceiveHit(in DamageInfo info);
+
+        // ------------------------------------------------------------------ first-meeting cinematic
+        /// <summary>Does this boss have a first-meeting cinematic (<see cref="BossCinematic"/> plays it once per save)?</summary>
+        public virtual bool HasIntroCinematic => false;
+        /// <summary>The cinematic itself: stage the boss, move the camera with <see cref="BossCinematic.Shot"/>. Runs on the director.</summary>
+        public virtual IEnumerator IntroCinematic(BossCinematic director) { yield break; }
+        /// <summary>The player skipped: jump straight to where the cinematic would have left the boss.</summary>
+        public virtual void SkipIntroCinematic() { }
+        /// <summary>Start fighting from where the cinematic left the boss (no entrance of its own).</summary>
+        public virtual void BeginFightAfterIntro() => BeginFight();
     }
 }

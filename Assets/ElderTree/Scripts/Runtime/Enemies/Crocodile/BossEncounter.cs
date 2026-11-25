@@ -92,8 +92,9 @@ namespace ElderTree.Enemies
         /// <summary>A boss is spawned while it is in the world: fighting, or felled and smouldering.</summary>
         public static bool IsSpawned(BossBase b) => b != null && b.gameObject.activeSelf;
 
-        /// <summary>Bring a boss into the fight (restarts it if it was already there).</summary>
-        public void Spawn(BossBase b)
+        /// <summary>Bring a boss into the fight (restarts it if it was already there). <paramref name="afterIntro"/>: it was just
+        /// staged by its first-meeting cinematic, so it starts from there instead of making its usual entrance.</summary>
+        public void Spawn(BossBase b, bool afterIntro = false)
         {
             if (b == null) return;
             if (player != null && player.IsDead) return;
@@ -108,7 +109,7 @@ namespace ElderTree.Enemies
             Active = true;
             AudioManager.SetMusic(MusicMood.Boss);
             SetDummies(false);
-            b.BeginFight();
+            if (afterIntro) b.BeginFightAfterIntro(); else b.BeginFight();
             hud?.ShowBossBar(b);
         }
 

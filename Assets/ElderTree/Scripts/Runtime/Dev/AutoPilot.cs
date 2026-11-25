@@ -193,6 +193,7 @@ namespace ElderTree.Dev
                         break;
                     }
                     case "god": PlayerController.DevNoDamage = F(1, 1) > 0.5f; break;
+                    case "forgetintros": Progress.ForgetIntros(); break;
                     case "wear":
                     {
                         // "wear shark" / "wear alligator" / "wear none": instant form swap (no ownership needed)

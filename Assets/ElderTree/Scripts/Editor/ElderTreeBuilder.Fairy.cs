@@ -146,6 +146,72 @@ namespace ElderTree.EditorTools
             Unlit("M_FX_FairyCore", new Color(0.86f, 0.95f, 1f, 1f), null);
             Unlit("M_FX_FairyRing", new Color(0.55f, 0.75f, 1f, 1f), ring, additive: true);
             Unlit("M_FX_FairyBeam", new Color(0.62f, 0.82f, 1f, 0.42f), beamT, additive: true);
+            BuildFairyIntroArt();
+        }
+
+        /// <summary>
+        /// The moon that fades in on her back at the end of her intro ballet: a round full moon (cratered face, darker limb)
+        /// in a soft cold glow, on black so it can be drawn additive. Point filtered and dithered like the rest of the game.
+        /// </summary>
+        static void BuildFairyIntroArt()
+        {
+            var Hex = (System.Func<string, Color>)TextureForge.Hex;
+            var tex = TextureForge.SavePsx("T_FX_MoonDisc", 128, (u, v, x, y) =>
+            {
+                float dx = u - 0.5f, dy = v - 0.5f, r = Mathf.Sqrt(dx * dx + dy * dy);
+                const float R = 0.36f;
+                if (r < R)
+                {
+                    var c = Mx(Hex("#9AA4BC"), Hex("#E8ECF4"), 0.35f + 0.6f * TextureForge.Fbm(u, v, 5, 3, 4, 2801));
+                    c = Mx(c, Hex("#5E6880"), Sstep(0.55f, 0.7f, TextureForge.Fbm(u, v, 3, 2, 3, 2802)) * 0.65f);    // seas
+                    TextureForge.Worley(u, v, 10, 2803, out float f1, out _, out int id);
+                    float cr = 0.05f + 0.06f * ((id * 37 % 11) / 11f);
+                    if (f1 < cr) c = Mx(c, Hex("#525C72"), 0.5f * (1f - f1 / cr));
+                    else if (f1 < cr * 1.35f) c = Mx(c, Hex("#F4F6FA"), 0.45f);
+                    float limb = Mathf.Sqrt(Mathf.Max(0f, 1f - (r / R) * (r / R)));
+                    c *= 0.62f + 0.38f * limb;                                                             // darker towards the edge
+                    float rim = Sstep(R - 0.012f, R, r);                                                   // soft edge into the glow
+                    return Color.Lerp(c, new Color(0.55f, 0.66f, 0.9f) * 0.55f, rim);
+                }
+                float g = Mathf.Exp(-(r - R) * 22f) * 0.55f * (1f - Sstep(0.44f, 0.5f, r));          // cold glow round it
+                return new Color(0.55f, 0.66f, 0.9f) * g;
+            }, mips: false);
+            var ti = (TextureImporter)AssetImporter.GetAtPath($"{TextureForge.TexDir}/T_FX_MoonDisc.png");
+            if (ti != null && ti.wrapMode != TextureWrapMode.Clamp) { ti.wrapMode = TextureWrapMode.Clamp; ti.SaveAndReimport(); }
+            tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{TextureForge.TexDir}/T_FX_MoonDisc.png");
+            var m = Unlit("M_FX_FairyIntroMoon", Color.white, tex, additive: true);
+            m.renderQueue = (int)RenderQueue.Transparent - 10;      // behind her wings
+            EditorUtility.SetDirty(m);
+        }
+
+        /// <summary>Wires the intro cinematic's moon, glow and sounds onto the boss.</summary>
+        static void ApplyFairyIntro(FairyBoss boss)
+        {
+            boss.introMoonMaterial = M("M_FX_FairyIntroMoon");
+            boss.introHaloMaterial = M("M_FX_FairyGlow");
+            boss.introMusic = SoundPicks.FairyIntroMusic();
+            boss.introRevealClip = SoundPicks.FairyIntroReveal();
+            // the pack's female dance steps, retargeted onto her rig through a hidden copy of the pack's female model
+            const string kevin = "Assets/Kevin Iglesias/Human Animations";
+            boss.danceRig = AssetDatabase.LoadAssetAtPath<GameObject>($"{kevin}/Models/HumanF_Model.fbx");
+            // order matters: FairyBoss.DanceFlow / DanceSway / DanceDrive / DanceStep
+            boss.danceClips = new[] { "05", "09", "12", "17" }.Select(n =>
+                AssetDatabase.LoadAllAssetsAtPath($"{kevin}/Animations/Female/Social/Dance/Steps/HumanF@Dance{n}.fbx")
+                    .OfType<AnimationClip>().FirstOrDefault(c => !c.name.StartsWith("__preview"))).ToArray();
+        }
+
+        /// <summary>Adds the intro cinematic's assets to the existing Fairy prefab without rebuilding her (BuildFairyBoss does it too).</summary>
+        [MenuItem("Elder Tree/7d2. Fairy intro cinematic (moon + music)")]
+        public static string BuildFairyIntro()
+        {
+            BuildFairyIntroArt();
+            var root = PrefabUtility.LoadPrefabContents(FairyPrefabPath);
+            var boss = root.GetComponent<FairyBoss>();
+            ApplyFairyIntro(boss);
+            PrefabUtility.SaveAsPrefabAsset(root, FairyPrefabPath);
+            PrefabUtility.UnloadPrefabContents(root);
+            AssetDatabase.SaveAssets();
+            return $"Fairy intro: dances {string.Join(", ", boss.danceClips.Select(c => c ? c.name : "MISSING"))}, rig {(boss.danceRig ? "ok" : "MISSING")}, moon {(boss.introMoonMaterial ? "ok" : "MISSING")}, music {(boss.introMusic ? boss.introMusic.name : "MISSING")}, reveal {(boss.introRevealClip ? boss.introRevealClip.name : "MISSING")}";
         }
 
         static void ConfigureFairyImport()
@@ -481,6 +547,7 @@ namespace ElderTree.EditorTools
             boss.pillarPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(FairyPillarPrefabPath)?.GetComponent<FairyPillar>();
             var tg = root.AddComponent<Targetable>();
             tg.lockPoint = lockPoint.transform; tg.lockRadius = 0.8f; tg.displayName = boss.displayName; tg.rangeScale = 1.5f;
+            ApplyFairyIntro(boss);
 
             SetLayerRecursive(root, LayerEnemy);
             foreach (var h in root.GetComponentsInChildren<Hurtbox>(true)) h.gameObject.layer = LayerHurtbox;
