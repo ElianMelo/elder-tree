@@ -1,5 +1,88 @@
 # Handoff — Elder Tree soulslike slice
 
+## 0000000000000000000000000000. The Fairy's arena: "Starlit Grotto"
+
+Based on your three reference paintings (the tall tiered mushrooms under a starry sky, the mushroom houses with lit windows, the spotted caps along a glowing path). The **Fairy** now has her own stage: `Scenes/Cave_Fairy.unity`, built by `Elder Tree/9j` (art: `9i`, props: `Tools/Blender/build_cave.py`). The boss select sends her there instead of the training yard, owning the Fairy Mask now counts as having felled her (`maskId = "fairy"`), and her portrait was re-shot in the grotto.
+
+**Layout.** A great cavern about 62 m across. The fight ring is 20.2 m, the same as the other arenas.
+- **Fairy ring:** 96 small glowing mushrooms run right round the edge of the fight, just inside the invisible wall, so you can see where the edge is.
+- **Mushrooms (blue and violet, as you asked):**
+  - 6 giants (an 11 m umbrella like reference 1, and a pagoda of stacked caps).
+  - 12 tall, 34 medium, 90 clusters and 64 bracket fungi climbing the walls.
+  - Every cap has pale spots and glowing gills underneath. Half the instances swap blue and violet, so the two colours mix everywhere.
+- **Gnome houses:** two fat mushroom houses (reference 2), each with a round-topped door, two warm windows, a lantern on a post and a stone chimney.
+- **Stone:**
+  - 80 stalactites from the roof. Over the fight they're kept above 13.5 m so the Fairy has air.
+  - 22 stalagmites, 4 floor-to-roof columns and 20 mossy boulders.
+- **Plants:** 320 clumps of glowing flowers (bluebells, five-petalled star blossoms, bell spikes), many of them round the puddles. There are also the forest's ferns and tufts, re-tinted blue-teal.
+
+**The ceiling of stars** (`Art/Shaders/CaveStars.shader`): an additive layer drawn over the rock dome.
+- **Stars:** two layers of twinkling points (a few big glow-worm stars and many faint pinpricks) gather in a band like a milky way. A faint violet nebula drifts behind them, and the stars fade out down the walls.
+- **Glow threads:** 150 clusters of glow-worm threads hang from the roof, silk lines beaded with blue light, so the stars have depth from below.
+- **Moon-hole:** one hole in the roof leads up a short rock chimney to a real night sky with the moon. A shaft of moonlight comes through the violet haze onto the middle of the fight, with dust turning in it. The roof casts two-sided shadows, so the moon lights only the beam.
+
+**Reflective puddles** (`FX/PlanarReflection.cs` + `Art/Shaders/Puddle.shader`).
+- **The mirror:** 20 still puddles (11 in the fight, 9 among the mushrooms) are true mirrors. Once a frame a hidden camera renders the cave from under the water into a low-res, point-filtered texture, so the glowing caps, the stars and the Fairy all reflect.
+- **The water:** drip rings start up at random spots and spread. The floor dips under each puddle, and the rim fades into it.
+- **One water level:** all the puddles share one height, so a single mirror serves them all.
+
+**Brighter pass (your feedback: purple too strong, cavern too dark, player hard to see).** The design is unchanged; only the light and grade moved:
+- **Ambient light:** about 1.5x brighter and greyer-lavender instead of deep violet (sky 0.52/0.46/0.66, sides 0.46/0.40/0.58, below 0.34/0.28/0.44). The rock, the floor and the player all pick it up.
+- **Grade:**
+  - Exposure 0.85 → 1.2, contrast 16 → 10, saturation 4 → 0.
+  - Colour filter close to neutral, split toning softened to near-grey, magenta tint 22 → 8, a slight lift in the shadows.
+  - Lighter vignette, and the bloom is nearly white instead of lavender.
+- **Haze:** a little thinner and paler (density 0.011 → 0.009), and the Unity fog is a soft grey-violet instead of near-black purple.
+- **The player reads now:** a soft lavender fill light rides on the main camera (`ViewFill`, 6 intensity, 9 m range), so the Elder Tree's bark shows instead of a black cut-out. It also lights whatever is just in front of you, so the Fairy is easier to read too.
+- **Also updated:** the Fairy's portrait (re-shot in the brighter grotto) and new shots `Docs/Screenshots/71`–`72`. Shots `61`–`70` show the first, darker pass.
+
+**Purple post-processing** (`Settings/CavePostProfile.asset`).
+- **Grade:** violet colour filter, split toning (violet shadows, lavender highlights), magenta white-balance tint, and a lavender bloom off every glow.
+- **Haze and mist:** violet volumetric haze and a low violet mist (GroundFog, play mode only).
+
+**Light.** The only light comes from things in the cave:
+- **Mushrooms:** a breathing light under every big cap (`FX/GlowPulse.cs`). Lit shelf fungi wash patches of the walls.
+- **Warm glows:** amber from the house windows and lanterns.
+- **The moon,** through the hole.
+- **Fill:** soft bounce lights (moonbeam off the floor, glow on the walls and up into the roof) so the rock reads as a cave around the fight.
+
+**Life.**
+- **13 gnomes** (`World/Gnome.cs`; three models in `build_cave.py`: a lantern carrier, a miner with a pick over his shoulder, a sitter with a glowing pipe).
+  - Their heads follow you, or the boss when she's nearer.
+  - Standing ones waddle about near home and scurry away when you or the boss come within ~3.6 m.
+  - Sitters on the ring's edge watch the fight and duck and shiver instead.
+  - Each has its own hat and coat colour, and a soft fill light walks with each one, so they read away from the lit spots.
+- **16 frogs** by the puddles: the forest's frogs and `Frog.cs`, with a new violet skin with glowing cyan spots, plus the blue dart frogs.
+- **Spores:** blue and violet spores rise slowly all over the cave.
+- **Ambience:** the Gamemaster `cave_ambience_loop_02`, at the wind's level (`SoundPicks.CaveAmbience`).
+
+**Assets.**
+- **Props:** `build_cave.py -- <abs Art/Models/Cave>` exports 36 PSX props (12–1,048 tris): giant, tall, medium, twin and cluster mushrooms, shelf fungi, two houses, stalactites, stalagmites, a column, boulders, four flower clumps, two glow-thread clusters and three gnomes.
+- **Cave shell:** the floor, the dome with its hole and the puddle discs are built as meshes in Unity (`CaveGround/CaveShell/CavePuddles.asset`).
+- **Textures:** new 15-bit dithered textures for the cave rock, moss, floor, floor moss and mud; the mushroom cap (spots), cap glow, gills and stalk; the flower atlas and its glow map; gnome wool, beard, skin and wood; and the cave frog and its glow map.
+
+**Gotchas found.**
+- **URP point lights fall off with distance squared.** A light needs about 15–20 intensity to show on a wall 5 m away, which is why the fill lights look high in the builder.
+- **Floating glows:** cap lights first sat at the bounds' centre, which floats beside the cap on a bent mushroom. They now sit at the vertex centre at the cap's height.
+- **Portraits:** `CaptureBossPortraits` re-renders all of them. The croc, shark, druid and Elder Tree PNGs were reverted, so only the Fairy's changed.
+- **AutoPilot on the boss select:** stick navigation over-shoots the grid. To test a stage, call `SceneFlow.Load(entry.scene, entry.bossArg)` the way the select screen does.
+
+**Verified.**
+- **Flow (play mode):** the Fairy's select entry → `Cave_Fairy` → "Lair of the Fairy / STARLIT / GROTTO" → she spawns and fights (Volley and Moonfall seen there).
+- **Puddles:** they reflect live in play mode.
+- **Gnomes and frogs** are placed and animated. Gnome close-ups were checked after adding their fill lights.
+- **Health:** 0 errors, 0 warnings, ~95–100 fps in the editor.
+- **Shots:** `Docs/Screenshots/61`–`70`.
+
+**Not verified / your call.**
+- **The haze is now a lavender veil in the middle distance.** If it looks milky, lower `vf.ambient` in `BuildCavePostProfile`.
+- **The far walls fade into violet haze** rather than showing clear rock. The stalactites and stars sell the roof. Lower `vf.density` / `RenderSettings.fogDensity` if you want more cave wall.
+- **Colour vs. ART_DIRECTION:** saturated blue and violet glows are, by the rules, accents. Here they light the whole stage, as you asked; the surfaces under them stay dark.
+- **Cost of the mirror:** it re-renders the scene (with shadows) once a frame at 35% of the screen size. If that's too much on your target, lower `PlanarReflection.resolution` or turn off its `shadows`.
+- **Unheard:** the cave ambience, by ear. There are no drip one-shots yet.
+- **Not seen in motion:** the gnomes fleeing, the frogs hopping, the drip rings. Only stills were checked.
+- **Victory → select** wasn't re-run for this stage (same `BossArena` code as the other arenas).
+
 ## 000000000000000000000000000. Fairy Mask (Fairy reward)
 
 **Reward:** felling the Fairy drops the **Fairy Mask** (`FairyBoss.rewardMask`, set by `PlaceFairyMaskSet`). The first pickup plays the usual cinematic, here in pale blue and rose pink, then the **FAIRY MASK** card with the controls. Afterwards it lives in **slot 4 / D-pad ←**, the last free slot.

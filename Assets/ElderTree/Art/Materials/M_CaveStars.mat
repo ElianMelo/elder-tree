@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_CaveStars
+  m_Shader: {fileID: 4800000, guid: 2e13266233a06654cb10e2a021eeb34f, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _BandWidth: 9
+    - _Brightness: 3.5
+    - _Cell: 1.1
+    - _FadeMax: 11
+    - _FadeMin: 4
+    - _Keep: 0.55
+    - _NebulaStrength: 0.6
+    - _Size: 0.11
+    - _SmallCell: 0.42
+    - _SmallKeep: 0.5
+    - _SmallSize: 0.05
+    m_Colors:
+    - _BandDir: {r: 0.62, g: 0.12, b: 0.78, a: 0}
+    - _ColorA: {r: 0.54999995, g: 0.75, b: 1, a: 1}
+    - _ColorB: {r: 0.8, g: 0.54999995, b: 1, a: 1}
+    - _ColorC: {r: 0.54999995, g: 1, b: 0.95, a: 1}
+    - _NebulaColor: {r: 0.21999997, g: 0.079999976, b: 0.41999996, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
