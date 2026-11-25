@@ -17,6 +17,14 @@ namespace ElderTree.FX
         public float trackSpeed = 25f;
         public bool trackPlayerInFights = true;
 
+        /// <summary>Something every searchlight hunts while it's set (a boss's intro cinematic: the garrison spots the
+        /// Crocodile taking off). Overrides the sweep and the fight tracking; clear it to give them back.</summary>
+        public static Transform Spot;
+        /// <summary>Raised above <see cref="Spot"/>'s pivot (aim at the body, not its wheels).</summary>
+        public static float SpotLift = 2f;
+        [Tooltip("How fast it swings onto Spot (degrees a second).")]
+        public float spotSpeed = 55f;
+
         Transform player;
         float seed;
         Quaternion current;
@@ -33,8 +41,10 @@ namespace ElderTree.FX
         {
             if (head == null) return;
             Vector3 aim;
-            bool fight = trackPlayerInFights && player != null && Enemies.BossEncounter.Instance != null && Enemies.BossEncounter.Instance.Active;
-            if (fight) aim = player.position + Vector3.up * 0.5f;
+            bool spot = Spot != null && Spot.gameObject.activeInHierarchy;
+            bool fight = !spot && trackPlayerInFights && player != null && Enemies.BossEncounter.Instance != null && Enemies.BossEncounter.Instance.Active;
+            if (spot) aim = Spot.position + Vector3.up * SpotLift;
+            else if (fight) aim = player.position + Vector3.up * 0.5f;
             else
             {
                 // smooth sweep with dwell at the ends: sin shaped through a soft clamp
@@ -47,7 +57,7 @@ namespace ElderTree.FX
                 aim = head.position + yaw * baseRot * pitch * Vector3.forward * to.magnitude;
             }
             var want = Quaternion.LookRotation((aim - head.position).normalized, Vector3.up);
-            current = Quaternion.RotateTowards(current, want, (fight ? trackSpeed : 90f) * Time.deltaTime);
+            current = Quaternion.RotateTowards(current, want, (spot ? spotSpeed : fight ? trackSpeed : 90f) * Time.deltaTime);
             head.rotation = current;
         }
     }

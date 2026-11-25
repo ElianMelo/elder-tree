@@ -4005,7 +4005,7 @@ Transform:
   m_GameObject: {fileID: 111904837}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 10.281325, y: 1.84547, z: 6.358913}
+  m_LocalPosition: {x: 10.281325, y: 1.8454701, z: 6.358913}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4376,15 +4376,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 5463222a8cc2eb34cba00b66561545f9, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -9.393672
+      value: -2.1492283
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5463222a8cc2eb34cba00b66561545f9, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.010093585
+      value: -0.00440666
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5463222a8cc2eb34cba00b66561545f9, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.049309473
+      value: -1.8918326
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5463222a8cc2eb34cba00b66561545f9, type: 3}
       propertyPath: m_LocalRotation.w
@@ -10350,6 +10350,60 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e699a5a40a98bcd4a9df0d2055944fe3, type: 3}
   m_PrefabInstance: {fileID: 280047673}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &282803257
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 282803258}
+  - component: {fileID: 282803259}
+  m_Layer: 0
+  m_Name: CrocodileAirstrip
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &282803258
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 282803257}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1030824002}
+  - {fileID: 1987675283}
+  m_Father: {fileID: 379956104}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &282803259
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 282803257}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8252109d542da5240b619b5d26ade1cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Enemies.CrocodileAirstrip
+  park: {fileID: 1030824002}
+  lineUp: {fileID: 1987675283}
+  rollDistance: 9
+  liftOffSpeed: 14
+  firstTurnRadius: 8.5
+  climbAltitude: 22
+  passAltitude: 8
+  turnRight: 1
 --- !u!1001 &287808222
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13576,6 +13630,7 @@ Transform:
   - {fileID: 401809696}
   - {fileID: 1697671930}
   - {fileID: 2037891707}
+  - {fileID: 282803258}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &381462056
@@ -15399,7 +15454,7 @@ Transform:
   m_GameObject: {fileID: 426823629}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -5.470274, y: 2.286968, z: 11.688039}
+  m_LocalPosition: {x: -5.470274, y: 2.3851047, z: 15.438039}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -24064,8 +24119,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 644859706}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0.06911379, y: 0, z: 0, w: 0.9976088}
+  m_LocalPosition: {x: 0, y: 2.4563937, z: -14.499479}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -30394,7 +30449,7 @@ Transform:
   m_GameObject: {fileID: 834931936}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -9.343799, y: 2.3100936, z: 0.045756724}
+  m_LocalPosition: {x: -2.0993547, y: 2.2955935, z: -1.8953854}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -34433,7 +34488,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3037922896095481548, guid: d67ae53248653b145b4550a16e55bf1f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 950416615}
   m_SourcePrefab: {fileID: 100100000, guid: d67ae53248653b145b4550a16e55bf1f, type: 3}
 --- !u!4 &950416612 stripped
 Transform:
@@ -34451,6 +34509,40 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: caf3a1b48d6dd364d8d5cb89cea001e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Enemies.CrocodileBoss
+--- !u!1 &950416614 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3037922896095481548, guid: d67ae53248653b145b4550a16e55bf1f, type: 3}
+  m_PrefabInstance: {fileID: 950416611}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &950416615
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 950416614}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1001 &950471119
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -36701,6 +36793,37 @@ CapsuleCollider:
   m_Height: 8
   m_Direction: 1
   m_Center: {x: 0, y: 4, z: 0}
+--- !u!1 &1030824001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1030824002}
+  m_Layer: 0
+  m_Name: Park
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1030824002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1030824001}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.3007058, z: -0, w: 0.95371693}
+  m_LocalPosition: {x: -9, y: 0, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 282803258}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1033372126
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -46743,6 +46866,7 @@ MonoBehaviour:
   player: {fileID: 2139444641}
   hud: {fileID: 1035662014}
   startDelay: 2.2
+  introDelay: 0.6
   rematchDelay: 2.5
   returnToSelectAfterVictory: 1
   returnDelay: 3.5
@@ -61404,7 +61528,7 @@ Transform:
   m_GameObject: {fileID: 1718427246}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -13.25399, y: 2.2887497, z: 7.636189}
+  m_LocalPosition: {x: -14.553028, y: 2.4325385, z: 8.3861885}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -63690,15 +63814,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 5463222a8cc2eb34cba00b66561545f9, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -13.298473
+      value: -14.597511
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5463222a8cc2eb34cba00b66561545f9, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.011250276
+      value: 0.13253859
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5463222a8cc2eb34cba00b66561545f9, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 7.6133585
+      value: 8.3633585
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5463222a8cc2eb34cba00b66561545f9, type: 3}
       propertyPath: m_LocalRotation.w
@@ -70633,6 +70757,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: a38a612ff56fd2f41a12e03d65a4cf68, type: 3}
   m_PrefabInstance: {fileID: 1985606657}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1987675282
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1987675283}
+  m_Layer: 0
+  m_Name: LineUp
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1987675283
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1987675282}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
+  m_LocalPosition: {x: -3, y: 0, z: 8.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 282803258}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1987730587
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -71842,7 +71997,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 412213485083165384, guid: 167dbec42b4c3a647bfb8b4a8afc1afb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2037891710}
   m_SourcePrefab: {fileID: 100100000, guid: 167dbec42b4c3a647bfb8b4a8afc1afb, type: 3}
 --- !u!4 &2037891707 stripped
 Transform:
@@ -71860,6 +72018,40 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c4520fd9b2a7944c8137ab81d237ea2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Enemies.FairyBoss
+--- !u!1 &2037891709 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 412213485083165384, guid: 167dbec42b4c3a647bfb8b4a8afc1afb, type: 3}
+  m_PrefabInstance: {fileID: 2037891706}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2037891710
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2037891709}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1001 &2038480564
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -73369,11 +73561,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5463222a8cc2eb34cba00b66561545f9, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.013031879
+      value: 0.085104816
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5463222a8cc2eb34cba00b66561545f9, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 11.719317
+      value: 15.469317
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5463222a8cc2eb34cba00b66561545f9, type: 3}
       propertyPath: m_LocalRotation.w
@@ -75205,6 +75397,7 @@ MonoBehaviour:
   pitchWobble: 4
   trackSpeed: 25
   trackPlayerInFights: 0
+  spotSpeed: 55
 --- !u!64 &2549504030869236781
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -75484,6 +75677,7 @@ MonoBehaviour:
   pitchWobble: 4
   trackSpeed: 25
   trackPlayerInFights: 1
+  spotSpeed: 55
 --- !u!64 &8924244527115694653
 MeshCollider:
   m_ObjectHideFlags: 0

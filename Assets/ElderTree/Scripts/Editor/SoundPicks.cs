@@ -204,6 +204,19 @@ namespace ElderTree.EditorTools
         /// <summary>The Druid's roar, layered under its wood groan and played low (a beast's bellow, no voice). Not heard by ear yet.</summary>
         public static AudioClip DruidIntroRoar() => Loop("Animal_Impersonations/bear_roar_03", Use.OneShot);
 
+        /// <summary>The Crocodile's first-meeting departure: an epic track that stays low while it wakes and warms up, then swells
+        /// (about 24 s in) as it climbs out over the garrison. Not heard by ear yet.</summary>
+        public static AudioClip CrocIntroMusic() => Loop("Ω_Bonus_Music_16bit44kOnly/music_epic_fallen_empire", Use.Ambience);
+
+        /// <summary>Under the Crocodile's name card: a deep boom. Not heard by ear yet.</summary>
+        public static AudioClip CrocIntroReveal() => Loop("Cinematic Sounds/cinematic_deep_boom_impact_01", Use.OneShot);
+
+        /// <summary>The Crocodile snoring in its sleep: a deep purr played at half pitch (a reptile's rumble). Not heard by ear yet.</summary>
+        public static AudioClip CrocIntroSnore() => Loop("Animal_Impersonations/cat_purr_deep_01", Use.OneShot);
+
+        /// <summary>The Crocodile roaring past the camera (takeoff, then the low pass over you): a deep bass whoosh. Not heard by ear yet.</summary>
+        public static AudioClip CrocIntroPass() => Loop("Cinematic Sounds/cinematic_deep_bass_pass_whoosh_02", Use.OneShot);
+
         static AudioManager.MusicTrack Music(string rel, float volume, float loopStart, float loopEnd) =>
             new() { clip = Loop(rel, Use.Ambience), volume = volume, loopStart = loopStart, loopEnd = loopEnd };
 

@@ -22,9 +22,9 @@ namespace ElderTree.Enemies
     /// Arrows wear its stance down: break it in the air and it crash-lands, open to a critical blow.
     /// Below half health it flies faster, drops more and charges twice.
     /// </summary>
-    public class CrocodileBoss : BossBase
+    public partial class CrocodileBoss : BossBase
     {
-        public enum Mode { Dormant, Flying, Landing, Grounded, Charging, Staggered, Crashing, Dead }
+        public enum Mode { Dormant, Flying, Landing, Grounded, Charging, Staggered, Crashing, Dead, Cinematic }
 
         public string displayName = "Crocodile";
 
@@ -178,6 +178,7 @@ namespace ElderTree.Enemies
         {
             StopAllCoroutines();
             ClearProjectiles();
+            EndIntroDressing();
             State = Mode.Dormant;
             health = maxHealth;
             poise = maxPoise;
@@ -1131,7 +1132,7 @@ namespace ElderTree.Enemies
         // ================================================================== damage
         public override bool ReceiveHit(in DamageInfo info)
         {
-            if (!IsAlive || State == Mode.Crashing) return false;
+            if (!IsAlive || State == Mode.Crashing || State == Mode.Cinematic) return false;
             lastHitTime = Time.time;
             if (State == Mode.Grounded) closePressure += info.explosive ? 0.12f : 0.2f;
             health = Mathf.Max(0f, Health - info.damage);
@@ -1275,7 +1276,7 @@ namespace ElderTree.Enemies
             if (engineAudio && State != Mode.Dead)
             {
                 engineAudio.pitch = 0.55f + propSpin / 2400f * 0.5f + engineRev * 0.25f;
-                engineAudio.volume = Mathf.MoveTowards(engineAudio.volume, EngineVolume * (0.55f + propSpin / 2400f * 0.45f), dt * 0.6f);
+                engineAudio.volume = Mathf.MoveTowards(engineAudio.volume, EngineVolume * (0.55f + propSpin / 2400f * 0.45f) * engineLevel, dt * 0.6f);
             }
 
             if (beacon)

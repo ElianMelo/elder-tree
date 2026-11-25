@@ -1,5 +1,69 @@
 # Handoff — Elder Tree soulslike slice
 
+## 0000000000000000000000000000000. The Crocodile's intro cinematic: an aircraft's departure
+
+Same system as the Fairy's and the Druid's: it plays once per save, the first time you reach `Swamp_Crocodile`. Skip and replay work the same way (see the Fairy's section).
+
+**The scene (~26 s, `Enemies/Crocodile/CrocodileBoss.Intro.cs`), paced like a plane's departure:**
+1. **Asleep.** From beside you: the bomber is parked on the west side of the garrison, nose sagging into the mud, prop still, snoring. Each breath puffs from its nostrils, and the camera pushes in.
+2. **Wake.** Close on the head: a snort, a huge yawn that shows every tooth, the jaws snap shut, and it shakes the sleep off.
+3. **Engine start.** From up behind the tail: the prop is cranked twice. Each time it lurches round, coughs smoke and runs down. The third time it catches with a bang and a gout of smoke, the engine drone comes in, and the body shudders. Then it runs the engine up, blowing dust (or spray over the pools) back off the ground.
+4. **Taxi.** It rolls out in a right turn onto the runway along the north side, bumping over the ground and kicking up dust or spray at the wheels. The garrison's two **searchlights swing onto it** and stay on it until the fight starts.
+5. **Run-up against the brakes.** From down the runway, telephoto: prop screaming, nose dipped, jaws open, a storm of dust behind.
+6. **Takeoff run.** Brakes off: it charges the camera, rotates nose-up and lifts off, then banks hard right past the camera with a deep pass whoosh.
+7. **High chase.** A camera above and behind follows its climbing spiral over the lit garrison. The name card shows: **CROCODILE: Bomber Ace of the Drowned Garrison** (in brass).
+8. **The dive.** From where you stand: it comes round the far side, **crosses the moon**, and roars low over your head. The fight starts with it already in the air on its usual orbit.
+
+**Its eyes are open now (your feedback).** The glowing eyeballs used to sit buried inside the hide bumps on its head, so it always read as eyes-shut. `Tools/Blender/build_crocodile.py` now builds each eye:
+- out in front of its bump, looking forward and out, with a heavy hide lid hooding the top third (a glare, not a cartoon stare);
+- with a near-black vertical slit pupil (`M_BombIron`).
+
+`Crocodile.fbx` was re-exported. Only `Bomber_Head` changed (476 → 856 tris). The prefab picked it up by itself, with its materials remapped by name, so there was no rebuild. The boss-select portrait still shows the old eyes until `Elder Tree/9c` re-renders it.
+
+**The airstrip (`Enemies/Crocodile/CrocodileAirstrip.cs`, in the scene under `--- Actors ---/CrocodileAirstrip`).** It's the flight plan, and nothing in it is visible:
+- `Park`: where it sleeps, nose along +Z.
+- `LineUp`: where the takeoff run starts, +Z down the runway.
+- `rollDistance` (9 m) and `liftOffSpeed` (14 m/s): the takeoff run.
+- `firstTurnRadius` (8.5 m): its first turn after lift-off. Over one lap the turn widens and its centre drifts onto the arena's, so the spiral ends on the fight's orbit (12.5 m).
+- `climbAltitude` (22 m) and `passAltitude` (8 m): the top of the climb and the height of the pass over you.
+- `turnRight`.
+
+Gizmos show the parked plane, the runway and the first turn. Move the markers to re-plan it.
+
+**Builder:**
+- `Elder Tree/7a` patches the prefab's sounds and the swamp scene's airstrip.
+- `7` (the Crocodile prefab) and `9b` (the swamp scene) include it.
+- Layout constants are at the top of `ElderTreeBuilder.CrocodileIntro.cs`.
+- **Torches moved:** the arena's torches stood in every route the plane could taxi. The builder moves any torch in the plane's ground footprint, with its light, to the nearest clear spot (dry ground, inside the ring, away from the other torches and your start). This time it moved `Torch3` (3.8 m north), `Torch4` (1.5 m) and `Torch5` (7.5 m, toward the middle). Everything else in the scene is unchanged.
+
+**Code changes:**
+- **Crocodile boss:**
+  - `CrocodileBoss` is now partial and gains `Mode.Cinematic`. It can't be hit while that's on.
+  - The engine drone has a level multiplier, so it stays silent while it sleeps.
+  - On the ground the cinematic uses the boss's own pose and attitude code (`Pose`, `ApplyAttitude`). The climb and dive are a scripted spiral that hands its speed and heading straight to the fight's `Steer`.
+- **Searchlights:** `Searchlight.Spot` is a static override that makes every searchlight hunt a transform.
+- **Cinematic fill light and shake:** a soft moonlit fill light (no fog scatter) and the cinematic's own camera shake, as on the Druid.
+- **Camera spots:** cameras are nudged at least 4 m from torches and lanterns. Up close, their fog halo washed whole frames out.
+
+**Sound (Gamemaster, none of it heard by ear):**
+- Music: `music_epic_fallen_empire`. I picked it from its loudness curve: it stays low for ~24 s, then swells, which lands on the climb and the name card.
+- Snore: `cat_purr_deep_01` at half pitch.
+- Takeoff and overhead passes: `cinematic_deep_bass_pass_whoosh_02`.
+- Under the name card: `cinematic_deep_boom_impact_01`.
+- The coughs, catch, clunks, yawn and roars reuse existing cues (`BombPop`, `Knock`, `Slam`, `CrocRoar`, `JawSnap`, `Skid`).
+
+**Verified (play mode, Swamp_Crocodile, five runs with frames at every beat):**
+- **The full sequence runs, with 0 errors and 0 warnings.** The fight starts with it flying and its first moves follow (Carpet, Strike).
+- **Clearance:** a per-frame overlap check along the whole path finds nothing in the plane's way. The only contacts left come from my deliberately oversized test boxes, 1–2 m off a torch and the east floodlight at lift-off.
+- **Skip:** an early test run skipped during the engine start. It cut to the fight with it in the air.
+- **Shots:** `Docs/Screenshots/73`–`76`.
+
+**Not verified / your call:**
+- **By ear:** none of the sounds above.
+- **Second visit:** not re-run. Its entrance (`Intro()`) is untouched.
+- **Engine-start frames:** seen from up behind the tail, the box-cell wing fills a lot of the frame. The prop and smoke read, but small.
+- **The torch moves:** if you'd rather keep the old torch spots, move `Park` / `LineUp` instead and re-run `7a`.
+
 ## 000000000000000000000000000000. The Druid's intro cinematic: out of the forest, through the trees, and a roar
 
 Same system as the Fairy's: it plays once per save, the first time you reach `Forest_Druid`. The skip and replay controls are the same as hers (see below).

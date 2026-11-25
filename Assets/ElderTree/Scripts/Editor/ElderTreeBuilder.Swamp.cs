@@ -855,6 +855,7 @@ namespace ElderTree.EditorTools
             rig.hud.titleMain = "DROWNED";
             rig.hud.titleSub = "GARRISON";
             foreach (var b in Object.FindObjectsByType<Enemies.CrocodileBoss>(FindObjectsInactive.Include, FindObjectsSortMode.None)) { b.arenaCenter = Vector3.zero; EditorUtility.SetDirty(b); }
+            BuildCrocodileAirstrip();
 
             EditorSceneManager.SaveScene(scene, SwampScenePath);
             RegisterBuildScenes();

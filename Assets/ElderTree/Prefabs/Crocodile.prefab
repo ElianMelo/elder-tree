@@ -5618,6 +5618,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Enemies.CrocodileBoss
   rewardMask: {fileID: 0}
+  introEpithet: Bomber Ace of the Drowned Garrison
+  introNameColor: {r: 0.93, g: 0.8, b: 0.5, a: 1}
+  introMusic: {fileID: 8300000, guid: a7bfdcb767a52e1449edb578774235df, type: 3}
+  introMusicVolume: 0.55
+  introRevealClip: {fileID: 8300000, guid: 886dd441091c1974ead974fbbefa1324, type: 3}
+  introSnoreClip: {fileID: 8300000, guid: 50311116eae4c2246a73f6ff1ae5869a, type: 3}
+  introSnorePitch: 0.5
+  introSnoreVolume: 0.55
+  introPassClip: {fileID: 8300000, guid: 22b42d61b3c094d45bf9cd7e04a74d62, type: 3}
   displayName: Crocodile
   pivot: {fileID: 4826420578504631060}
   jaw: {fileID: 8782170950320947892}

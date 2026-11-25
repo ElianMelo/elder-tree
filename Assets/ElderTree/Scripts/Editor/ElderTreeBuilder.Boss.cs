@@ -504,6 +504,7 @@ namespace ElderTree.EditorTools
 
             SetLayerRecursive(root, LayerEnemy);
             foreach (var hb in root.GetComponentsInChildren<Hurtbox>(true)) hb.gameObject.layer = LayerHurtbox;
+            ApplyCrocodileIntro(boss);
             PrefabUtility.SaveAsPrefabAsset(root, BossPrefabPath);
             Object.DestroyImmediate(root);
         }

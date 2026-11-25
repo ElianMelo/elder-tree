@@ -512,12 +512,37 @@ for s in (-1, 1):
     ec = P(2.85, s * 0.5, 2.44)
     head.loft(lathe_rings([(2.6, 0.2, 2.38), (2.75, 0.24, 2.44), (2.95, 0.22, 2.46), (3.1, 0.12, 2.42)], 6, lat0=s * 0.5),
               "M_CrocHide", cap0=False)
-    eye = []
+    # the eye, open: a glowing eyeball out in front of the turret, looking forward and out, hooded by a heavy hide lid
+    # over its top third, with a dark vertical slit pupil (it used to sit buried in the turret and read as shut)
+    gaze = (P(0.85, s * 0.42, 0.2) - P(0, 0, 0)).normalized()
+    eb = P(3.02, s * 0.56, 2.47)
+    er = 0.165
+    side_t = gaze.cross(Vector((0, 0, 1))).normalized()       # horizontal across the eye
+    up_t = side_t.cross(gaze).normalized()                     # vertical across the eye
+    eye_ball = []
+    for k in range(7):
+        a = -math.pi / 2 + math.pi * k / 6
+        eye_ball.append([eb + gaze * (math.sin(a) * er * 0.9) + (side_t * math.cos(b) + up_t * math.sin(b)) * (math.cos(a) * er)
+                         for b in (q * 2 * math.pi / 10 for q in range(10))])
+    head.loft(eye_ball, "M_CrocEye")
+    # slit pupil: a thin near-black lens on the front of the eyeball, tall and narrow
+    pc = eb + gaze * (er * 0.86)
+    pupil = []
     for k in range(5):
         a = -math.pi / 2 + math.pi * k / 4
-        eye.append([ec + Vector((math.cos(b) * math.cos(a) * 0.15, math.sin(a) * 0.15, 0.06 + math.sin(b) * math.cos(a) * 0.13))
-                    for b in (q * 2 * math.pi / 8 for q in range(8))])
-    head.loft(eye, "M_CrocEye")
+        pupil.append([pc + gaze * (math.sin(a) * 0.03) + (side_t * math.cos(b) * 0.032 + up_t * math.sin(b) * 0.13) * math.cos(a)
+                      for b in (q * 2 * math.pi / 8 for q in range(8))])
+    head.loft(pupil, "M_BombIron")
+    # the upper lid: a hide shell over the top of the eye, tipped forward so its edge cuts across the eye (a hooded glare)
+    lid_axis = (up_t + gaze * 0.45 - side_t * s * 0.15).normalized()
+    lid_u = gaze.cross(lid_axis).normalized()
+    lid_v = lid_axis.cross(lid_u).normalized()
+    lid = []
+    for k in range(5):
+        t = math.radians(4 + 58 * k / 4)
+        lid.append([eb + (lid_axis * math.cos(t) + (lid_u * math.cos(b) + lid_v * math.sin(b)) * math.sin(t)) * (er + 0.03)
+                    for b in (q * 2 * math.pi / 10 for q in range(10))])
+    head.loft(lid, "M_CrocHide", cap1=False)
     # heavy brow ridge (angry slant toward the snout)
     head.loft([[P(2.6, s * 0.3, 2.5), P(2.62, s * 0.55, 2.66), P(2.6, s * 0.78, 2.5)],
                [P(3.05, s * 0.32, 2.48), P(3.0, s * 0.5, 2.6), P(3.0, s * 0.72, 2.46)]], "M_CrocHide", closed=False)
