@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b8c0f509530d7541905da286722bd53, type: 3}
+  m_Name: Chakram_Moon
+  m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Equipment.ChakramData
+  displayName: Moon Chakram
+  icon: {fileID: 2800000, guid: 5240a8546d567c845a776d3845ad5ebd, type: 3}
+  manaPerShot: 10
+  raiseTime: 0.3
+  aimMoveSpeed: 2.4
+  catchRecovery: 0.15
+  range: 17
+  outSpeed: 24
+  returnSpeed: 26
+  curve: 1.6
+  spin: 1500
+  radius: 0.42
+  catchRadius: 0.7
+  maxFlightTime: 3.5
+  leadFactor: 0.6
+  openSkyDistance: 30
+  damage: 46
+  poiseDamage: 14
+  cutPower: 1
+  cutWidth: 1.2
+  colour: {r: 1, g: 0.55, b: 0.72, a: 1}
+  shake: 0.12

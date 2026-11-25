@@ -53,6 +53,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: S_Light2
   - id: S_Light2
     state: Sword_L2
@@ -93,6 +94,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: S_Light3
   - id: S_Light3
     state: Sword_L3
@@ -133,6 +135,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: S_Light4
   - id: S_Light4
     state: Sword_L4
@@ -173,6 +176,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: S_Light1
   heavyCombo:
   - id: S_Iai
@@ -214,6 +218,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: S_Helm
   - id: S_Helm
     state: Sword_H2
@@ -254,6 +259,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: S_KesaR
   - id: S_KesaR
     state: Sword_H3
@@ -294,6 +300,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: S_Roundslash
   - id: S_Roundslash
     state: Sword_H4
@@ -334,6 +341,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 1
+    hand: 0
     next: S_Iai
   runningAttack:
     id: S_Run
@@ -375,6 +383,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: S_Light2
   jumpAttack:
     id: S_Jump
@@ -416,6 +425,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: S_Light1
   dodgeAttack:
     id: S_Fade
@@ -457,6 +467,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: S_Light1
   skill:
     id: S_Skill
@@ -498,4 +509,5 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: 

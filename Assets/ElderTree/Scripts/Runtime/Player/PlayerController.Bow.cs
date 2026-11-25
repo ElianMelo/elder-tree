@@ -43,7 +43,7 @@ namespace ElderTree.Player
         BowData Bow => (CurrentForm != null && CurrentForm.bow != null) ? CurrentForm.bow : bowData;
 
         public bool BowRaised => State == PlayerState.Aim;
-        public BowPhase CurrentBowPhase => State == PlayerState.Aim && !cannonMode && !orbMode ? bowPhase : BowPhase.None;
+        public BowPhase CurrentBowPhase => State == PlayerState.Aim && !cannonMode && !orbMode && !chakramMode ? bowPhase : BowPhase.None;
         public float BowPhaseProgress { get; private set; }
         /// <summary>Gameplay draw amount 0..1 (eased). With the cannon: readiness of the next shot.</summary>
         public float BowDraw { get; private set; }
@@ -54,7 +54,9 @@ namespace ElderTree.Player
         public bool AimOnTarget { get; private set; }
         public int ArrowsLoosed { get; private set; }
         /// <summary>Mana one shot of the raised ranged weapon costs.</summary>
-        public float RangedManaCost => CurrentForm != null && CurrentForm.rangedKind == RangedKind.Orb && CurrentForm.orb != null
+        public float RangedManaCost => CurrentForm != null && CurrentForm.rangedKind == RangedKind.Chakram && CurrentForm.chakram != null
+            ? CurrentForm.chakram.manaPerShot
+            : CurrentForm != null && CurrentForm.rangedKind == RangedKind.Orb && CurrentForm.orb != null
             ? CurrentForm.orb.manaPerShot
             : CurrentForm != null && CurrentForm.rangedKind == RangedKind.Cannon && CurrentForm.cannon != null
             ? CurrentForm.cannon.manaPerShot
@@ -95,6 +97,7 @@ namespace ElderTree.Player
         bool TryEnterAim()
         {
             if (CurrentForm != null && CurrentForm.rangedKind == RangedKind.Orb) return TryEnterOrbAim();
+            if (CurrentForm != null && CurrentForm.rangedKind == RangedKind.Chakram) return TryEnterChakramAim();
             if (CurrentForm != null && (CurrentForm.rangedKind == RangedKind.Cannon || CurrentForm.rangedKind == RangedKind.Crossbow)) return TryEnterCannonAim();
             if (!input.GameplayEnabled || !input.AimHeld || arrowPrefab == null || bowRig == null || Bow == null) return false;
             EndSwing();
@@ -124,9 +127,10 @@ namespace ElderTree.Player
             drawLinear = 0f;
             fireQueued = false;
             holdPlaying = false;
-            bool wasCannon = cannonMode || orbMode;
+            bool wasCannon = cannonMode || orbMode || chakramMode;
             cannonMode = false;
             if (orbMode) { orbMode = false; DropHeldOrb(); }
+            if (chakramMode) { chakramMode = false; LowerChakram(); }
             if (State == PlayerState.Aim) ReturnToLocomotion(wasCannon ? 0.3f : 0.25f);
         }
 
@@ -135,7 +139,7 @@ namespace ElderTree.Player
         {
             bool aiming = State == PlayerState.Aim;
             bool casting = State == PlayerState.Cast;
-            bool squared = cannonMode || orbMode || casting;      // square stance: the clip faces the root, no archer hips turn
+            bool squared = cannonMode || orbMode || chakramMode || casting;      // square stance: the clip faces the root, no archer hips turn
             bool moving = motor.PlanarVelocity.sqrMagnitude > 0.04f;
             // the cannon / orb / casting stances keep their own legs while standing; the walk layer only steps when moving
             float target = aiming || casting ? (squared ? (moving ? 1f : 0f) : 1f) : 0f;
@@ -149,7 +153,7 @@ namespace ElderTree.Player
             float pitch = Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
             animator.SetFloat(HAimPitch, Mathf.Clamp(pitch, -50f, 40f), 0.06f, dt);
 
-            if (!cannonMode && !orbMode)
+            if (!cannonMode && !orbMode && !chakramMode)
             {
                 // draw: the Load clip reaches full draw at loadFullDrawTime; scrub it with the gameplay draw
                 float drawT = bowPhase == BowPhase.Draw ? BowDraw * loadFullDrawTime : 0f;
@@ -226,6 +230,7 @@ namespace ElderTree.Player
         {
             if (cannonMode) { UpdateCannonAim(dt); return; }
             if (orbMode) { UpdateOrbAim(dt); return; }
+            if (chakramMode) { UpdateChakramAim(dt); return; }
             var b = Bow;
             if (!AimCommon(dt, b.aimMoveSpeed, stanceYaw)) return;
 

@@ -22,10 +22,24 @@ namespace ElderTree.Masks
         public SlashArc slash;
         [Tooltip("Two-handed weapons: keeps the off hand on the shaft (null = one-handed).")]
         public TwoHandGrip twoHandGrip;
+        [Header("Off hand (dual wield)")]
+        [Tooltip("The left-hand weapon of a dual-wield form (null = one weapon).")]
+        public WeaponHitbox offWeapon;
+        public WeaponTrail offTrail;
+        public SlashArc offSlash;
         [Header("Ranged")]
         public BowRig bowRig;
         [Tooltip("Shouldered ranged weapon: the cannon, or the crossbow (same rig: stowed on the back, raised to the shoulder).")]
         public CannonRig cannonRig;
+        [Tooltip("Fairy: the chakram model, its grip socket in the right hand and where it rides on the back.")]
+        public Transform chakram;
+        public Transform chakramHandSocket;
+        public Transform chakramStowSocket;
+        [Tooltip("Where the right-hand weapon goes while the chakram is in that hand, and where it lives in the hand.")]
+        public Transform mainWeaponStowSocket;
+        public Transform mainWeaponHandSocket;
+        [Tooltip("Fairy: the wings that flutter.")]
+        public FairyWings wings;
         [Header("Magic (caster forms)")]
         [Tooltip("Where spells leave the staff (the glowing seed in the crook).")]
         public Transform spellFocus;

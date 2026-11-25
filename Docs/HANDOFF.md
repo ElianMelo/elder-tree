@@ -1,5 +1,120 @@
 # Handoff — Elder Tree soulslike slice
 
+## 000000000000000000000000000. Fairy Mask (Fairy reward)
+
+**Reward:** felling the Fairy drops the **Fairy Mask** (`FairyBoss.rewardMask`, set by `PlaceFairyMaskSet`). The first pickup plays the usual cinematic, here in pale blue and rose pink, then the **FAIRY MASK** card with the controls. Afterwards it lives in **slot 4 / D-pad ←**, the last free slot.
+
+| Fairy form | What it does |
+|---|---|
+| Body | `FairyForm.fbx` uses the same skeleton as the Elder Tree, so all pack clips work. It's a human-sized echo of the boss: pale skin, a dusky blue dress to the knee with a torn hem, long white hair (crown and front locks on the head, the long fall on the chest so it follows the body), pointed ears, cold blue eyes, a pale gem, bare feet. 1,726 tris plus 280 in wings. **Four wings flutter** (`FX/FairyWings.cs`): a slow beat at rest, faster when running, fast and wide in the air or during the special, folded back during a roll or a hit, and swept back while aiming so they don't block the over-the-shoulder view. Handling: 8% faster, 12% longer roll, takes 10% more damage. |
+| **Twin Fae Daggers** (your call: two small white daggers) | A bone-white leaf-shaped blade with a crescent-moon guard and a pale blue wrapped grip, **one in each hand**. Grips come from the pack's own dual-wield props (`B-handProp.R/.L` on the DW parry pose). **Light:** right, left, right, left (1H _R / _L clips), then a both-blades strike (`AttackDW01`). Quick and cheap: 10 stamina, 24–38 damage. **Heavy:** a crossing double cut you can hold to charge (`AttackDW02`, two strikes, either can land), a big left sweep (`Attack1H05_L`), then a lunging two-blade strike. **Run attack:** a long lunging stab. **Roll attack:** a left-hand cut. Guard uses the pack's dual-wield parry (`ElderTree_Fairy.overrideController`). Each attack says which blade is live (`AttackData.hand`: Main / Off / Both), and a blow that lands with both blades counts once. Hit windows were **measured**: hand speed per clip on the fairy rig (`AnalyzeFairyClip`), windows round the peak. White slashes with a pale blue edge, and they cut vines. |
+| **Moon Chakram** (your call: a pink circle thrown like a boomerang) | A **pink crescent blade** after your three references: sharp outer and inner edges, a darker engraved band of runes in the middle, a wrapped grip on the inner edge where the hand holds it (like your second photo). It rides across the small of the back. **LT** raises it (the pack's `ThrowBoomerang01_R - Hold`, the right dagger goes to the hip), **RT** throws it (`ThrowBoomerang01_R`, released at the measured hand-speed peak). It spins flat at 1,500°/s, flies out along a slight curve to the crosshair (up to 17 m), slows into the turn or **rebounds off a wall**, then homes back to the hand, speeding up, and is caught (`- Catch` clip). It **cuts everything it passes, once on the way out and once on the way back** (46 per pass), and cuts vines. Pink trail and light. 10 mana per throw. **One chakram:** it must come back before the next throw (about 2.2 s round trip at a target 6 m away with a wall behind it). The daggers work while it's out. |
+| **Special: Moonfall** (reworked on your feedback: one huge moon instead of many rays, a bigger area) | **RB + RT:** she rises 0.8 m on her wings and raises a hand to the sky (`MagicAttackCall1H01_R`). A **huge moon** (3.6 m radius, a crater-pocked pale face that glows by its own light) falls out of the night onto the target: the lock target, else 8 m ahead. It comes in on a long slant from high up beyond the target, so the camera behind her sees it drop, accelerating over 1.7 s and shedding motes, while a **ring 15 m across** opens on the ground and its light grows over the field. **Impact:** everything within **7.5 m** takes 210 damage and 120 poise (dummies stagger). There is a flash, a ring of light racing out across the ground, dust all round the rim, shards and a slow-motion beat. The moon settles into the ground as a glowing dome, then sinks and crumbles away. 1 special charge, hyper armour (`Combat/MoonDrop.cs`, prefab `MoonDrop.prefab`). |
+
+**Tuning** (created once, your edits survive rebuilds): `Data/Equipment/Melee_FairyDaggers`, `Chakram_Moon` (range, out / return speed, curve, spin, radius, damage, mana), `Special_Moonfall` (rise, moon size, drop height / distance, fall time, impact radius / damage / poise, camera), `Data/Forms/Form_Fairy`, `Data/Masks/Mask_Fairy`, `Data/FairyDaggerMoveset` (timings; `FairyMovesetVersion` rewrites it on upgrade).
+
+**Code map:**
+- New: `Player/PlayerController.Fairy.cs` (dual blades, chakram aim / throw / catch, Moonfall), `Combat/Chakram.cs` (the thrown crescent), `Combat/MoonDrop.cs` (the falling moon; texture `T_FX_Moon`, mesh `MoonSphere.asset`), `FX/FairyWings.cs`, `Equipment/ChakramData.cs`, `Equipment/MoonfallData.cs`.
+- Changed: `RangedKind.Chakram` and `FormData.chakram`; `AttackData.hand` (`WeaponHand`); `FormRig` gained the off-hand blade (`offWeapon`, `offTrail`, `offSlash`) and the chakram sockets; `WeaponHitbox.ClearHits()`; `FairyPillar` gained a friendly mode; HUD shows the chakram icon / name / mana cost and its hits flash the crosshair.
+- Builder: `Editor/ElderTreeBuilder.FairyMask.cs` (menu **8d**, in `BuildAll()` after the Druid set). 16 new animator states (`Fairy_*`), all from the Human Mega pack.
+- Model: `Tools/Blender/build_fairy_form.py -- <abs Art/Models/FairyMask>` (body, wings, dagger, chakram, mask). New textures: `T_FairyBlade`, `T_FairyGrip`, `T_FairyChakram` (rune band, honed edges).
+- **Sound:** no new cues. Blade whoosh / hit for the daggers and chakram, `MetalHit` + `BladeRing` for the catch and wall rebounds, the magic set for Moonfall. **None of it heard by ear.**
+
+**Verified in play mode (AutoPilot):**
+- **Form:** worn, with daggers in both hands, wings and the chakram on the back. The HUD shows Twin Fae Daggers and Moon Chakram ◆10.
+- **Daggers:** the light chain reached the both-blades finisher (112 on a dummy) and a charged heavy hit for 78.
+- **Chakram:** thrown, hit going out (48) and coming back (45), rebounded off the cracked wall, was caught, and a second throw after the catch hit twice again.
+- **Moonfall (falling moon):** rise → call → the moon drops in from above the target → impact. It hit all three dummies for 210 / 163 / 164 and staggered them, then crumbled away. Checked frame by frame through the impact. A full-strength impact shake had knocked the camera into a thicket behind her for one frame, so the shake and the camera pull-back were reduced.
+- **Reward path:** forget masks → pickup → cinematic → card → fairy worn, slot 4 owned.
+- **Health:** `BuildAll()` and play mode, 0 errors, 0 warnings.
+- **Shots:** `Docs/Screenshots/55`–`60`.
+
+**Fixed during the test:**
+- The chakram came back too slowly to throw again in a fight. It now accelerates harder.
+- The wings blocked much of the aiming view. They now fold back while aiming.
+- A throw pressed during the catch animation was dropped. A throw now cuts the catch short.
+
+**Not verified / your call:**
+- **Feel on a pad:** dagger speed, how long the chakram round trip should be, and whether one chakram at a time is right or you'd rather it can be thrown again mid-flight.
+- **Close-ups of the grips** (the dagger and chakram in the hand during swings and the throw) were only seen at gameplay distance.
+- **The mask pickup still shows the Crocodile's mask model** while it hovers. This is the same for every mask (the pickup prefab has one model), so it isn't new.
+- **AutoPilot note:** `wear fairy` right after the title card was undone by the start-up sequence. It works a moment later.
+- **Question:** should the chakram be throwable again before it returns (recalling it)?
+
+## 00000000000000000000000000. Boss: Fairy (hovering fae, ranged, flees when you close in)
+
+**Start it:** pause menu → **Summon Fairy** (under Summon Druid), F1 → row 4, or the boss select's **bottom** slot. She fights in the training yard via `SceneFlow.PendingBoss` until she gets a stage of her own. She drifts down out of the sky some way in front of you, then opens her arms and wings.
+
+She comes from your reference painting, done in the PSX dark-fantasy style:
+- A tall pale fae (~2.6 m) in a **blue dress**: dusky, with a ragged hem and torn tatters.
+- Long **white hair**: a fall down the back and two locks framing the face.
+- Pointed ears, cold pale-blue glowing eyes and a pale gem on the breast.
+- **Four white veined wings**: a see-through membrane with solid white veins and rim.
+
+She **hovers** about 0.6 m off the ground with her toes pointed, rather than flying about. She has her own cold light and sheds fairy dust from her wings.
+
+| Move | Tell → attack | Counterplay / punish |
+|---|---|---|
+| Volley | A hand rises and gathers light (sparkles drawn into the palm), then flicks a fan of motes (3, **5 in phase 2**) that home in on you for ~0.75 s. 2 volleys (3 in phase 2), alternating hands. | Roll through them late, or sidestep once the homing runs out. 55 each. |
+| Halo | Arms spread; motes bloom one by one in a ring behind her head (6, **8 in phase 2**), then fire one after another at where you're going. | A rhythm of rolls (0.22 s apart, 0.15 s in phase 2). 60 each. |
+| Moonfall | Rises with both arms up. A pale ring opens under you (motes rising out of it), and 1 s later a column of light slams down. 3 rings (**5 in phase 2**), chasing you. | Keep moving. 120 in the ring. **Spent** for 1.5 s after: she sinks low and won't flee. |
+| Swoop (far away) | Draws back, arms swept behind her, then skims at you low and fast with her arms out. | Roll sideways through her. 110. **Spent** 0.9 s after. |
+| Spiral (phase 2) | Arms out level, then she spins on the spot shedding a spiral of motes outward and slightly down. | Find the gaps. 45 each. **Dizzy** 1.6 s after. |
+| **Flee** | Stay within ~3.8 m of her and she startles. She holds almost still for **1.5 s (1 s in phase 2)**, then takes off backwards in an arc to a spot ~11 m from you on the far side. In phase 2 she first **shoves you with a wing gust** (50, knockback). She also leaves **3 motes hanging in the air** behind her, which arm and burst when you walk into them (70). | That brief moment is an opening: 2 club hits landed in the test. Spent and Dizzy are the real punish windows. Bring the bow: arrows reach her anywhere. |
+| Phase 2 (≤50%) | Curls up, rising, then flings her arms and wings wide: a **nova** of 14 motes bursts out all round her. 20% faster, more motes, a shorter flee fuse. | |
+| **Stance break** | Her wings fold and she drops out of the air onto her knees, head bowed, for 3.6 s. | Criticals. She rises with a beat of her wings. |
+
+Stats on the prefab: 2,200 HP, poise 90 (arrows break it well), arena radius 15 m. When she dies she falls onto her back and her light dims. Then she comes apart into motes and is gone. Felling her drops the **Fairy Mask** (see the section above).
+
+**How it's built**
+- **Model** (`Tools/Blender/build_fairy.py -- <abs Art/Models/Fairy>`): rigid PS1 segments with origins on the joints.
+  - Parts: pelvis, skirt, torso, head, hair, upper arm / forearm / hand ×2, thigh / shin / foot ×2, and upper and lower wing ×2.
+  - **1,606 tris**, within the 2,500 budget.
+  - The wings are flat fanned cards with polar UVs (u across the fan, v root → rim), so one vein texture fits every wing shape.
+- **Textures** (`TextureForge`, 128 px, PSX dithered):
+  - `T_FairyDress`: muted cornflower blue, long folds, weave, faded patches.
+  - `T_FairySkin`.
+  - `T_FairyHair`: bone-white strands, grey between them.
+  - `T_FairyWing`: the veins, cross-veins and rim are solid. The membrane is 16–36% alpha with a blue→lilac sheen.
+  - `T_FX_FairyBeam`.
+  - The wings are **unlit alpha-blended** (`M_FairyWing`, Particles/Unlit), so they glow faintly at night. The eyes and gem are cold blue `Glow` materials.
+- **Animation** (`Enemies/Fairy/FairyBoss.cs`) is procedural, like the other bosses.
+  - Pose targets are smoothed in `LateUpdate`: lean, bank, lift, arm elevation/azimuth/elbow, hips/knees, and wing open/amplitude/frequency/droop.
+  - The wings flutter round their roots (7 Hz idle, 13 Hz fleeing).
+  - She bobs and sways, her legs paddle slowly and her head tracks you. The **skirt and hair drag** behind her motion.
+- **Projectiles:**
+  - `FairyMote` is pooled. It can be held, fired (optionally homing) or left hanging as a mine. A roll's i-frames let it pass through you, and it bursts on the ground and walls.
+  - `FairyPillar` is the ring → column.
+  - Both are prefabs built by the builder (`FairyMote.prefab`, `FairyPillar.prefab`, core mesh `FairyMoteCore.asset`).
+- **Flee logic:** a close-timer fills while you're within `closeRange`, plus a little on every hit, and drains when you back off.
+  - Spells can be interrupted while she's gathering; anything she's holding fizzles.
+  - The recover windows (Spent, Dizzy) and the swoop dash can't be interrupted, so she only flees after them.
+- **Hurtboxes:** torso, head, skirt, arms, shins and the **upper wings**. One fat capsule (`Hurt_Legs`) covers the legs and hem, so low swings still connect with a hovering target.
+- **Builder:** `Editor/ElderTreeBuilder.Fairy.cs` → `BuildFairyBoss()` (menu **7d**, in `BuildAll()` after the Druid).
+  - Scene placement: roster index 3 in every arena (`PlaceFairyBoss`, called from `PlaceBoss`).
+  - Boss select: cell 7. The portrait is shot with her hovering in the training yard (`Portrait_fairy.png`, `Silhouette_fairy.png`).
+  - She was added to the four existing scenes with a one-off script instead of a full rebuild, so nothing else in those scenes changed.
+- **Sound:** no new cues. She reuses the magic set pitched up:
+  - `SpellGather` for gathers and rings, `OrbCharge` for the halo and nova, `OrbFire` for motes, `OrbImpact` for bursts and columns.
+  - `WhooshLight` / `WhooshHeavy` for wing beats and the swoop, plus `Land` and `Stagger`.
+  - She has no voice, per the no-human-voices rule. **None of it has been heard by ear.**
+
+**Verified in play mode (AutoPilot):**
+- **Moves:** the descent intro, Volley (tell, fan, homing), Halo (bloom, then firing in sequence), Moonfall (rings, columns, a hit on the player, Spent), Flee (triggered by standing close; landed ~13 m away).
+- **Phase 2:** the nova at 50%, Spiral, the gust and hanging mines, Swoop.
+- **Stance break and death:** stance break → kneel → rise, and death → fall → dissolve.
+- **Hits:** real club hits land in the brief close window (2 before she fled) and while she's spent.
+- **Health:** 0 errors, 0 warnings.
+- **Shots:** `Docs/Screenshots/50`–`54`.
+
+**Not verified / your call.**
+- **Feel with a human on a pad:** whether the 1.5 s close window is generous enough for a club user, the homing strength, Moonfall pacing, and how often she swoops.
+- **The colours are a step brighter than ART_DIRECTION**, because you asked for a clearly blue dress and white wings. The dress texture is dusky, but it reads vivid under her own light at night. If that's too much, lower the `bodyLight` intensity (1.1) or darken `T_FairyDress`.
+- **The sounds are reused and unheard.** A wing-flutter loop and a proper chime would help if the magic set doesn't fit her.
+- **Like the other bosses, she passes through props** (no body collider). Motes do burst on walls and props.
+- **When she lies dead, her folded wings dip a little into the ground.**
+- **Questions:** (1) Should she drop a mask (a fairy form with hover and mote casting)? (2) Does she get her own stage next, like the other three?
+
 ## 0000000000000000000000000. The Druid's arena: "Verdant Cathedral"
 
 Based on your six references (the samaúma trunks, the canopy from above, the buttressed kapok, the treehouse at sunrise, the tree ferns). **Druid** now has its own stage: `Scenes/Forest_Druid.unity`, built by `Elder Tree/9h` (art: `9g`, props: `Tools/Blender/build_forest.py`). The boss select sends the Druid there instead of the training yard, and its portrait was re-shot in the new arena (sunlit face against the forest).

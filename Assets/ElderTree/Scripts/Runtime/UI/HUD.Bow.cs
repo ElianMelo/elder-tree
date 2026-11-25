@@ -49,6 +49,7 @@ namespace ElderTree.UI
             VineSeeker.HitTarget += OnSpellHit;
             DruidOrb.HitTarget += OnOrbHit;
             VineRing.HitTarget += OnRingHit;
+            Chakram.HitTarget += OnChakramHit;
         }
 
         void OnDisable()
@@ -57,7 +58,10 @@ namespace ElderTree.UI
             VineSeeker.HitTarget -= OnSpellHit;
             DruidOrb.HitTarget -= OnOrbHit;
             VineRing.HitTarget -= OnRingHit;
+            Chakram.HitTarget -= OnChakramHit;
         }
+
+        void OnChakramHit(Chakram c, IDamageable target, DamageInfo info) { hitFlash = 1f; hitWasFull = false; }
 
         void OnRingHit(VineRing r, IDamageable target, DamageInfo info) { hitFlash = 1f; hitWasFull = true; }
 

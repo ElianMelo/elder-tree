@@ -91,14 +91,15 @@ namespace ElderTree.Player
                 edge = new Color(lc.r, lc.g, lc.b, Mathf.Max(edge.a, 0.75f));
             }
             if (spiritedSwing) core = Color.Lerp(core, new Color(1f, 0.4f, 0.32f, core.a), 0.55f);
-            if (slashArc) slashArc.Begin(core, edge);
-            if (trail)
-            {
-                var g = new Gradient();
-                g.SetKeys(new[] { new GradientColorKey(core, 0f), new GradientColorKey(edge, 1f) },
-                          new[] { new GradientAlphaKey(core.a, 0f), new GradientAlphaKey(0f, 1f) });
-                trail.colour = g;
-            }
+            bool main = attack == null || offWeapon == null || attack.hand != WeaponHand.Off;
+            bool off = offWeapon != null && attack != null && attack.hand != WeaponHand.Main;
+            if (slashArc && main) slashArc.Begin(core, edge);
+            if (offSlash && off) offSlash.Begin(core, edge);
+            var g = new Gradient();
+            g.SetKeys(new[] { new GradientColorKey(core, 0f), new GradientColorKey(edge, 1f) },
+                      new[] { new GradientAlphaKey(core.a, 0f), new GradientAlphaKey(0f, 1f) });
+            if (trail) trail.colour = g;
+            if (offTrail) offTrail.colour = g;
         }
 
         // ================================================================== spirit gauge (long sword)

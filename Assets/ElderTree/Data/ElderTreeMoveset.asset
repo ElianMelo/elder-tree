@@ -53,6 +53,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: Light2
   - id: Light2
     state: Light2
@@ -93,6 +94,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: Light3
   - id: Light3
     state: Light3
@@ -133,6 +135,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: Light4
   - id: Light4
     state: Light4
@@ -173,6 +176,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: Light1
   heavyCombo:
   - id: Heavy1
@@ -214,6 +218,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: Heavy2
   - id: Heavy2
     state: Heavy2
@@ -254,6 +259,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: Heavy1
   runningAttack:
     id: RunAttack
@@ -295,6 +301,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: Light2
   jumpAttack:
     id: JumpAttack
@@ -336,6 +343,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: Light1
   dodgeAttack:
     id: DodgeAttack
@@ -377,6 +385,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: Light2
   skill:
     id: Skill
@@ -418,4 +427,5 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: 

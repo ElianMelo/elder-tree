@@ -242,8 +242,7 @@ namespace ElderTree.Player
             if (!windowOpen && attackT >= a.hitStart && !airHold)
             {
                 windowOpen = true;
-                weapon.Begin();
-                if (trail) trail.Emitting = true;
+                BeginHitboxes(a);
                 bool heavy = a.weight != ImpactWeight.Light;
                 if (Melee != null && Melee.slashing)
                 {
@@ -253,12 +252,7 @@ namespace ElderTree.Player
                 else AudioManager.Play(heavy ? Sfx.WhooshHeavy : Sfx.WhooshLight, clubTip.position, heavy ? 0.9f : 0.75f, charging ? 0.9f : 1f);
             }
             if (windowOpen && weapon.Active) CheckGroundBlast();
-            if (windowOpen && weapon.Active && attackT >= a.hitEnd)
-            {
-                weapon.End();
-                if (trail) trail.Emitting = false;
-                if (slashArc) slashArc.End();
-            }
+            if (windowOpen && HitboxActive && attackT >= a.hitEnd) EndHitboxes();
             if (a.slamRadius > 0f && !slamDone && attackT >= a.hitEnd - 0.03f && motor.Grounded)
             {
                 slamDone = true;
@@ -329,9 +323,7 @@ namespace ElderTree.Player
         void EndSwing()
         {
             inStance = false;
-            if (weapon) weapon.End();
-            if (trail) trail.Emitting = false;
-            if (slashArc) slashArc.End();
+            EndHitboxes();
             motor.GravityScale = 1f;
             charging = false;
         }

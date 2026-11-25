@@ -523,6 +523,7 @@ namespace ElderTree.EditorTools
             enc.bosses.Add(boss);
             PlaceSharkBoss(actorRoot, enc);
             PlaceDruidBoss(actorRoot, enc);
+            PlaceFairyBoss(actorRoot, enc);
         }
     }
 }

@@ -53,6 +53,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: H_Light2
   - id: H_Light2
     state: Hammer_L2
@@ -93,6 +94,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: H_Light3
   - id: H_Light3
     state: Hammer_L3
@@ -133,6 +135,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: H_Light1
   heavyCombo:
   - id: H_Heavy1
@@ -174,6 +177,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: H_Heavy2
   - id: H_Heavy2
     state: Hammer_H2
@@ -214,6 +218,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: H_Heavy3
   - id: H_Heavy3
     state: Hammer_H3
@@ -254,6 +259,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: H_Heavy1
   runningAttack:
     id: H_Run
@@ -295,6 +301,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: H_Light2
   jumpAttack:
     id: H_Jump
@@ -336,6 +343,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: H_Light1
   dodgeAttack:
     id: H_Dodge
@@ -377,6 +385,7 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: H_Light2
   skill:
     id: H_Skill
@@ -418,4 +427,5 @@ MonoBehaviour:
     stanceTime: 0.2
     drawFade: 0.07
     levelsSpirit: 0
+    hand: 0
     next: 

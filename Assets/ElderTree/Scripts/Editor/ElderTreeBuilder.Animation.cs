@@ -201,6 +201,24 @@ namespace ElderTree.EditorTools
             // Wrath of the Grove (druid special): the kick's knee-up chamber, held, then cut into the heavy landing = a stomp
             Act("Druid_StompRaise_R", K("Combat/Unarmed/HumanM@AttackKick02_R"));
             Act("Druid_StompRaise_L", K("Combat/Unarmed/HumanM@AttackKick02_L"));
+            // Fairy Mask: twin daggers on the pack's 1H right / left and dual-wield clips (light alternates the hands),
+            // the boomerang set for the Moon Chakram, and the sky-calling cast for Moonfall
+            Act("Fairy_L1", K("Combat/1H/HumanM@Attack1H02_R"));
+            Act("Fairy_L2", K("Combat/1H/HumanM@Attack1H02_L"));
+            Act("Fairy_L3", K("Combat/1H/HumanM@Attack1H04_R"));
+            Act("Fairy_L4", K("Combat/1H/HumanM@Attack1H04_L"));
+            Act("Fairy_L5", K("Combat/1H/HumanM@AttackDW01"));
+            Act("Fairy_H1", K("Combat/1H/HumanM@AttackDW02"));
+            Act("Fairy_H2", K("Combat/1H/HumanM@Attack1H05_L"));
+            Act("Fairy_H3", K("Combat/1H/HumanM@AttackDW01"));
+            Act("Fairy_Run", K("Combat/1H/HumanM@Attack1H01_R"));
+            Act("Fairy_Dodge", K("Combat/1H/HumanM@Attack1H01_L"));
+            Act("Fairy_ChakramHold", K("Combat/Thrown/Boomerang/HumanM@ThrowBoomerang01_R - Hold"));
+            Act("Fairy_ChakramThrow", K("Combat/Thrown/Boomerang/HumanM@ThrowBoomerang01_R"));
+            Act("Fairy_ChakramWait", K("Combat/Thrown/Boomerang/HumanM@ThrowBoomerang01_R - Wait"));
+            Act("Fairy_ChakramCatch", K("Combat/Thrown/Boomerang/HumanM@ThrowBoomerang01_R - Catch"));
+            Act("Fairy_CallLoad", K("Combat/Spellcasting/MagicAttacks/Call/HumanM@MagicAttackCall1H01_R - Load"));
+            Act("Fairy_CallCast", K("Combat/Spellcasting/MagicAttacks/Call/HumanM@MagicAttackCall1H01_R - Cast"));
             Act("MaskDon", K("Misc/Drink/HumanM@Drink01_R"));
             Act("MaskScream", K("Social/Emotions/HumanM@Pain01"));
             Act("MaskRoar", K("Social/Emotions/HumanM@Angry01"));

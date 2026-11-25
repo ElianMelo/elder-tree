@@ -21,6 +21,7 @@ MonoBehaviour:
   cannon: {fileID: 0}
   crossbow: {fileID: 0}
   orb: {fileID: 0}
+  chakram: {fileID: 0}
   magic: {fileID: 0}
   special: {fileID: 0}
   moveSpeedMultiplier: 1

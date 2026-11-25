@@ -31,9 +31,11 @@ namespace ElderTree.EditorTools
             log.AppendLine(BuildBoss());            // boss materials are shared by the mask set
             log.AppendLine(BuildSharkBoss());       // reuses the croc mouth / teeth materials
             log.AppendLine(BuildDruidBoss());
+            log.AppendLine(BuildFairyBoss());
             log.AppendLine(BuildMaskSet());         // data + models the player prefab needs
             log.AppendLine(BuildSharkSet());        // the Shark's reward: shark body, long sword, crossbow, vines
             log.AppendLine(BuildDruidMaskSet());    // the Druid's reward: druid body, staff, Vine Seeker, Verdant Orb
+            log.AppendLine(BuildFairyMaskSet());    // the Fairy's reward: fae body, twin daggers, Moon Chakram, Moonfall
             log.AppendLine(BuildPrefabs());
             log.AppendLine(BuildAudio());
             log.AppendLine(RenderClubIcon());
@@ -400,6 +402,7 @@ namespace ElderTree.EditorTools
             PlaceMaskSet(envRoot, sys, pc, hud, yardProps);
             PlaceSharkSet(envRoot, sys, yardProps);
             PlaceDruidSet(sys);
+            PlaceFairyMaskSet(sys);
 
             // Megaman-style stage flow: auto-summon this arena's boss (or the one the select screen asked for)
             var arena = sys.AddComponent<BossArena>();

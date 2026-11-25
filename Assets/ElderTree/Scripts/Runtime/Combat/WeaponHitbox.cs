@@ -45,6 +45,8 @@ namespace ElderTree.Combat
         }
 
         public void End() => Active = false;
+        /// <summary>Forget who was hit (a new swing that may not activate this blade, dual wield).</summary>
+        public void ClearHits() => hitThisSwing.Clear();
         public bool HasHit(IDamageable d) => hitThisSwing.Contains(d);
         public void MarkHit(IDamageable d) => hitThisSwing.Add(d);
 

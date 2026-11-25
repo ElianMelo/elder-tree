@@ -5,6 +5,9 @@ namespace ElderTree.Combat
 {
     public enum ImpactWeight { Light, Heavy, Slam }
 
+    /// <summary>Which hand's weapon cuts in a swing (dual-wield forms; single weapons always use Main).</summary>
+    public enum WeaponHand { Main, Off, Both }
+
     /// <summary>
     /// One attack. All timings are normalized (0..1) over the animation clip so tuning survives
     /// playback-speed changes. Phase speeds give the club its weight: slow anticipation, a fast
@@ -88,6 +91,10 @@ namespace ElderTree.Combat
         [Header("Spirit gauge (long sword)")]
         [Tooltip("A spirited hit with this attack raises the spirit gauge level (the roundslash).")]
         public bool levelsSpirit;
+
+        [Header("Dual wield")]
+        [Tooltip("Dual-wield forms: which hand's blade is live in the hit window (Main = right).")]
+        public WeaponHand hand = WeaponHand.Main;
 
         [Header("Chain")]
         public string next = "";

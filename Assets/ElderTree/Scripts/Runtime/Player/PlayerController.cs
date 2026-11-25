@@ -190,6 +190,7 @@ namespace ElderTree.Player
             // bones are posed now: turn the blade for this cut, then sweep the weapon
             UpdateBladeRoll(Time.deltaTime);
             if (weapon && !HammerThrown) weapon.Tick();
+            if (offWeapon) offWeapon.Tick();
             if (weapon) slashPrevTip = weapon.TipWorld;
             UpdateHeldOrb();
             UpdateVisualRoll();
@@ -234,6 +235,9 @@ namespace ElderTree.Player
             if (State == PlayerState.Special && s != PlayerState.Special) CameraDirector.Instance?.ReleaseFocus(0.35f);
             if (State == PlayerState.Special && s != PlayerState.Special && spinMode) AbortSpin();
             if (State == PlayerState.Special && s != PlayerState.Special && growMode) AbortGrowth();
+            if (State == PlayerState.Special && s != PlayerState.Special && moonMode) AbortMoonfall();
+            // the chakram goes back on the back when its aim ends some other way (hit, death, a special)
+            if (State == PlayerState.Aim && s != PlayerState.Aim && chakramMode) { chakramMode = false; LowerChakram(); }
             // a cast cut short (roll, hit, death, swap) drops its gather glow
             if (State == PlayerState.Cast && s != PlayerState.Cast) EndCastFx();
             // raising a ranged weapon drops the lock (free crosshair aim); lowering it picks the target back up

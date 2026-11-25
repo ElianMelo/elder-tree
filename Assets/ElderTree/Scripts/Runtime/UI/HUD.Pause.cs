@@ -32,7 +32,7 @@ namespace ElderTree.UI
 
         const int TabGame = 0, TabGraphics = 1, TabAudio = 2, TabControls = 3;
         static readonly string[] TabNames = { "GAME", "GRAPHICS", "AUDIO", "CONTROLS" };
-        static readonly string[] MenuNames = { "Resume", "Summon Crocodile", "Summon Shark", "Summon Druid", "Reset Training", "Boss Select", "Quit" };
+        static readonly string[] MenuNames = { "Resume", "Summon Crocodile", "Summon Shark", "Summon Druid", "Summon Fairy", "Reset Training", "Boss Select", "Quit" };
 
         enum RowKind { Value, Slider, Bind, Button }
 
@@ -226,10 +226,21 @@ namespace ElderTree.UI
                     break;
                 }
                 case 4:
+                {
+                    var t = Lbl("Cold light, and the hum of wings.", "panel__flavor", pausePanel);
+                    ApplySerif(t);
+                    Lbl("Fairy hovers above the ground and fights from afar: fans of homing motes, a halo of motes fired one by one, " +
+                        "and columns of light that fall on rings opening under your feet. Get close and she won't stay long: after a " +
+                        "moment she takes off for the far side of the field. Hit her while she's spent after a big spell, and use your " +
+                        "bow. Break her stance and she drops to her knees.", "panel__text", pausePanel);
+                    Lbl("Press Select to summon.", "panel__text panel__text--dim", pausePanel);
+                    break;
+                }
+                case 5:
                     Lbl("Stand every dummy back up at full health, send any boss away and restore your HP, FP and stamina.", "panel__text", pausePanel);
                     Lbl("Press Select to reset.", "panel__text panel__text--dim", pausePanel);
                     break;
-                case 5:
+                case 6:
                 {
                     var t = Lbl("Choose your next foe.", "panel__flavor", pausePanel);
                     ApplySerif(t);
@@ -237,7 +248,7 @@ namespace ElderTree.UI
                     Lbl("Press Select to leave.", "panel__text panel__text--dim", pausePanel);
                     break;
                 }
-                case 6:
+                case 7:
                     Lbl("Return to the desktop?", "panel__text", pausePanel);
                     Lbl("Press Select to quit.", "panel__text panel__text--dim", pausePanel);
                     break;
@@ -253,9 +264,10 @@ namespace ElderTree.UI
                 case 1: SetPause(false); SummonBossRequested?.Invoke(0); return;
                 case 2: SetPause(false); SummonBossRequested?.Invoke(1); return;
                 case 3: SetPause(false); SummonBossRequested?.Invoke(2); return;
-                case 4: ResetTrainingRequested?.Invoke(); SetPause(false); return;
-                case 5: SetPause(false); BossSelectRequested?.Invoke(); return;
-                case 6: QuitRequested?.Invoke(); return;
+                case 4: SetPause(false); SummonBossRequested?.Invoke(3); return;
+                case 5: ResetTrainingRequested?.Invoke(); SetPause(false); return;
+                case 6: SetPause(false); BossSelectRequested?.Invoke(); return;
+                case 7: QuitRequested?.Invoke(); return;
             }
         }
 

@@ -84,8 +84,13 @@ namespace ElderTree.Player
             CurrentRig = rig;
             CurrentForm = form;
             animator = rig.animator;
+            RecallChakram();
             weapon = rig.weapon;
-            if (weapon) weapon.OnHit = OnWeaponHit;
+            offWeapon = rig.offWeapon;
+            offTrail = rig.offTrail;
+            offSlash = rig.offSlash;
+            if (weapon) weapon.OnHit = OnMainBladeHit;
+            if (offWeapon) offWeapon.OnHit = OnOffBladeHit;
             CaptureWeaponRest();
             clubTip = rig.weaponTip;
             clubRenderer = rig.weaponRenderer;
@@ -98,7 +103,10 @@ namespace ElderTree.Player
             ResetSpirit();
             spinMode = false;
             growMode = false;
+            moonMode = false;
             growNow = 1f;
+            chakramMode = false;
+            ChakramToHand(false);
             moveset = form.moveset != null ? form.moveset : (baseForm != null ? baseForm.moveset : moveset);
             walkSpeed = baseWalk * form.moveSpeedMultiplier;
             runSpeed = baseRun * form.moveSpeedMultiplier;
@@ -309,6 +317,7 @@ namespace ElderTree.Player
             if (special == null) return !IsCaster && moveset.skill != null && StartAttack(moveset.skill);
             if (special is SpinSlashData spin) return TryStartSpin(spin);
             if (special is GrowthStompData gs) return TryStartGrowth(gs);
+            if (special is MoonfallData mf) return TryStartMoonfall(mf);
             if (!(special is SpecialAttackData s)) return false;
             if (weapon == null || HammerThrown) return false;
             if (!stats.HasSpecialCharge)
@@ -357,6 +366,7 @@ namespace ElderTree.Player
         {
             if (spinMode) { UpdateSpin(dt); return; }
             if (growMode) { UpdateGrowth(dt); return; }
+            if (moonMode) { UpdateMoonfall(dt); return; }
             spT += dt;
             motor.SetDesiredPlanarVelocity(Vector3.zero, 12f, dt);
             switch (spPhase)

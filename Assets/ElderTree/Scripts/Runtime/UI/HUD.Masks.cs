@@ -86,7 +86,8 @@ namespace ElderTree.UI
             var f = player.CurrentForm;
             Texture2D meleeIcon = f != null && f.magic != null && f.magic.icon != null ? f.magic.icon
                 : f != null && f.melee != null && f.melee.icon != null ? f.melee.icon : clubIcon;
-            Texture2D rangedIcon = f != null && f.rangedKind == RangedKind.Orb && f.orb != null && f.orb.icon != null ? f.orb.icon
+            Texture2D rangedIcon = f != null && f.rangedKind == RangedKind.Chakram && f.chakram != null && f.chakram.icon != null ? f.chakram.icon
+                : f != null && f.rangedKind == RangedKind.Orb && f.orb != null && f.orb.icon != null ? f.orb.icon
                 : f != null && f.rangedKind == RangedKind.Cannon && f.cannon != null && f.cannon.icon != null ? f.cannon.icon
                 : f != null && f.rangedKind == RangedKind.Crossbow && f.crossbow != null && f.crossbow.icon != null ? f.crossbow.icon
                 : f != null && f.bow != null && f.bow.icon != null ? f.bow.icon : bowIcon;
@@ -104,6 +105,7 @@ namespace ElderTree.UI
             get
             {
                 var f = player != null ? player.CurrentForm : null;
+                if (f != null && f.rangedKind == RangedKind.Chakram && f.chakram != null) return f.chakram.displayName;
                 if (f != null && f.rangedKind == RangedKind.Orb && f.orb != null) return f.orb.displayName;
                 if (f != null && f.rangedKind == RangedKind.Cannon && f.cannon != null) return f.cannon.displayName;
                 if (f != null && f.rangedKind == RangedKind.Crossbow && f.crossbow != null) return f.crossbow.displayName;
