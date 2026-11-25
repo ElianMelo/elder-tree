@@ -195,6 +195,15 @@ namespace ElderTree.EditorTools
         /// <summary>The moon rising on the Fairy's back at the end of her ballet: a deep, low swell. Not heard by ear yet.</summary>
         public static AudioClip FairyIntroReveal() => Loop("Cinematic Sounds/cinematic_deep_low_whoosh_impact_02", Use.OneShot);
 
+        /// <summary>The Druid's first-meeting entrance: a dark, slow cinematic build (its own track, not a fight mood). Not heard by ear yet.</summary>
+        public static AudioClip DruidIntroMusic() => Loop("Ω_Bonus_Music_16bit44kOnly/music_cinematic_darkness_falls", Use.Ambience);
+
+        /// <summary>Under the Druid's name card: a deep, low impact. Not heard by ear yet.</summary>
+        public static AudioClip DruidIntroReveal() => Loop("Cinematic Sounds/cinematic_deep_low_whoosh_impact_04", Use.OneShot);
+
+        /// <summary>The Druid's roar, layered under its wood groan and played low (a beast's bellow, no voice). Not heard by ear yet.</summary>
+        public static AudioClip DruidIntroRoar() => Loop("Animal_Impersonations/bear_roar_03", Use.OneShot);
+
         static AudioManager.MusicTrack Music(string rel, float volume, float loopStart, float loopEnd) =>
             new() { clip = Loop(rel, Use.Ambience), volume = volume, loopStart = loopStart, loopEnd = loopEnd };
 

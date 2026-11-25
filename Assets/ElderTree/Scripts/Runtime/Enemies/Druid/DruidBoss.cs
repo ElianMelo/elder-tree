@@ -24,9 +24,9 @@ namespace ElderTree.Enemies
     /// Animation is procedural on rigid segments: stepping feet with 3D two-bone IK (legs and arms), and every leaf
     /// clump sways on its own, harder when it moves or is struck.
     /// </summary>
-    public class DruidBoss : BossBase
+    public partial class DruidBoss : BossBase
     {
-        public enum Mode { Dormant, Stalking, Attacking, Holding, Recovering, Toppled, Dead }
+        public enum Mode { Dormant, Stalking, Attacking, Holding, Recovering, Toppled, Dead, Cinematic }
         public enum Part { Body, FootL, FootR, Head }
 
         public string displayName = "Druid";
@@ -92,7 +92,7 @@ namespace ElderTree.Enemies
         public struct HullPoint { public Transform bone; public Vector3 local; }
 
         public Mode State { get; private set; } = Mode.Dormant;
-        public override bool IsAlive => State != Mode.Dead && State != Mode.Dormant;
+        public override bool IsAlive => State != Mode.Dead && State != Mode.Dormant && State != Mode.Cinematic;
         public override bool IsStaggered => false;               // only the face goes critical (DruidPart)
         public override bool PhaseTwo => phaseTwo;
         public override float Health => health;
@@ -246,6 +246,8 @@ namespace ElderTree.Enemies
         {
             StopAllCoroutines();
             ReleaseHeld(false);
+            DropHeldProps();
+            freeRoam = false;
             health = maxHealth;
             footing = 0f;
             phaseTwo = false;
@@ -262,6 +264,8 @@ namespace ElderTree.Enemies
         {
             StopAllCoroutines();
             ReleaseHeld(false);
+            DropHeldProps();
+            freeRoam = false;
             State = Mode.Dormant;
             health = maxHealth;
             footing = 0f;
@@ -388,7 +392,7 @@ namespace ElderTree.Enemies
         Vector3 Heading => Quaternion.Euler(0, yaw, 0) * Vector3.forward;
         Vector3 Rel => transform.InverseTransformPoint(PlayerPos);
         float FlatDist => Flat(PlayerPos - transform.position).magnitude;
-        Vector3 Ground(Vector3 p) { p.y = groundY; return p; }
+        Vector3 Ground(Vector3 p) { p.y = freeRoam ? Blast.Floor(p).y : groundY; return p; }
         float Side(int leg) => leg == 0 ? -1f : 1f;
 
         void Face(Vector3 dir, float rate, float dt)
@@ -413,6 +417,14 @@ namespace ElderTree.Enemies
         {
             Vector3 rel = Flat(p - arenaCenter);
             float limit = Limit;
+            if (freeRoam)
+            {
+                // the intro cinematic: out in the forest, on the forest floor
+                p.y = Blast.Floor(p).y;
+                transform.position = p;
+                transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+                return;
+            }
             if (rel.magnitude > limit)
             {
                 p = arenaCenter + rel.normalized * limit;
@@ -493,6 +505,7 @@ namespace ElderTree.Enemies
             FXManager.Spawn(FXType.DustSmall, at + Heading * 0.6f, Quaternion.LookRotation(Vector3.up), 1.8f);
             float d = Flat(PlayerPos - at).magnitude;
             if (d < 14f) CameraDirector.Instance?.Shake(0.13f * (1f - d / 14f), Vector3.down);
+            if (State == Mode.Cinematic) CinematicFootfall(at);
             agitation = Mathf.Max(agitation, 0.3f);
         }
 
@@ -1378,6 +1391,7 @@ namespace ElderTree.Enemies
                 lockPoint.position = Vector3.Lerp(stand, head.position + Vector3.up * 0.4f, down);
             }
             UpdateMaterials(dt);
+            UpdateHeldProps();
         }
 
         /// <summary>

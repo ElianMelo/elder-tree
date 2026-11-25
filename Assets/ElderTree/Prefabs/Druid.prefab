@@ -19777,6 +19777,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Enemies.DruidBoss
   rewardMask: {fileID: 0}
+  introEpithet: Walking Grove of the Verdant Cathedral
+  introNameColor: {r: 0.82, g: 0.92, b: 0.6, a: 1}
+  introMusic: {fileID: 8300000, guid: 8cbf878a925e2c344b0cefe33911b865, type: 3}
+  introMusicVolume: 0.5
+  introRevealClip: {fileID: 8300000, guid: 36e2c5347283d4c4296f52a619c8d5cc, type: 3}
+  introRoarClip: {fileID: 8300000, guid: 3bcea73d5d03e3f43bc61697c6208899, type: 3}
+  introRoarPitch: 0.55
+  introRoarVolume: 0.8
   displayName: Druid
   pivot: {fileID: 2951516711492140197}
   torso: {fileID: 8460350976194717765}

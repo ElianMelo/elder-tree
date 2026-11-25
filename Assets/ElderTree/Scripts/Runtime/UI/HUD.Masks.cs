@@ -124,11 +124,11 @@ namespace ElderTree.UI
 
         public void Flash(float strength) => flash = Mathf.Max(flash, strength);
 
-        /// <summary>A boss's name during its first-meeting cinematic (the mask card's band, in the cold moonlit colours).</summary>
-        public void ShowBossIntro(string name, string epithet)
+        /// <summary>A boss's name during its first-meeting cinematic (the mask card's band; cold moonlit colours unless the boss picks its own).</summary>
+        public void ShowBossIntro(string name, string epithet, Color? color = null)
         {
             cardTitle.text = name;
-            cardTitle.style.color = new Color(0.82f, 0.88f, 1f);
+            cardTitle.style.color = color ?? new Color(0.82f, 0.88f, 1f);
             cardLine.text = epithet;
             cardHint.text = "";
             cardT = 0f;

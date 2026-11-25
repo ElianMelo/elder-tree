@@ -283,6 +283,7 @@ namespace ElderTree.EditorTools
 
             SetLayerRecursive(root, LayerEnemy);
             foreach (var h in root.GetComponentsInChildren<Hurtbox>(true)) h.gameObject.layer = LayerHurtbox;
+            ApplyDruidIntro(boss);
             PrefabUtility.SaveAsPrefabAsset(root, DruidPrefabPath);
             Object.DestroyImmediate(root);
         }

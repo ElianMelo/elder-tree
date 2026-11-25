@@ -1,5 +1,70 @@
 # Handoff — Elder Tree soulslike slice
 
+## 000000000000000000000000000000. The Druid's intro cinematic: out of the forest, through the trees, and a roar
+
+Same system as the Fairy's: it plays once per save, the first time you reach `Forest_Druid`. The skip and replay controls are the same as hers (see below).
+
+**The scene (~22 s, `Enemies/Druid/DruidBoss.Intro.cs`):**
+1. **Something in the trees.** You see it from beside you, past the stones on the shaded north-west side, left of the great kapok:
+   - leaves start raining from the canopy;
+   - the trees there shiver, with low rumbles and a far footfall;
+   - the camera pushes in, and two green eyes open in the shade.
+2. **Hands on two trees.** It steps out of the brush and lays a hand on a tree either side of it.
+3. **The shove.** It pushes both trees aside. They lean about 30° away from its path, creak, thrash leaves, then spring back to about 24°.
+4. It steps through between them, shedding leaves, to a third, bigger tree at the edge of the clearing.
+5. **The rip:**
+   - it grips that tree with one fist low and one high;
+   - it wrenches it off its stump (crack, splinters, dust);
+   - it tears it in two (a second crack and a burst of leaves);
+   - it flings the halves into the undergrowth either side, where they crash down.
+6. **The stride.** It walks into the clearing toward you, its steps shaking the camera.
+7. **The roar.** It plants its roots, rears up and roars, arms up, shedding leaves. The name card shows: **DRUID: Walking Grove of the Verdant Cathedral** (in leaf green). Then the fight starts from there.
+
+**The lair (`Enemies/Druid/DruidLair.cs`, in the scene under `--- Actors ---/DruidLair`).** It holds:
+- the hiding spot and the entry point;
+- the two trees it shoves (whole `MidTree_A` / `MidTree_C`, movable, no colliders);
+- the tree it tears: `MidTree_B` at 1.35×, pre-cut into a stump, a middle and a crown, with a splintered cap at each break (`Art/Models/Forest/DruidRipTree_*.asset`);
+- where the halves land (the builder picks the clearest spots on each side, outside the fight ring);
+- a falling-leaf emitter.
+
+On later visits it starts as the Druid left it: trees leaning, a stump, the halves lying in the brush.
+
+**Builder:**
+- `Elder Tree/7c2` patches the prefab's sounds and the forest scene's lair.
+- `9h` (the forest scene) and `7c` (the Druid prefab) include it.
+- The lair clears a lane through the undergrowth from the hiding spot to the stones. The brush right round the hiding spot and the big emergents behind it stay, so it still looks hidden.
+- Tuning: `DruidLairAngle` (124°) and the radii are at the top of `ElderTreeBuilder.DruidIntro.cs`. `pushAngle` / `settleAngle` are on the lair. `introEpithet`, `introNameColor`, `introMusicVolume` and `introRoar*` are on the prefab.
+
+**Code changes:**
+- **Druid boss:**
+  - `DruidBoss` is now partial and gains `Mode.Cinematic`.
+  - While it's out in the forest (`freeRoam`), it ignores the arena limit and stands on the forest floor.
+  - The torn halves ride in its fists, turned by the choreography rather than by its wrists.
+  - A soft fill light follows it during the cinematic only, or the shade leaves it a silhouette.
+  - The cinematic camera has its own shake.
+- **HUD:** `HUD.ShowBossIntro` takes an optional colour.
+
+**Sound (Gamemaster, none of it heard by ear):**
+- Music: `music_cinematic_darkness_falls`.
+- Under the name card: `cinematic_deep_low_whoosh_impact_04`.
+- Roar: `bear_roar_03` at 0.55 pitch, under its usual wood groan and rumble.
+- The cracks, creaks, rustles and crashes reuse the existing cues (`RootSnap`, `WoodGroan`, `VineRustle`, `Slam`, `DeepRumble`).
+
+**Verified (play mode, Forest_Druid, AutoPilot shots synced to each beat):**
+- **The full sequence runs, with 0 errors and 0 warnings:**
+  - the eyes open;
+  - both trees are shoved and settle leaning;
+  - the third tree is lifted off its stump, torn in two, and the halves land outside the ring;
+  - it walks in and roars, the name card shows, and the fight starts.
+- **Skip:** it stands at the entry, the lair is torn open, and the fight starts.
+- **Second visit:** no cinematic, the usual uproot-and-roar entrance, and the lair stays torn open.
+
+**Not verified / your call:**
+- **Framing:** the forest is dense. Fern fronds still drift through the edge of a few shots. The rip reads best from the front of the tree but is still busy; the halves are dark bark against dark foliage.
+- **Roar sound:** the bear roar layer may sound too "animal". If so, drop `introRoarClip`, and the groan and rumble remain.
+- **First shot:** it is hazy, because the clearing's god-ray haze sits between you and the lair. Only the eyes and the face read.
+- **Rebuild churn:** `9h` rebuilt the forest scene from scratch, which re-serialises `Forest_Druid.unity` and `ForestPostProfile.asset`. The diff is huge but the content is the same, apart from the lair and the cleared lane.
+
 ## 00000000000000000000000000000. Boss intro cinematics (first meeting only), starting with the Fairy's ballet
 
 **When it plays:** the first time you reach a boss's stage, after the title card. It plays **once per save** (`Progress.IntroSeen`, PlayerPrefs key `ElderTree.Bosses.IntroSeen`) and is marked as seen as soon as it starts. Retries after a death and later visits skip it and the boss makes its usual entrance. Summoning from the pause / F1 menu never plays it. **Skip:** A / Enter or B / Esc after 1.2 s (a quick dip to black). **Replay:** F1 → World → "Boss intro cinematics → Forget", or the AutoPilot command `forgetintros`, then reload the stage.

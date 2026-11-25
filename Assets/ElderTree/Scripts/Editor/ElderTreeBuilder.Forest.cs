@@ -924,11 +924,14 @@ namespace ElderTree.EditorTools
             var am = Object.FindAnyObjectByType<Audio.AudioManager>(FindObjectsInactive.Include);
             if (am != null) { am.ambienceLoop = SoundPicks.ForestAmbience(); EditorUtility.SetDirty(am); }
 
+            // the Druid's hiding place and the path it tears out of the forest (its first-meeting cinematic)
+            string lairLog = BuildDruidLair();
+
             EditorSceneManager.SaveScene(scene, ForestScenePath);
             RegisterBuildScenes();
             return $"Forest arena built: {giants} kapoks + the great one, {emergents} emergents, {mids} understorey trees, {palms} acai palms, {tfern} tree ferns, " +
                    $"{bushes} thickets, {ferns} ferns, {tufts} tufts, {curtains} liana curtains, {stones} stones, {roots} roots, {rocks} rocks, deep forest: {deepGiants} kapoks, {deepTrees} trees, {deepThickets} thickets, {walls} canopy walls, " +
-                   $"{frogs} frogs, {birds} toucans ({perches.Length} perches), {vultures} vultures, {swarms} firefly swarms + {glows} lit fireflies";
+                   $"{frogs} frogs, {birds} toucans ({perches.Length} perches), {vultures} vultures, {swarms} firefly swarms + {glows} lit fireflies; {lairLog}";
         }
 
         static void FirefliesSwarm(Transform parent, Vector3 pos, float radius, float rate, string name)
