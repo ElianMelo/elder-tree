@@ -596,6 +596,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.Enemies.SharkBoss
   rewardMask: {fileID: 0}
+  introEpithet: Tide Reaver of the Bleached Atoll
+  introNameColor: {r: 0.66, g: 0.86, b: 0.9, a: 1}
+  introMusic: {fileID: 8300000, guid: e0b2c856088d1684e91973a6d2fb1b90, type: 3}
+  introMusicVolume: 0.6
+  introDroneClip: {fileID: 8300000, guid: b719f5ab8fbcf704a9fd48829bf76e27, type: 3}
+  introDroneVolume: 0.7
+  introRevealClip: {fileID: 8300000, guid: 37afe94c44c78ba49b8e735dfe01e5f4, type: 3}
+  introBuildClip: {fileID: 8300000, guid: 7b02563f9f9ac31428fb45e7970530cc, type: 3}
+  introPassClip: {fileID: 8300000, guid: 593591e3eff787842b842961a927c04a, type: 3}
+  introFoamMaterial: {fileID: 2100000, guid: 088be648deea880479e04f533049de82, type: 2}
   displayName: Shark
   pivot: {fileID: 8600707670441733420}
   jaw: {fileID: 4831565384465545020}

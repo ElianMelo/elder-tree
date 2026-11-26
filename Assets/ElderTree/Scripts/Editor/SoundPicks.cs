@@ -217,6 +217,22 @@ namespace ElderTree.EditorTools
         /// <summary>The Crocodile roaring past the camera (takeoff, then the low pass over you): a deep bass whoosh. Not heard by ear yet.</summary>
         public static AudioClip CrocIntroPass() => Loop("Cinematic Sounds/cinematic_deep_bass_pass_whoosh_02", Use.OneShot);
 
+        /// <summary>The Shark's first-meeting run in: a cinematic swell from its second breach. It builds for ~7 s and peaks as it
+        /// lands on the dock, then falls away by the fight. Picked by its loudness curve; not heard by ear yet.</summary>
+        public static AudioClip SharkIntroMusic() => Loop("Ω_Bonus_Music_16bit44kOnly/music_cinematic_reveal", Use.Ambience);
+
+        /// <summary>Under the Shark's approach (the fin circling): a low drone that swells and dies away over ~9 s. Not heard by ear yet.</summary>
+        public static AudioClip SharkIntroDrone() => Loop("Cinematic Sounds/cinematic_LowDrone1", Use.OneShot);
+
+        /// <summary>Under the Shark's name card: a deep, low impact. Not heard by ear yet.</summary>
+        public static AudioClip SharkIntroReveal() => Loop("Cinematic Sounds/cinematic_deep_low_whoosh_impact_03", Use.OneShot);
+
+        /// <summary>A reverse whoosh that builds into the Shark's leap onto the dock (it peaks at its end, 1.7 s). Not heard by ear yet.</summary>
+        public static AudioClip SharkIntroBuild() => Loop("Cinematic Sounds/cinematic_buildup_reverse_whoosh_01", Use.OneShot);
+
+        /// <summary>The Shark's spinning breach flying past the camera: a deep bass whoosh. Not heard by ear yet.</summary>
+        public static AudioClip SharkIntroPass() => Loop("Cinematic Sounds/cinematic_deep_bass_pass_whoosh_04", Use.OneShot);
+
         static AudioManager.MusicTrack Music(string rel, float volume, float loopStart, float loopEnd) =>
             new() { clip = Loop(rel, Use.Ambience), volume = volume, loopStart = loopStart, loopEnd = loopEnd };
 

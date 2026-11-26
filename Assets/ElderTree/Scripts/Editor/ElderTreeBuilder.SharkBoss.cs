@@ -177,6 +177,7 @@ namespace ElderTree.EditorTools
             boss.flashRenderers = model.GetComponentsInChildren<Renderer>().ToArray();
             boss.bodyColliders = solid.GetComponents<Collider>();
             boss.digAudio = dig;
+            ApplySharkIntro(boss);
             var tg = root.AddComponent<Targetable>();
             tg.lockPoint = lockPoint.transform; tg.lockRadius = 1f; tg.displayName = boss.displayName; tg.rangeScale = 1.4f;
 

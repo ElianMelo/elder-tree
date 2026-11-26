@@ -883,10 +883,11 @@ namespace ElderTree.EditorTools
             foreach (var b in Object.FindObjectsByType<Enemies.SharkBoss>(FindObjectsInactive.Include, FindObjectsSortMode.None)) { b.arenaCenter = Vector3.zero; EditorUtility.SetDirty(b); }
             var am = Object.FindAnyObjectByType<Audio.AudioManager>(FindObjectsInactive.Include);
             if (am != null) { am.ambienceLoop = SoundPicks.BeachAmbience(); EditorUtility.SetDirty(am); }
+            string laneLog = BuildSharkSeaLane();          // the Shark's run in for its first-meeting cinematic
 
             EditorSceneManager.SaveScene(scene, BeachScenePath);
             RegisterBuildScenes();
-            return $"Beach arena built: {mods} deck modules ({holes.Count} holed), {posts} pilings, {segs} rail bays, {palmCount} palms, {rocks} rocks, {grass} grass tufts, {drift} driftwood, {nuts} coconuts, {crabs} crabs, {birds} gulls";
+            return $"Beach arena built: {mods} deck modules ({holes.Count} holed), {posts} pilings, {segs} rail bays, {palmCount} palms, {rocks} rocks, {grass} grass tufts, {drift} driftwood, {nuts} coconuts, {crabs} crabs, {birds} gulls; {laneLog}";
         }
 
         static VolumeProfile BuildBeachPostProfile()

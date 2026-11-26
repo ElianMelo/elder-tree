@@ -1,5 +1,61 @@
 # Handoff — Elder Tree soulslike slice
 
+## 00000000000000000000000000000000. The Shark's intro cinematic: in from the open sea, two breaches, onto the dock
+
+Same system as the other three: it plays once per save, the first time you reach `Beach_Shark`. Skip and replay work the same way (see the Fairy's section). All four bosses now have one.
+
+**The scene (~18 s, `Enemies/Shark/SharkBoss.Intro.cs`), your brief: it comes from the ocean making waves with its fin showing, jumps twice, then reaches the dock:**
+1. **Out at sea.** A wide shot from above your left shoulder, over the south rail. The sea is calm and a low drone comes in. Then the camera pushes in to a telephoto: ~100 m out, a fin breaks the surface with a ring of foam, and the shark's shape shows just under the water.
+2. **The fin.** A low camera rides beside it on the sun side, with the atoll behind. You see the dorsal fin and the tip of the tail cutting the water, spray off the fin's leading edge, and a foam wake spreading into a V behind it. The water's own contact foam rims the fin.
+3. **First breach.** The fin slips under, then it bursts out side-on to the dock, about 3.4 m clear of the water, with half a twist. It crashes back in. Each breach has spray where it leaves the water, water streaming off its tail, a bigger splash and a foam ring where its nose goes in, then a smaller slap when the tail goes in.
+4. **Second breach.** It curves round toward a camera on the water, slips under again, and does a **spinning leap** (two turns, jaws open, ~5 m up) that flies right past the lens. There's a beat of slow motion at the top (0.35× for 0.55 s) and a deep whoosh as it passes. The cinematic's music starts here.
+5. **The dock.** Over your shoulder: the fin charges in east of the short pier, a reverse whoosh builds, and it bursts out of the water, over the south-east rail, jaws open, and crashes onto the planks ~8.5 m to your right in splinters and sea water.
+6. **The roar.** It skids, whips round to face you, rears up and roars. The name card shows: **SHARK: Tide Reaver of the Bleached Atoll** (in pale sea-green). The fight starts from there.
+
+**Fixed along the way: on the Bleached Atoll the Shark fought *under* the planks.** It measured its floor with `Blast.Floor`, which returns the lowest surface: under the dock that's the seabed (−2.44), so only its fins poked through the deck. It now uses the first surface down at the arena's centre (`SharkBoss.ArenaFloorY`, via `Blast.Ground`), so it swims above the deck. In the training yard it should be unchanged, since nothing stands on the arena's centre there, but I didn't re-run the yard.
+
+**The sea lane (`Enemies/Shark/SharkSeaLane.cs`, in the scene under `--- Actors ---/SharkSeaLane`).** It's the route, and nothing in it is visible:
+- `Rise`: where the fin breaks the surface. It sits straight out from your spawn, between the two piers, so the opening shot sees past the pilings.
+- `Breach1` and `Breach2`: where each leap leaves the water, with +Z the leap's direction. `breach*Length` / `breach*Apex` / `breach2Spins` shape them.
+- `Launch` and `Land`: the leap onto the dock (`launchApex`).
+- `cruiseSpeed`, `chargeSpeed`, and `finShow` (how much fin shows, 0.85 m).
+
+Gizmos draw the swim curves (blue), the leaps (orange) and the landing footprint. Move the markers to re-plan the route. Positions are at the top of `ElderTreeBuilder.SharkIntro.cs`.
+
+**New pieces:**
+- **`World/OceanSurface`:** the sea's height on the CPU. It uses the same four Gerstner swells as `Ocean.shader`, read from `M_Ocean`, so the fin, the camera and the foam ride the swell you see. Anything else that floats could use it.
+- **`FX/SeaFoam`:** foam drawn on the swell. Wakes spread into a V and fade, and rings spread from splashes. It's one world-space mesh rebuilt each frame, created on first use.
+  - Texture: `T_FX_SeaFoam`, a cutout lace band.
+  - Material: `M_FX_SeaFoam`.
+- **`SharkBoss`:** now partial. It gains `Mode.Cinematic`, and it can't be hit while that's on.
+
+**Builder:**
+- `Elder Tree/7b2` patches the prefab's sounds and foam material, plus the beach scene's sea lane.
+- `7b` (the Shark prefab) and `9f` (the beach scene) include it.
+
+**Sound (Gamemaster, none of it heard by ear):**
+- Approach: `cinematic_LowDrone1` (it swells, then dies away over ~9 s). The stage music fades out first.
+- Music from the second breach: `music_cinematic_reveal`. I picked it from its loudness curve: it builds for ~7 s and peaks on the landing.
+- Into the dock leap: `cinematic_buildup_reverse_whoosh_01` (it peaks at its end, timed to the landing).
+- Past the camera: `cinematic_deep_bass_pass_whoosh_04`.
+- Name card: `cinematic_deep_low_whoosh_impact_03`.
+- The splashes, slaps, crash, snap and roar reuse existing cues (`WaterSplash`, `Slam`, `JawSnap`, `SharkRoar`, `Skid`, `WhooshHeavy`).
+
+**Verified (play mode, Beach_Shark, five runs with frames at every beat):**
+- **The full sequence runs, with 0 errors and 0 warnings.** The fight starts on the planks and its first moves follow (Bite, Spin, Leap).
+- **Clearance:** a per-frame overlap check along its whole path finds nothing in its way except the arena's invisible ring walls. On the first run, before the floor fix, the dock leap clipped a barrel and a crate.
+- **Skip** (pressed during the fin shot): it cuts to the fight with the Shark on the planks, facing you.
+- **Second visit:** no cinematic. Its usual entrance (fin, erupt, belly flop, roar) plays on top of the deck.
+- **Shots:** `Docs/Screenshots/77`–`81`.
+
+**Not verified / your call:**
+- **By ear:** none of the sounds above.
+- **The wake:** it's a lacy foam band, readable from the low camera but faint in the far telephoto. Tune it with the threshold in `BuildSeaFoamArt`, or `StartWake` / `BeginTrail` (width, spread, life).
+- **The shape under the water:** close to the surface, its body shows pale through the shallow-alpha water. I kept that ("a shape under the surface"). Lower `finShow` to sink it.
+- **Landing spot:** it lands ~8.5 m from your spawn, so the fight starts close. If you'd rather it land further off, move `Land` and re-run `7b2`. Keep it clear of the holes at (6, −14) and (5, −2).
+- **The slow motion** at the top of the spinner uses `TimeDirector.SlowMo`, so it affects everything, including the sounds' timing.
+- **In the fight:** a spin leap knocked the AutoPilot's idle player into the hole at (−10, −6) a few seconds in. That's the existing hole mechanic. It's more likely now that the Shark fights on top of the deck.
+
 ## 0000000000000000000000000000000. The Crocodile's intro cinematic: an aircraft's departure
 
 Same system as the Fairy's and the Druid's: it plays once per save, the first time you reach `Swamp_Crocodile`. Skip and replay work the same way (see the Fairy's section).

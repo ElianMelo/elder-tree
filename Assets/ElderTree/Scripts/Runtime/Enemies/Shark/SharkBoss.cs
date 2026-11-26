@@ -25,9 +25,9 @@ namespace ElderTree.Enemies
     /// Animation is procedural: the tail swims, the body sways and swells, and a hull of extreme points keeps
     /// it out of the ground (a raised head or a dropped tail props the body up instead of clipping).
     /// </summary>
-    public class SharkBoss : BossBase
+    public partial class SharkBoss : BossBase
     {
-        public enum Mode { Dormant, Stalking, Attacking, Burrowed, Recovering, Staggered, Dead }
+        public enum Mode { Dormant, Stalking, Attacking, Burrowed, Recovering, Staggered, Dead, Cinematic }
 
         public string displayName = "Shark";
 
@@ -165,7 +165,7 @@ namespace ElderTree.Enemies
             burrowCd = 9f;
             forcedMove = null;
             gameObject.SetActive(true);
-            groundY = Blast.Floor(arenaCenter).y;
+            groundY = ArenaFloorY;
             ResetPose();
             State = Mode.Stalking;
             brain = StartCoroutine(Brain(true));
@@ -262,6 +262,10 @@ namespace ElderTree.Enemies
         }
 
         // ================================================================== movement primitives
+        /// <summary>The floor it swims over: the first surface down at the arena's centre. (Not <see cref="Blast.Floor"/>, the
+        /// lowest: on the Bleached Atoll that is the seabed under the dock, and it fought under the planks.)</summary>
+        float ArenaFloorY => Blast.Ground(arenaCenter).y;
+
         static Vector3 Flat(Vector3 v) { v.y = 0f; return v; }
         Vector3 Heading => Quaternion.Euler(0, yaw, 0) * Vector3.forward;
         Vector3 Rel => transform.InverseTransformPoint(PlayerPos);
@@ -1104,7 +1108,7 @@ namespace ElderTree.Enemies
         // ================================================================== damage
         public override bool ReceiveHit(in DamageInfo info)
         {
-            if (!IsAlive || State == Mode.Burrowed) return false;
+            if (!IsAlive || State == Mode.Burrowed || State == Mode.Cinematic) return false;
             lastHitTime = Time.time;
             closePressure += info.explosive ? 0.12f : 0.2f;
             health = Mathf.Max(0f, health - info.damage);
