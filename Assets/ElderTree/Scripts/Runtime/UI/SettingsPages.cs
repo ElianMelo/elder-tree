@@ -19,8 +19,9 @@ namespace ElderTree.UI
             l.AddValue("Boss introductions", () => Settings.IntroModeName(Settings.IntroCinematics),
                 d => Settings.IntroCinematics = (Settings.IntroMode)(((int)Settings.IntroCinematics + d + 3) % 3),
                 "When a boss's intro cinematic plays: only the first time you meet it, on every visit to its stage, or never.");
-            l.AddValue("Control hints", () => OnOff(Settings.ControlHints), _ => Settings.ControlHints = !Settings.ControlHints,
-                "Show the control list when a stage begins. It folds away by itself; the Help button brings it back.");
+            l.AddValue("Control hints", () => Settings.HintsModeName(Settings.ControlHints),
+                d => Settings.ControlHints = (Settings.HintsMode)(((int)Settings.ControlHints + d + 3) % 3),
+                "Where the control list shows when a stage begins: only in the training grounds, on every stage, or nowhere. The Help button always brings it up.");
             l.AddValue("Camera shake", () => Pct(Settings.ShakeScale), d => Settings.ShakeScale = Mathf.Clamp(Settings.ShakeScale + d * 0.1f, 0f, 1.5f),
                 "How hard impacts, stomps and explosions shake the camera.");
 

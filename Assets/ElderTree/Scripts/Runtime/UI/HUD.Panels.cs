@@ -177,7 +177,7 @@ namespace ElderTree.UI
                     TitleShowing = false;
                     input?.ClearAll();
                     input?.SetGameplayEnabled(true);
-                    SetHints(true);
+                    SetHints(HintsHere);
                     foreach (var e in new[] { statusBox, equipBox, equipName, hintsBox }) StartCoroutine(FadeElement(e, 0f, 1f, 0.6f));
                 }
             }

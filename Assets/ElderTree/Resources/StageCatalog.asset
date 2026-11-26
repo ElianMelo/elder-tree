@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a256a6826d3879f4197a39c76a6ff11e, type: 3}
+  m_Name: StageCatalog
+  m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.StageCatalog
+  stages:
+  - region: Training Grounds
+    boss: 
+    bossId: 
+    maskId: 
+    maskName: 
+    epithet: The watch begins.
+    description: A walled yard under the indigo night, its dummies standing in the
+      mist. Learn the weight of the club, the timing of the roll and the reach of
+      the bow before you go looking for trouble.
+    scene: Arena
+    bossArg: 
+    vista: {fileID: 2800000, guid: b3b9fa52f97cd9f4f94514fad56ea21c, type: 3}
+    portrait: {fileID: 2800000, guid: 74fa1215cc25e0944a3997490496ee0e, type: 3}
+    silhouette: {fileID: 2800000, guid: 065becd0d3f355044a5a636c1978f332, type: 3}
+  - region: Drowned Garrison
+    boss: Crocodile
+    bossId: crocodile
+    maskId: alligator
+    maskName: Alligator Mask
+    epithet: Bombardier of the Drowned Garrison
+    description: A sunken wartime outpost in a green-lit swamp, its searchlights
+      still sweeping the fog. Something sleeps on the airstrip. When it wakes it
+      takes to the sky, and the cannonballs follow.
+    scene: Swamp_Crocodile
+    bossArg: 
+    vista: {fileID: 2800000, guid: 603a395630e6b8247bf76e2823ea99fa, type: 3}
+    portrait: {fileID: 2800000, guid: 76f90af984fabc943a3de53232ae3c7e, type: 3}
+    silhouette: {fileID: 2800000, guid: 94bafe6c560461043842fe5ffec9226d, type: 3}
+  - region: Bleached Atoll
+    boss: Shark
+    bossId: shark
+    maskId: shark
+    maskName: Shark Mask
+    epithet: It swims where there is no water
+    description: A crescent of bone-white sand around a still lagoon, a whale skeleton
+      half buried, a wreck on the reef. The fight is on the old dock. Watch the water,
+      and then watch the planks.
+    scene: Beach_Shark
+    bossArg: 
+    vista: {fileID: 2800000, guid: 32e81b890ecb8e746ae2562e626d95ec, type: 3}
+    portrait: {fileID: 2800000, guid: 23f1d8dc55ee6454b97e6a16d5eb3538, type: 3}
+    silhouette: {fileID: 2800000, guid: 5c7e5cf4c5e655a4dbc6df8ae7ea4939, type: 3}
+  - region: Verdant Cathedral
+    boss: Druid
+    bossId: druid
+    maskId: druid
+    maskName: Druid Mask
+    epithet: The grove walks, and it is angry
+    description: A clearing ringed by standing stones beneath a great kapok, morning
+      light falling through the mist in shafts. The forest here is not still. Something
+      in it is older than the stones.
+    scene: Forest_Druid
+    bossArg: 
+    vista: {fileID: 2800000, guid: 7b7317d67779e1748854616f3fb2c154, type: 3}
+    portrait: {fileID: 2800000, guid: d6cc54444798aca49993f832f966442d, type: 3}
+    silhouette: {fileID: 2800000, guid: 737c8839dfed4494c8ff0ff9b21db509, type: 3}
+  - region: Starlit Grotto
+    boss: Fairy
+    bossId: fairy
+    maskId: fairy
+    maskName: Fairy Mask
+    epithet: She will not let you near
+    description: A cavern with stars for a ceiling, glowing mushrooms and mirror-still
+      pools, gnomes keeping house at its edges. At its heart, a shaft of moonlight.
+      She dances in it, and she does not want company.
+    scene: Cave_Fairy
+    bossArg: 
+    vista: {fileID: 2800000, guid: f3eddf8ace447bb41b1d464018e7ad73, type: 3}
+    portrait: {fileID: 2800000, guid: c51b8c82d86c7374d8bcb07501447a1f, type: 3}
+    silhouette: {fileID: 2800000, guid: 95c627c784cfad14a9df24692ada3d9b, type: 3}
+  style: {fileID: 7433441132597879392, guid: 596f34853205fc74f860333606f28d42, type: 3}

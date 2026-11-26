@@ -28,8 +28,8 @@ namespace ElderTree.UI
         public LockOnSystem lockOn;
 
         public static HUD Instance { get; private set; }
-        /// <summary>Any menu that takes the cursor and pauses the game (pause or F1 debug).</summary>
-        public bool MenuOpen => PauseOpen || DebugMenuOpen;
+        /// <summary>Any menu that takes the cursor and pauses the game (pause, level select or F1 debug).</summary>
+        public bool MenuOpen => PauseOpen || DebugMenuOpen || LevelSelectOpen;
         public bool PauseOpen => pauseRoot != null && pauseRoot.style.display == DisplayStyle.Flex;
         public bool TitleShowing { get; private set; }
         [Header("Title card (per scene)")]
@@ -65,14 +65,25 @@ namespace ElderTree.UI
             Settings.Changed -= OnSettingsChanged;
         }
 
-        bool hintsPref;
+        Settings.HintsMode hintsPref;
 
-        /// <summary>The Control hints option was flipped in a menu: show or fold the list right away.</summary>
+        /// <summary>
+        /// Does this stage show the control list on arrival? By default only the training grounds (the tutorial) do;
+        /// elsewhere the list stays hidden until the Help button asks for it.
+        /// </summary>
+        bool HintsHere => Settings.ControlHints switch
+        {
+            Settings.HintsMode.EveryStage => true,
+            Settings.HintsMode.Off => false,
+            _ => UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == SceneFlow.Training,
+        };
+
+        /// <summary>The Control hints option was changed in a menu: show or hide the list right away.</summary>
         void OnSettingsChanged()
         {
             if (hintsBox == null || Settings.ControlHints == hintsPref) return;
             hintsPref = Settings.ControlHints;
-            SetHints(hintsPref);
+            SetHints(HintsHere);
         }
 
         void Start()
@@ -99,8 +110,9 @@ namespace ElderTree.UI
             BuildDebugMenu();
             BuildMasks();
             BuildTitle();
+            BuildLevelSelect();
             hintsPref = Settings.ControlHints;
-            if (!hintsPref) SetHints(false);
+            SetHints(HintsHere);
             Settings.Changed += OnSettingsChanged;
 
             if (input != null) input.DeviceChanged += _ => { RefreshHints(); RefreshMaskBar(); };
@@ -271,6 +283,7 @@ namespace ElderTree.UI
             TickHints();
             TickBanner(dt);
             TickBossBar(dt);
+            TickLevelSelect();
             TickDebugMenu(dt);
             TickMasks(dt);
             TickPause();
@@ -335,9 +348,12 @@ namespace ElderTree.UI
             if (hintsExpanded && Time.unscaledTime - hintsShownAt > 28f) SetHints(false);
         }
 
+        /// <summary>Open or fold the control list. Folded, it keeps a one-line "show controls" tab on a stage that shows
+        /// hints, and disappears entirely on one that doesn't (the Help button still brings it back).</summary>
         void SetHints(bool expanded)
         {
             hintsExpanded = expanded;
+            hintsBox.style.display = expanded || HintsHere ? UnityEngine.UIElements.DisplayStyle.Flex : UnityEngine.UIElements.DisplayStyle.None;
             hintsShownAt = Time.unscaledTime;
             hintsBox.EnableInClassList("hints--collapsed", !expanded);
         }

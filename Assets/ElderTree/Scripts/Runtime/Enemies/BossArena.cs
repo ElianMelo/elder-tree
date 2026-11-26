@@ -9,7 +9,7 @@ namespace ElderTree.Enemies
     /// <summary>
     /// A boss's own stage (Megaman style). Once the title card is dismissed the boss is summoned; dying
     /// respawns you and the boss comes back for another round; felling it (and picking up its mask, if it
-    /// drops one) takes you back to the boss select screen. In the training yard it summons whatever boss
+    /// drops one) takes you back to the level select. In the training yard it summons whatever boss
     /// the select screen asked for (<see cref="SceneFlow.PendingBoss"/>), and otherwise does nothing.
     /// The first time you meet a boss that has one, its intro cinematic (<see cref="BossCinematic"/>) plays before the fight;
     /// retries after a death and later visits skip it.
@@ -81,7 +81,8 @@ namespace ElderTree.Enemies
             yield return null;
             while (cine != null && cine.Playing) yield return null;
             yield return new WaitForSeconds(returnDelay);
-            yield return SceneFlow.FadeAndLoad(hud, SceneFlow.BossSelect);
+            SceneFlow.OpenLevelSelect = true;
+            yield return SceneFlow.FadeAndLoad(hud, SceneFlow.MainMenu);
         }
     }
 }

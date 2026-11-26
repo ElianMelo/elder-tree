@@ -214,109 +214,6 @@
     border-color: rgba(216, 180, 106, 0.2);
 }
 
-/* ---------------------------------------------------------------- level select */
-.mm-levels__side {
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 900px;
-}
-
-.mm-levels__list {
-    width: 640px;
-    margin-top: 10px;
-}
-
-.mm-stage {
-    flex-direction: row;
-    align-items: center;
-    height: 84px;
-    padding-left: 26px;
-    margin-bottom: 6px;
-}
-.mm-stage__glow {
-    position: absolute;
-    left: -60px; right: 0; top: 0; bottom: 0;
-    opacity: 0;
-    transition-property: opacity;
-    transition-duration: 0.2s;
-}
-.mm-stage__gem {
-    width: 12px; height: 12px;
-    margin-right: 26px;
-    rotate: 45deg;
-    border-width: 1px;
-    border-color: rgba(216, 180, 106, 0.6);
-    background-color: rgba(0, 0, 0, 0);
-}
-.mm-stage--felled .mm-stage__gem { background-color: rgb(216, 180, 106); border-color: rgb(244, 223, 166); }
-.mm-stage--training .mm-stage__gem { border-radius: 6px; rotate: 0deg; }
-.mm-stage__name {
-    font-size: 27px;
-    letter-spacing: 5px;
-    color: rgb(170, 160, 138);
-    transition-property: color;
-    transition-duration: 0.2s;
-}
-.mm-stage__sub {
-    font-size: 15px;
-    letter-spacing: 2px;
-    color: rgb(130, 122, 106);
-    margin-top: 2px;
-}
-.mm-stage:hover .mm-stage__name { color: rgb(215, 204, 178); }
-.mm-stage--active .mm-stage__glow { opacity: 1; }
-.mm-stage--active .mm-stage__name { color: rgb(250, 238, 206); text-shadow: 0 0 10px rgba(255, 200, 120, 0.4); }
-.mm-stage--active .mm-stage__sub { color: rgb(200, 186, 150); }
-
-.mm-stageinfo {
-    position: absolute;
-    right: 110px;
-    bottom: 140px;
-    width: 760px;
-    align-items: flex-end;
-    opacity: 0;
-    translate: 18px 0;
-    transition-property: opacity, translate;
-    transition-duration: 0.3s;
-    transition-timing-function: ease-out-cubic;
-}
-.mm-stageinfo--in { opacity: 1; translate: 0 0; }
-.mm-stageinfo__kicker { font-size: 14px; letter-spacing: 6px; color: rgb(190, 172, 132); -unity-text-align: middle-right; }
-.mm-stageinfo__name {
-    font-size: 62px;
-    letter-spacing: 8px;
-    color: rgb(245, 232, 198);
-    -unity-text-align: middle-right;
-    text-shadow: 0 0 16px rgba(0, 0, 0, 0.9);
-}
-.mm-stageinfo__epithet {
-    font-size: 22px;
-    color: rgb(200, 190, 160);
-    -unity-font-style: italic;
-    -unity-text-align: middle-right;
-    text-shadow: 0 0 8px rgba(0, 0, 0, 0.95);
-}
-.mm-stageinfo__rule { width: 420px; height: 1px; margin: 14px 0 12px 0; opacity: 0.7; }
-.mm-stageinfo__desc {
-    font-size: 18px;
-    color: rgb(226, 218, 200);
-    white-space: normal;
-    -unity-text-align: upper-right;
-    text-shadow: 0 0 6px rgba(0, 0, 0, 1);
-}
-
-.mm-chips { flex-direction: row; justify-content: flex-end; margin-top: 16px; }
-.mm-chip {
-    font-size: 13px;
-    letter-spacing: 3px;
-    padding: 5px 12px;
-    margin-left: 10px;
-    border-width: 1px;
-    background-color: rgba(6, 6, 8, 0.75);
-}
-.mm-chip--done { color: rgb(244, 223, 166); border-color: rgba(216, 180, 106, 0.8); }
-.mm-chip--open { color: rgb(160, 150, 128); border-color: rgba(160, 150, 128, 0.4); }
-
 /* ---------------------------------------------------------------- footer */
 .mm-foot {
     position: absolute;
@@ -344,7 +241,7 @@
 .mm-foot__keys { width: 520px; font-size: 15px; letter-spacing: 2px; color: rgb(176, 166, 142); -unity-text-align: middle-right; }
 .mm-foot__keys { font-size: 16px; }
 
-/* ---------------------------------------------------------------- confirm dialog, toast, travel card */
+/* ---------------------------------------------------------------- confirm dialog, toast */
 .mm-modal {
     background-color: rgba(0, 0, 0, 0.7);
     align-items: center;
@@ -404,14 +301,3 @@
     transition-property: opacity, translate;
     transition-duration: 0.3s;
 }
-
-.mm-card { align-items: center; justify-content: center; }
-.mm-card__title {
-    font-size: 64px;
-    letter-spacing: 14px;
-    color: rgb(240, 226, 190);
-    -unity-text-align: middle-center;
-    padding-left: 14px;
-}
-.mm-rule { width: 560px; height: 1px; margin: 16px 0; }
-.mm-card__sub { font-size: 20px; letter-spacing: 3px; color: rgb(190, 178, 150); -unity-font-style: italic; }

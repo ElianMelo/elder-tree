@@ -6,20 +6,23 @@ using UnityEngine.SceneManagement;
 namespace ElderTree
 {
     /// <summary>
-    /// Scene routing: MainMenu (title, level select, options) -> BossSelect (Megaman-style hub) or straight into a stage
-    /// -> back to BossSelect after a win. Every stage you enter is remembered for the menu's Continue.
+    /// Scene routing: MainMenu (title, level select, options) -> a stage -> back to the main menu's level select after
+    /// a win (or any time through F2 / the pause menu's in-game level select). Every stage you enter is remembered for
+    /// the menu's Continue.
     /// Bosses without an arena of their own yet fight in the training yard (Arena), summoned on arrival
     /// through <see cref="PendingBoss"/>.
     /// </summary>
     public static class SceneFlow
     {
         public const string MainMenu = "MainMenu";
-        public const string BossSelect = "BossSelect";
         public const string Training = "Arena";
         public const string Swamp = "Swamp_Crocodile";
         public const string Beach = "Beach_Shark";
         public const string Forest = "Forest_Druid";
         public const string Cave = "Cave_Fairy";
+
+        /// <summary>The main menu opens straight on its level select (read and cleared by MainMenuScreen).</summary>
+        public static bool OpenLevelSelect;
 
         /// <summary>Boss to summon when the next arena loads (read and cleared by BossArena).</summary>
         public static string PendingBoss;
@@ -29,7 +32,7 @@ namespace ElderTree
         public static void Load(string scene, string boss = null)
         {
             PendingBoss = boss;
-            if (scene != MainMenu && scene != BossSelect)
+            if (scene != MainMenu)
             {
                 PlayerPrefs.SetString(LastStageKey, scene + "|" + boss);
                 PlayerPrefs.Save();

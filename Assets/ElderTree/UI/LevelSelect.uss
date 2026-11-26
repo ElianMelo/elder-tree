@@ -1,0 +1,174 @@
+/* Level select (LevelSelectView): shared by the main menu and the in-game F2 / pause level select.
+   Elden Ring restraint: the stage's vista drifting under a dark grade, a list on a dark band to the left,
+   the stage's name, ruler and portrait at the bottom right, hairline rules that fade at both ends. */
+
+.ls-root {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background-color: rgb(4, 4, 6);
+    color: rgb(237, 230, 214);
+    font-size: 18px;
+    overflow: hidden;
+    transition-property: opacity;
+    transition-duration: 0.28s;
+    transition-timing-function: ease-out-cubic;
+}
+.ls-off { opacity: 0; }
+.ls-bare { background-color: rgba(0, 0, 0, 0); }
+.ls-bare .ls-vista, .ls-bare .ls-grade, .ls-bare .ls-side, .ls-bare .ls-page, .ls-bare .ls-info, .ls-bare .ls-foot { display: none; }
+
+.ls-fill { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.ls-fade { background-color: rgb(0, 0, 0); }
+
+.ls-vista {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    -unity-background-scale-mode: scale-and-crop;
+    -unity-background-image-tint-color: rgb(190, 184, 176);
+}
+
+.ls-side { position: absolute; left: 0; top: 0; bottom: 0; width: 900px; }
+
+/* ---------------------------------------------------------------- header + list */
+.ls-page {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    padding: 64px 96px 110px 96px;
+}
+.ls-head { flex-direction: row; align-items: flex-end; }
+.ls-back {
+    font-size: 54px;
+    color: rgb(176, 160, 124);
+    margin-right: 22px;
+    margin-bottom: -6px;
+    transition-property: color, translate;
+    transition-duration: 0.15s;
+}
+.ls-back:hover { color: rgb(250, 238, 206); translate: -4px 0; }
+.ls-kicker { font-size: 14px; letter-spacing: 7px; color: rgb(176, 160, 124); }
+.ls-title {
+    font-size: 44px;
+    letter-spacing: 10px;
+    color: rgb(240, 226, 190);
+    text-shadow: 0 0 14px rgba(255, 196, 110, 0.25);
+}
+.ls-rule { height: 1px; width: 900px; margin-top: 14px; margin-bottom: 18px; opacity: 0.6; }
+
+.ls-list { width: 640px; margin-top: 10px; }
+
+.ls-stage {
+    flex-direction: row;
+    align-items: center;
+    height: 84px;
+    padding-left: 26px;
+    margin-bottom: 6px;
+}
+.ls-stage__glow {
+    position: absolute;
+    left: -60px; right: 0; top: 0; bottom: 0;
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.2s;
+}
+.ls-stage__gem {
+    width: 12px; height: 12px;
+    margin-right: 26px;
+    rotate: 45deg;
+    border-width: 1px;
+    border-color: rgba(216, 180, 106, 0.6);
+}
+.ls-stage--felled .ls-stage__gem { background-color: rgb(216, 180, 106); border-color: rgb(244, 223, 166); }
+.ls-stage--training .ls-stage__gem { border-radius: 6px; rotate: 0deg; }
+.ls-stage__name {
+    font-size: 27px;
+    letter-spacing: 5px;
+    color: rgb(170, 160, 138);
+    transition-property: color;
+    transition-duration: 0.2s;
+}
+.ls-stage__sub { font-size: 15px; letter-spacing: 2px; color: rgb(130, 122, 106); margin-top: 2px; }
+.ls-stage:hover .ls-stage__name { color: rgb(215, 204, 178); }
+.ls-stage--active .ls-stage__glow { opacity: 1; }
+.ls-stage--active .ls-stage__name { color: rgb(250, 238, 206); text-shadow: 0 0 10px rgba(255, 200, 120, 0.4); }
+.ls-stage--active .ls-stage__sub { color: rgb(200, 186, 150); }
+
+/* ---------------------------------------------------------------- the chosen stage */
+.ls-info {
+    position: absolute;
+    right: 110px;
+    bottom: 140px;
+    width: 760px;
+    align-items: flex-end;
+    opacity: 0;
+    translate: 18px 0;
+    transition-property: opacity, translate;
+    transition-duration: 0.3s;
+    transition-timing-function: ease-out-cubic;
+}
+.ls-info--in { opacity: 1; translate: 0 0; }
+.ls-portrait {
+    width: 132px;
+    height: 132px;
+    margin-bottom: 18px;
+    border-width: 1px;
+    border-color: rgba(216, 180, 106, 0.75);
+    -unity-background-scale-mode: scale-and-crop;
+}
+.ls-info__kicker { font-size: 14px; letter-spacing: 6px; color: rgb(190, 172, 132); -unity-text-align: middle-right; }
+.ls-info__name {
+    font-size: 62px;
+    letter-spacing: 8px;
+    color: rgb(245, 232, 198);
+    -unity-text-align: middle-right;
+    text-shadow: 0 0 16px rgba(0, 0, 0, 0.9);
+}
+.ls-info__epithet {
+    font-size: 22px;
+    color: rgb(200, 190, 160);
+    -unity-font-style: italic;
+    -unity-text-align: middle-right;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.95);
+}
+.ls-info__rule { width: 420px; height: 1px; margin: 14px 0 12px 0; opacity: 0.7; }
+.ls-info__desc {
+    font-size: 18px;
+    color: rgb(226, 218, 200);
+    white-space: normal;
+    -unity-text-align: upper-right;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 1);
+}
+.ls-chips { flex-direction: row; justify-content: flex-end; margin-top: 16px; }
+.ls-chip {
+    font-size: 13px;
+    letter-spacing: 3px;
+    padding: 5px 12px;
+    margin-left: 10px;
+    border-width: 1px;
+    background-color: rgba(6, 6, 8, 0.75);
+}
+.ls-chip--done { color: rgb(244, 223, 166); border-color: rgba(216, 180, 106, 0.8); }
+.ls-chip--open { color: rgb(160, 150, 128); border-color: rgba(160, 150, 128, 0.4); }
+
+/* ---------------------------------------------------------------- footer + travel card */
+.ls-foot {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 74px;
+    padding: 0 64px;
+    background-color: rgba(4, 4, 6, 0.55);
+}
+.ls-foot__rule { height: 1px; opacity: 0.45; }
+.ls-foot__row { flex-grow: 1; flex-direction: row; align-items: center; justify-content: space-between; }
+.ls-foot__left { font-size: 13px; letter-spacing: 3px; color: rgb(140, 130, 110); }
+.ls-foot__keys { font-size: 16px; letter-spacing: 2px; color: rgb(176, 166, 142); -unity-text-align: middle-right; }
+
+.ls-card { align-items: center; justify-content: center; }
+.ls-card__title {
+    font-size: 64px;
+    letter-spacing: 14px;
+    color: rgb(240, 226, 190);
+    -unity-text-align: middle-center;
+    padding-left: 14px;
+}
+.ls-card__rule { width: 560px; height: 1px; margin: 16px 0; }
+.ls-card__sub { font-size: 20px; letter-spacing: 3px; color: rgb(190, 178, 150); -unity-font-style: italic; }

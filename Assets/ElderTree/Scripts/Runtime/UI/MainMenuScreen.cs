@@ -12,29 +12,13 @@ namespace ElderTree.UI
     /// The title and main menu, in the restrained Elden Ring manner: a stage vista drifting slowly behind a dark
     /// grade, rising embers, a tree-ring emblem behind the title, a short centred list whose highlighted entry sits
     /// in a soft gold glow, and a footer with the highlighted entry's description and the button prompts.
-    /// Pages: Level Select (every stage, its vista behind the list), Options (game + camera), Settings (graphics,
+    /// Pages: Level Select (the shared <see cref="LevelSelectView"/> over the <see cref="StageCatalog"/>), Options (game + camera), Settings (graphics,
     /// audio, controls in tabs), Reset (progress, masks, introductions, settings, controls; each one confirmed).
     /// Pad, keyboard and mouse all drive everything.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class MainMenuScreen : MonoBehaviour
     {
-        [Serializable]
-        public class Stage
-        {
-            public string region;             // "Drowned Garrison"
-            public string boss;               // "Crocodile"; empty = no boss (training grounds)
-            public string bossId;             // progress id ("crocodile")
-            public string maskId;             // owning this mask also counts as felled
-            public string maskName;           // "Alligator Mask"
-            public string epithet;
-            [TextArea(2, 5)] public string description;
-            public string scene;
-            public string bossArg;            // SceneFlow.PendingBoss for shared arenas
-            public Texture2D vista;
-        }
-
-        public List<Stage> stages = new();
         public StyleSheet hudStyle;          // option rows (.setting, .slider, .bindrow)
         public StyleSheet menuStyle;
         public string kicker = "A NIGHT WATCH SOULSLIKE";
@@ -61,8 +45,8 @@ namespace ElderTree.UI
         }
 
         Page page = Page.Title;
-        VisualElement root, bgFront, bgBack, embersLayer, titleGroup, mainCol, modal, fade, card;
-        Label pressAny, footLeft, footHelp, footKeys, toast, cardTitle, cardSub;
+        VisualElement root, bgFront, bgBack, embersLayer, titleGroup, mainCol, modal, fade;
+        Label pressAny, footLeft, footHelp, footKeys, toast;
         RingEmblem emblem;
         readonly Dictionary<Page, VisualElement> pages = new();
         PlayerInputReader input;
@@ -72,10 +56,9 @@ namespace ElderTree.UI
         readonly List<Item> items = new();
         int itemIndex;
 
-        readonly List<VisualElement> stageRows = new();
-        int stageIndex;
-        Label stRegion, stBoss, stEpithet, stDesc;
-        VisualElement stChips, stInfo;
+        StageCatalog catalog;
+        List<StageCatalog.Stage> stages = new();
+        LevelSelectView levels;
 
         OptionList optionsList, settingsList, resetList;
         readonly List<Label> settingsTabs = new();
@@ -95,7 +78,6 @@ namespace ElderTree.UI
         Texture2D shownVista;
         float frontBorn, backBorn;
 
-        Texture2D glowTex, lineTex, shadeTex, vignetteTex, sideTex;
         readonly List<Ember> embers = new();
 
         static readonly Color Gold = new(0.85f, 0.71f, 0.42f), Ember1 = new(1f, 0.62f, 0.28f), Ember2 = new(1f, 0.84f, 0.52f);
@@ -112,12 +94,20 @@ namespace ElderTree.UI
             input?.SetGameplayEnabled(false);
             if (input != null) input.DeviceChanged += _ => RefreshFooter();
             Settings.Load();
+            catalog = StageCatalog.Instance;
+            if (catalog != null) stages = catalog.stages;
 
-            MakeTextures();
             Build();
             RefreshProgress();
-            GoTo(Page.Title, false);
             NextVista(true);
+            // back from a stage (a victory, or the level select asked for): straight to the stage list
+            if (SceneFlow.OpenLevelSelect)
+            {
+                SceneFlow.OpenLevelSelect = false;
+                GoTo(Page.Main, false);
+                GoTo(Page.Levels, false);
+            }
+            else GoTo(Page.Title, false);
             AudioManager.SetMusic(MusicMood.Explore);
             StartCoroutine(FadeIn());
         }
@@ -125,47 +115,6 @@ namespace ElderTree.UI
         void OnDestroy()
         {
             ControlBindings.CancelRebind();
-            foreach (var t in new[] { glowTex, lineTex, shadeTex, vignetteTex, sideTex }) if (t) Destroy(t);
-        }
-
-        // ================================================================== textures (generated: soft gradients only)
-        static Texture2D Tex(int w, int h, Func<float, float, Color> f)
-        {
-            var t = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear, hideFlags = HideFlags.DontSave };
-            var px = new Color[w * h];
-            for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++)
-                px[y * w + x] = f(w > 1 ? x / (w - 1f) : 0.5f, h > 1 ? y / (h - 1f) : 0.5f);
-            t.SetPixels(px);
-            t.Apply(false, true);
-            return t;
-        }
-
-        void MakeTextures()
-        {
-            // the highlight behind a chosen entry: wide, soft, warm
-            glowTex = Tex(256, 64, (u, v) =>
-            {
-                float x = u * 2f - 1f, y = v * 2f - 1f;
-                float a = Mathf.Pow(Mathf.Clamp01(1f - x * x), 1.8f) * Mathf.Pow(Mathf.Clamp01(1f - y * y), 1.6f);
-                return new Color(Gold.r, Gold.g * 0.92f, Gold.b * 0.8f, a * 0.42f);
-            });
-            lineTex = Tex(256, 1, (u, _) => { float x = u * 2f - 1f; return new Color(0.96f, 0.87f, 0.65f, Mathf.Pow(Mathf.Clamp01(1f - x * x), 2.2f)); });
-            // grade over the vista: heavy at the bottom (menu + footer), a little at the top
-            shadeTex = Tex(1, 256, (_, v) =>
-            {
-                float a = 0.28f + 0.62f * Mathf.Pow(1f - v, 2.2f) + 0.3f * Mathf.Pow(v, 4f);
-                return new Color(0.012f, 0.012f, 0.018f, Mathf.Clamp01(a));
-            });
-            vignetteTex = Tex(128, 128, (u, v) =>
-            {
-                float x = u * 2f - 1f, y = v * 2f - 1f;
-                float d = Mathf.Sqrt(x * x * 0.7f + y * y);
-                float a = Mathf.Clamp01((d - 0.5f) / 0.7f);
-                return new Color(0, 0, 0, a * a * (3f - 2f * a) * 0.85f);
-            });
-            // level select: the list sits on a dark band fading to the right
-            sideTex = Tex(256, 1, (u, _) => new Color(0.01f, 0.01f, 0.015f, 0.94f * Mathf.Pow(1f - u, 0.9f)));
         }
 
         // ================================================================== helpers
@@ -235,29 +184,25 @@ namespace ElderTree.UI
 
             bgBack = El("mm-vista", root);
             bgFront = El("mm-vista", root);
-            Image(El("mm-fill", root), shadeTex);
-            Image(El("mm-fill", root), vignetteTex);
+            Image(El("mm-fill", root), MenuTextures.Shade);
+            Image(El("mm-fill", root), MenuTextures.Vignette);
             embersLayer = El("mm-fill", root);
             for (int i = 0; i < 70; i++) embers.Add(NewEmber(true));
 
             BuildTitle();
             BuildMain();
-            BuildLevels();
             BuildOptions();
             BuildSettings();
             BuildReset();
             BuildFooter();
+            levels = new LevelSelectView(root, this, catalog);
+            levels.BackRequested += () => GoTo(Page.Main);
             BuildModal();
 
             toast = Lbl("", "mm-toast mm-off", root);
             toast.style.display = DisplayStyle.None;
 
             fade = El("mm-fill mm-fade", root);
-            card = El("mm-fill mm-card", root);
-            cardTitle = SerifLbl("", "mm-card__title", card);
-            El("mm-rule", card).style.backgroundImage = lineTex;
-            cardSub = Lbl("", "mm-card__sub", card);
-            card.style.opacity = 0f;
         }
 
         void BuildTitle()
@@ -270,9 +215,9 @@ namespace ElderTree.UI
             Lbl(kicker, "mm-title__kicker", titleGroup);
             SerifLbl(titleText, "mm-title__main", titleGroup);
             var orn = El("mm-ornament", titleGroup);
-            El("mm-ornament__line", orn).style.backgroundImage = lineTex;
+            El("mm-ornament__line", orn).style.backgroundImage = MenuTextures.Line;
             El("mm-ornament__gem", orn);
-            El("mm-ornament__line", orn).style.backgroundImage = lineTex;
+            El("mm-ornament__line", orn).style.backgroundImage = MenuTextures.Line;
 
             pressAny = SerifLbl("PRESS ANY BUTTON", "mm-press mm-fadeable", root);
             pressAny.pickingMode = PickingMode.Position;
@@ -295,9 +240,9 @@ namespace ElderTree.UI
             int idx = items.Count;
             it.el = El("mm-item", mainCol);
             var glow = El("mm-item__glow", it.el);
-            Image(glow, glowTex);
-            El("mm-item__line mm-item__line--top", it.el).style.backgroundImage = lineTex;
-            El("mm-item__line mm-item__line--bottom", it.el).style.backgroundImage = lineTex;
+            Image(glow, MenuTextures.Glow);
+            El("mm-item__line mm-item__line--top", it.el).style.backgroundImage = MenuTextures.Line;
+            El("mm-item__line mm-item__line--bottom", it.el).style.backgroundImage = MenuTextures.Line;
             it.text = SerifLbl(label, "mm-item__text", it.el);
             it.el.pickingMode = PickingMode.Position;
             it.el.RegisterCallback<PointerEnterEvent>(_ => { if (CanPoint(Page.Main) && itemIndex != idx) SelectItem(idx, true); });
@@ -319,42 +264,9 @@ namespace ElderTree.UI
             Lbl(kick, "mm-page__kicker", titles);
             SerifLbl(title, "mm-page__title", titles);
             var rule = El("mm-page__rule", pg);
-            rule.style.backgroundImage = lineTex;
+            rule.style.backgroundImage = MenuTextures.Line;
             pages[p] = pg;
             return pg;
-        }
-
-        // ------------------------------------------------------------------ level select
-        void BuildLevels()
-        {
-            var pg = NewPage(Page.Levels, "LEVEL SELECT", "TRAVEL");
-            pg.AddToClassList("mm-page--levels");
-            var side = El("mm-levels__side", pg);
-            Image(side, sideTex);
-            var list = El("mm-levels__list", pg);
-            for (int i = 0; i < stages.Count; i++)
-            {
-                int idx = i;
-                var row = El("mm-stage", list);
-                var glow = El("mm-stage__glow", row);
-                Image(glow, glowTex);
-                El("mm-stage__gem", row);
-                var txt = El("mm-stage__text", row);
-                SerifLbl("", "mm-stage__name", txt);
-                Lbl("", "mm-stage__sub", txt);
-                row.pickingMode = PickingMode.Position;
-                row.RegisterCallback<PointerEnterEvent>(_ => { if (CanPoint(Page.Levels) && stageIndex != idx) SelectStage(idx, true); });
-                row.RegisterCallback<ClickEvent>(_ => { if (CanPoint(Page.Levels)) { SelectStage(idx, false); TravelTo(stages[idx]); } });
-                stageRows.Add(row);
-            }
-
-            stInfo = El("mm-stageinfo", pg);
-            stBoss = Lbl("", "mm-stageinfo__kicker", stInfo);
-            stRegion = SerifLbl("", "mm-stageinfo__name", stInfo);
-            stEpithet = SerifLbl("", "mm-stageinfo__epithet", stInfo);
-            El("mm-stageinfo__rule", stInfo).style.backgroundImage = lineTex;
-            stDesc = Lbl("", "mm-stageinfo__desc", stInfo);
-            stChips = El("mm-chips", stInfo);
         }
 
         // ------------------------------------------------------------------ options / settings / reset
@@ -446,7 +358,7 @@ namespace ElderTree.UI
         void BuildFooter()
         {
             var foot = El("mm-foot", root);
-            El("mm-foot__rule", foot).style.backgroundImage = lineTex;
+            El("mm-foot__rule", foot).style.backgroundImage = MenuTextures.Line;
             var row = El("mm-foot__row", foot);
             footLeft = Lbl("", "mm-foot__left", row);
             footHelp = Lbl("", "mm-foot__help", row);
@@ -459,7 +371,7 @@ namespace ElderTree.UI
             modal.pickingMode = PickingMode.Position;
             modal.style.display = DisplayStyle.None;
             var box = El("mm-modal__box", modal);
-            El("mm-modal__rule", box).style.backgroundImage = lineTex;
+            El("mm-modal__rule", box).style.backgroundImage = MenuTextures.Line;
             modalTitle = SerifLbl("", "mm-modal__title", box);
             modalBody = Lbl("", "mm-modal__body", box);
             var btns = El("mm-modal__btns", box);
@@ -472,7 +384,7 @@ namespace ElderTree.UI
                 b.RegisterCallback<ClickEvent>(_ => { modalIndex = idx; ModalChoose(); });
                 modalBtns[i] = b;
             }
-            El("mm-modal__rule", box).style.backgroundImage = lineTex;
+            El("mm-modal__rule", box).style.backgroundImage = MenuTextures.Line;
         }
 
         void Confirm(string title, string body, string yes, Action onYes)
@@ -538,11 +450,7 @@ namespace ElderTree.UI
         }
 
         // ================================================================== state
-        string ContinueHelp() => SceneFlow.LastStage(out var scene, out _) ? $"Return to {StageFor(scene)?.region ?? scene}." : "";
-
-        Stage StageFor(string scene) => stages.Find(s => s.scene == scene);
-
-        bool IsFelled(Stage s) => !string.IsNullOrEmpty(s.bossId) && Progress.IsFelled(s.bossId, s.maskId);
+        string ContinueHelp() => SceneFlow.LastStage(out var scene, out _) ? $"Return to {catalog?.Find(scene)?.region ?? scene}." : "";
 
         void RefreshProgress()
         {
@@ -555,20 +463,10 @@ namespace ElderTree.UI
             SelectItem(itemIndex, false);
 
             int bosses = 0, felled = 0;
-            for (int i = 0; i < stages.Count; i++)
-            {
-                var s = stages[i];
-                bool hasBoss = !string.IsNullOrEmpty(s.bossId);
-                bool down = IsFelled(s);
-                if (hasBoss) { bosses++; if (down) felled++; }
-                var row = stageRows[i];
-                row.Q<Label>(className: "mm-stage__name").text = s.region.ToUpperInvariant();
-                row.Q<Label>(className: "mm-stage__sub").text = !hasBoss ? "Training grounds" : down ? $"{s.boss}, felled" : "? ? ?";
-                row.EnableInClassList("mm-stage--felled", down);
-                row.EnableInClassList("mm-stage--training", !hasBoss);
-            }
+            foreach (var s in stages)
+                if (s.HasBoss) { bosses++; if (s.Felled) felled++; }
             footLeft.text = $"BOSSES FELLED   {felled} / {bosses}          {version}";
-            if (stages.Count > 0) SelectStage(Mathf.Clamp(stageIndex, 0, stages.Count - 1), false);
+            levels?.Refresh();
         }
 
         int NextVisible(int from, int dir)
@@ -597,40 +495,6 @@ namespace ElderTree.UI
             it.act?.Invoke();
         }
 
-        void SelectStage(int idx, bool sound)
-        {
-            stageIndex = idx;
-            for (int i = 0; i < stageRows.Count; i++) stageRows[i].EnableInClassList("mm-stage--active", i == stageIndex);
-            var s = stages[stageIndex];
-            bool hasBoss = !string.IsNullOrEmpty(s.bossId);
-            bool down = IsFelled(s);
-            stRegion.text = s.region.ToUpperInvariant();
-            stBoss.text = !hasBoss ? "TRAINING GROUNDS" : down ? $"DOMAIN OF THE {s.boss.ToUpperInvariant()}" : "DOMAIN OF AN UNKNOWN FOE";
-            stEpithet.text = s.epithet;
-            stDesc.text = s.description;
-            stChips.Clear();
-            if (hasBoss)
-            {
-                Chip(down ? "BOSS FELLED" : "BOSS UNVANQUISHED", down ? "mm-chip--done" : "mm-chip--open");
-                bool mask = Progress.OwnsMask(s.maskId);
-                if (!string.IsNullOrEmpty(s.maskName)) Chip(mask ? s.maskName.ToUpperInvariant() + " CLAIMED" : "MASK UNCLAIMED", mask ? "mm-chip--done" : "mm-chip--open");
-            }
-            else Chip("NO BOSS", "mm-chip--open");
-            if (page == Page.Levels)
-            {
-                ShowVista(s.vista);
-                if (sound)
-                {
-                    AudioManager.Play2D(Sfx.UIMove, 0.5f);
-                    stInfo.RemoveFromClassList("mm-stageinfo--in");
-                    stInfo.schedule.Execute(() => stInfo.AddToClassList("mm-stageinfo--in")).StartingIn(16);
-                }
-            }
-            RefreshFooter();
-        }
-
-        void Chip(string text, string cls) => Lbl(text, "mm-chip " + cls, stChips);
-
         void GoTo(Page p, bool sound = true)
         {
             var from = page;
@@ -641,12 +505,10 @@ namespace ElderTree.UI
             Show(pressAny, p == Page.Title);
             Show(mainCol, p == Page.Main);
             foreach (var kv in pages) if (kv.Key == p || kv.Key == from) Show(kv.Value, kv.Key == p);
+            if (p == Page.Levels) levels.Open();
+            else if (from == Page.Levels) levels.Close();
             switch (p)
             {
-                case Page.Levels:
-                    stInfo.AddToClassList("mm-stageinfo--in");
-                    SelectStage(stageIndex, false);
-                    break;
                 case Page.Options:
                     optionsList.Clear();
                     SettingsPages.Game(optionsList);
@@ -691,9 +553,6 @@ namespace ElderTree.UI
                     keys = $"{ok}  Select      {back}  Title";
                     help = items[itemIndex].help;
                     break;
-                case Page.Levels:
-                    keys = $"{(pad ? "D-Pad" : "↑ ↓")}  Choose      {ok}  Travel      {back}  Back";
-                    break;
                 case Page.Options:
                     keys = optionsList.Listening ? optionsList.FooterAction(pad) : $"{optionsList.FooterAction(pad)}      {back}  Back";
                     help = optionsList.CurrentHelp;
@@ -717,31 +576,10 @@ namespace ElderTree.UI
         void Continue()
         {
             if (!SceneFlow.LastStage(out var scene, out var boss)) return;
-            var s = StageFor(scene);
-            if (s != null) TravelTo(s);
-            else StartCoroutine(Travel(scene, boss, scene.ToUpperInvariant(), ""));
-        }
-
-        void TravelTo(Stage s)
-        {
-            AudioManager.Play2D(Sfx.UISelect, 0.8f);
-            bool hasBoss = !string.IsNullOrEmpty(s.bossId);
-            string sub = !hasBoss ? "Training grounds" : IsFelled(s) ? $"{s.boss}, felled" : s.epithet;
-            StartCoroutine(Travel(s.scene, s.bossArg, s.region.ToUpperInvariant(), sub));
-        }
-
-        IEnumerator Travel(string scene, string boss, string title, string sub)
-        {
             locked = true;
-            RefreshFooter();
-            cardTitle.text = title;
-            cardSub.text = sub;
-            yield return Ease.Tween(0.7f, k => fade.style.opacity = k, Ease.InOutSine);
-            AudioManager.Play2D(Sfx.Title, 0.7f);
-            yield return Ease.Tween(0.6f, k => card.style.opacity = k, Ease.OutCubic);
-            yield return new WaitForSecondsRealtime(1.3f);
-            yield return Ease.Tween(0.5f, k => card.style.opacity = 1f - k, Ease.InCubic);
-            SceneFlow.Load(scene, boss);
+            var s = catalog?.Find(scene);
+            if (s != null) levels.Travel(s);
+            else StartCoroutine(levels.TravelRoutine(scene, boss, scene.ToUpperInvariant(), ""));
         }
 
         void Quit()
@@ -790,7 +628,7 @@ namespace ElderTree.UI
 
         IEnumerator VistaFade()
         {
-            yield return Ease.Tween(page == Page.Levels ? 0.45f : 1.6f, k => bgBack.style.opacity = k, Ease.InOutSine);
+            yield return Ease.Tween(1.6f, k => bgBack.style.opacity = k, Ease.InOutSine);
             FinishFade();
         }
 
@@ -801,14 +639,6 @@ namespace ElderTree.UI
             (frontBorn, backBorn) = (backBorn, frontBorn);
             bgFront.style.opacity = 1f;
             bgBack.style.opacity = 0f;
-        }
-
-        // slow drift: each vista zooms in and slides a little over its life
-        static void Drift(VisualElement e, float age)
-        {
-            float k = Mathf.Clamp01(age / 30f);
-            e.style.scale = new Scale(Vector3.one * Mathf.Lerp(1.06f, 1.14f, Ease.InOutSine(k)));
-            e.style.translate = new Translate(new Length(Mathf.Lerp(-1.2f, 1.2f, k), LengthUnit.Percent), new Length(Mathf.Sin(age * 0.07f) * 0.6f, LengthUnit.Percent));
         }
 
         // ================================================================== embers
@@ -857,8 +687,9 @@ namespace ElderTree.UI
         {
             float dt = Time.unscaledDeltaTime, t = Time.unscaledTime;
             TickEmbers(dt, t);
-            Drift(bgFront, t - frontBorn);
-            Drift(bgBack, t - backBorn);
+            LevelSelectView.Drift(bgFront, t - frontBorn);
+            LevelSelectView.Drift(bgBack, t - backBorn);
+            levels.Tick(page == Page.Levels && !ModalOpen && !locked ? input : null);
             if (emblem != null) emblem.Spin(dt);
             if (page == Page.Title) pressAny.style.opacity = 0.45f + 0.55f * (0.5f + 0.5f * Mathf.Sin(t * 2.2f));
             else pressAny.style.opacity = StyleKeyword.Null;
@@ -876,14 +707,6 @@ namespace ElderTree.UI
                     var nav = input.ConsumeNavigate();
                     if (nav.y != 0) SelectItem(NextVisible(itemIndex, -nav.y), true);
                     if (input.SubmitPressed) Activate();
-                    else if (input.CancelPressed) Back();
-                    break;
-                }
-                case Page.Levels:
-                {
-                    var nav = input.ConsumeNavigate();
-                    if (nav.y != 0 && stages.Count > 0) SelectStage((stageIndex - nav.y + stages.Count) % stages.Count, true);
-                    if (input.SubmitPressed && stages.Count > 0) TravelTo(stages[stageIndex]);
                     else if (input.CancelPressed) Back();
                     break;
                 }

@@ -31,7 +31,6 @@ namespace ElderTree
                 hud.PauseChanged += OnPause;
                 hud.ResetTrainingRequested += ResetTraining;
                 hud.QuitRequested += Quit;
-                hud.BossSelectRequested += () => StartCoroutine(SceneFlow.FadeAndLoad(hud, SceneFlow.BossSelect));
                 hud.MainMenuRequested += () => StartCoroutine(SceneFlow.FadeAndLoad(hud, SceneFlow.MainMenu));
             }
             LockCursor(true);

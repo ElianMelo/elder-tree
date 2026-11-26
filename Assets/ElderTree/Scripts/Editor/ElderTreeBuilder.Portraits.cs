@@ -14,12 +14,11 @@ using static ElderTree.EditorTools.TextureForge;
 namespace ElderTree.EditorTools
 {
     /// <summary>
-    /// Megaman-style boss select: portraits rendered in-game (each boss in its arena, through the game's camera,
-    /// lighting, fog and post-processing at the PSX resolution), a silhouette derived from each, and the select scene.
+    /// Boss portraits for the level select: each boss rendered in-game in its arena (through the game's camera,
+    /// lighting, fog and post-processing at the PSX resolution), and a silhouette derived from each, shown until felled.
     /// </summary>
     public static partial class ElderTreeBuilder
     {
-        public const string BossSelectScenePath = Root + "/Scenes/BossSelect.unity";
         public const string PortraitDir = Root + "/UI/Portraits";
         const int PortraitSize = 144;
         const int ShotLayer = 31;
@@ -194,90 +193,7 @@ namespace ElderTree.EditorTools
 
         static Texture2D Portrait(string name) => AssetDatabase.LoadAssetAtPath<Texture2D>($"{PortraitDir}/{name}.png");
 
-        // ================================================================== the select scene
-        [MenuItem("Elder Tree/9d. Build Boss Select Scene")]
-        public static string BuildBossSelectScene()
-        {
-            if (cues == null) BuildAudio();
-            var bg = SavePsx("T_SelectBG", 128, (u, v, x, y) =>
-            {
-                var c = Color.Lerp(Hex("#040705"), Hex("#121A13"), 0.3f + 0.5f * Fbm(u, v, 6, 6, 4, 401) + 0.2f * (Hash(x, y, 402) - 0.5f));
-                float streak = Fbm(u, v, 24, 2, 2, 403);
-                return Color.Lerp(c, Hex("#1C2A1C"), Mathf.Clamp01((streak - 0.62f) * 4f) * 0.5f);
-            }, mips: false);
-            var fogTex = Save("T_SelectFog", 256, 256, (x, y) =>
-            {
-                float u = x / 256f, v = y / 256f;
-                float f = Fbm(u, v, 3, 3, 5, 411);
-                float a = Mathf.Clamp01((f - 0.42f) * 2.4f);
-                return new Color(1, 1, 1, a * a);
-            });
-            var fimp = (TextureImporter)AssetImporter.GetAtPath(TexDir + "/T_SelectFog.png");
-            fimp.alphaIsTransparency = true; fimp.wrapMode = TextureWrapMode.Repeat; fimp.SaveAndReimport();
-
-            var vig = Save("T_SelectVignette", 128, 128, (x, y) =>
-            {
-                float u = x / 127f * 2f - 1f, v = y / 127f * 2f - 1f;
-                float d = Mathf.Sqrt(u * u * 0.8f + v * v);
-                float a = Mathf.Clamp01((d - 0.45f) / 0.75f);
-                return new Color(0.005f, 0.01f, 0.006f, a * a * (3f - 2f * a) * 0.92f);
-            });
-            var vimp = (TextureImporter)AssetImporter.GetAtPath(TexDir + "/T_SelectVignette.png");
-            vimp.alphaIsTransparency = true; vimp.wrapMode = TextureWrapMode.Clamp; vimp.SaveAndReimport();
-
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            RenderSettings.fog = false;
-            RenderSettings.skybox = null;
-            RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = Color.black;
-
-            var camGo = new GameObject("Main Camera") { tag = "MainCamera" };
-            var cam = camGo.AddComponent<Camera>();
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = Color.black;
-            cam.cullingMask = 0;
-            camGo.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = false;
-            camGo.AddComponent<AudioListener>();
-
-            var es = new GameObject("EventSystem");
-            es.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            es.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
-
-            var audioGo = new GameObject("Audio");
-            var am = audioGo.AddComponent<AudioManager>();
-            am.cues = cues;
-            am.ambienceLoop = ambience;
-            am.ambienceVolume = SoundPicks.AmbienceVolume;
-            am.exploreMusic = SoundPicks.ExploreMusic();
-            am.bossMusic = SoundPicks.BossMusic();
-            GameMixer.Assign(am);
-
-            var uiGo = new GameObject("BossSelect");
-            var doc = uiGo.AddComponent<UIDocument>();
-            doc.panelSettings = BuildPanelSettings();
-            var screen = uiGo.AddComponent<BossSelectScreen>();
-            screen.background = bg;
-            screen.fogLayer = fogTex;
-            screen.vignette = vig;
-            screen.entries = new List<BossSelectScreen.Entry>
-            {
-                new() { id = "eldertree", displayName = "Elder Tree", epithet = "The watch begins. Training grounds.", scene = SceneFlow.Training,
-                        alwaysRevealed = true, cell = 4, portrait = Portrait("Portrait_eldertree"), silhouette = Portrait("Portrait_eldertree") },
-                new() { id = "crocodile", displayName = "Crocodile", epithet = "Bombardier of the Drowned Garrison", maskId = "alligator",
-                        scene = SceneFlow.Swamp, cell = 1, portrait = Portrait("Portrait_crocodile"), silhouette = Portrait("Silhouette_crocodile") },
-                new() { id = "shark", displayName = "Shark", epithet = "It swims where there is no water", maskId = "shark",
-                        scene = SceneFlow.Beach, cell = 3, portrait = Portrait("Portrait_shark"), silhouette = Portrait("Silhouette_shark") },
-                new() { id = "druid", displayName = "Druid", epithet = "The grove walks, and it is angry", maskId = "druid",
-                        scene = SceneFlow.Forest, cell = 5, portrait = Portrait("Portrait_druid"), silhouette = Portrait("Silhouette_druid") },
-                new() { id = "fairy", displayName = "Fairy", epithet = "She will not let you near", maskId = "fairy", scene = SceneFlow.Cave,
-                        cell = 7, portrait = Portrait("Portrait_fairy"), silhouette = Portrait("Silhouette_fairy") },
-            };
-            EditorSceneManager.SaveScene(scene, BossSelectScenePath);
-            RegisterBuildScenes();
-            return "Boss select built: " + BossSelectScenePath;
-        }
-
-        [MenuItem("Elder Tree/9. Build Boss Select + Arenas (all)")]
+        [MenuItem("Elder Tree/9. Build Arenas + Portraits + Main Menu (all)")]
         public static string BuildBossStages()
         {
             var log = new System.Text.StringBuilder();
@@ -290,7 +206,6 @@ namespace ElderTree.EditorTools
             log.AppendLine(BuildCaveArt());
             log.AppendLine(BuildCaveScene());
             log.AppendLine(CaptureBossPortraits());
-            log.AppendLine(BuildBossSelectScene());
             log.AppendLine(BuildMainMenuAll());
             return log.ToString();
         }

@@ -17,7 +17,7 @@ namespace ElderTree.EditorTools
     /// <summary>
     /// The title / main menu: a wide in-game vista of every stage (through the game's camera, lighting, fog and
     /// post at the PSX resolution) for the menu's drifting background and level select, and the MainMenu scene,
-    /// which becomes the first scene of the build.
+    /// which becomes the first scene of the build, plus the stage catalog its level select reads.
     /// </summary>
     public static partial class ElderTreeBuilder
     {
@@ -142,10 +142,81 @@ namespace ElderTree.EditorTools
 
         static Texture2D VistaTex(string id) => AssetDatabase.LoadAssetAtPath<Texture2D>($"{VistaDir}/Vista_{id}.png");
 
+        // ================================================================== the stage catalog
+        public const string StageCatalogPath = Root + "/Resources/" + StageCatalog.ResourceName + ".asset";
+
+        static StageCatalog.Stage[] DefaultStages() => new StageCatalog.Stage[]
+        {
+            new()
+            {
+                region = "Training Grounds", epithet = "The watch begins.", scene = SceneFlow.Training, bossId = "",
+                description = "A walled yard under the indigo night, its dummies standing in the mist. Learn the weight of the club, " +
+                              "the timing of the roll and the reach of the bow before you go looking for trouble.",
+            },
+            new()
+            {
+                region = "Drowned Garrison", boss = "Crocodile", bossId = "crocodile", maskId = "alligator", maskName = "Alligator Mask",
+                epithet = "Bombardier of the Drowned Garrison", scene = SceneFlow.Swamp,
+                description = "A sunken wartime outpost in a green-lit swamp, its searchlights still sweeping the fog. Something sleeps " +
+                              "on the airstrip. When it wakes it takes to the sky, and the cannonballs follow.",
+            },
+            new()
+            {
+                region = "Bleached Atoll", boss = "Shark", bossId = "shark", maskId = "shark", maskName = "Shark Mask",
+                epithet = "It swims where there is no water", scene = SceneFlow.Beach,
+                description = "A crescent of bone-white sand around a still lagoon, a whale skeleton half buried, a wreck on the reef. " +
+                              "The fight is on the old dock. Watch the water, and then watch the planks.",
+            },
+            new()
+            {
+                region = "Verdant Cathedral", boss = "Druid", bossId = "druid", maskId = "druid", maskName = "Druid Mask",
+                epithet = "The grove walks, and it is angry", scene = SceneFlow.Forest,
+                description = "A clearing ringed by standing stones beneath a great kapok, morning light falling through the mist in " +
+                              "shafts. The forest here is not still. Something in it is older than the stones.",
+            },
+            new()
+            {
+                region = "Starlit Grotto", boss = "Fairy", bossId = "fairy", maskId = "fairy", maskName = "Fairy Mask",
+                epithet = "She will not let you near", scene = SceneFlow.Cave,
+                description = "A cavern with stars for a ceiling, glowing mushrooms and mirror-still pools, gnomes keeping house at " +
+                              "its edges. At its heart, a shaft of moonlight. She dances in it, and she does not want company.",
+            },
+        };
+
+        /// <summary>
+        /// The stage list the level select reads (Resources/StageCatalog). Created with the default texts only when
+        /// missing, so edits to it survive; every build re-links the vistas, portraits and the view's styles.
+        /// </summary>
+        [MenuItem("Elder Tree/9k2. Build Stage Catalog")]
+        public static string BuildStageCatalog()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(StageCatalogPath));
+            var cat = AssetDatabase.LoadAssetAtPath<StageCatalog>(StageCatalogPath);
+            if (cat == null)
+            {
+                cat = ScriptableObject.CreateInstance<StageCatalog>();
+                cat.stages = DefaultStages().ToList();
+                AssetDatabase.CreateAsset(cat, StageCatalogPath);
+            }
+            foreach (var s in cat.stages)
+            {
+                string id = string.IsNullOrEmpty(s.bossId) ? "training" : s.bossId;
+                s.vista = VistaTex(id);
+                string face = string.IsNullOrEmpty(s.bossId) ? "eldertree" : s.bossId;
+                s.portrait = Portrait($"Portrait_{face}");
+                s.silhouette = Portrait($"Silhouette_{face}");
+            }
+            cat.style = AssetDatabase.LoadAssetAtPath<StyleSheet>(Root + "/UI/LevelSelect.uss");
+            EditorUtility.SetDirty(cat);
+            AssetDatabase.SaveAssets();
+            return $"Stage catalog: {cat.stages.Count} stages ({StageCatalogPath})";
+        }
+
         // ================================================================== the menu scene
         [MenuItem("Elder Tree/9l. Build Main Menu Scene")]
         public static string BuildMainMenuScene()
         {
+            var catLog = BuildStageCatalog();
             if (cues == null) BuildAudio();
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             RenderSettings.fog = false;
@@ -187,46 +258,9 @@ namespace ElderTree.EditorTools
             var menu = uiGo.AddComponent<MainMenuScreen>();
             menu.hudStyle = AssetDatabase.LoadAssetAtPath<StyleSheet>(Root + "/UI/ElderTreeHUD.uss");
             menu.menuStyle = AssetDatabase.LoadAssetAtPath<StyleSheet>(Root + "/UI/MainMenu.uss");
-            menu.stages = new List<MainMenuScreen.Stage>
-            {
-                new()
-                {
-                    region = "Training Grounds", epithet = "The watch begins.", scene = SceneFlow.Training, vista = VistaTex("training"),
-                    description = "A walled yard under the indigo night, its dummies standing in the mist. Learn the weight of the club, " +
-                                  "the timing of the roll and the reach of the bow before you go looking for trouble.",
-                },
-                new()
-                {
-                    region = "Drowned Garrison", boss = "Crocodile", bossId = "crocodile", maskId = "alligator", maskName = "Alligator Mask",
-                    epithet = "Bombardier of the Drowned Garrison", scene = SceneFlow.Swamp, vista = VistaTex("crocodile"),
-                    description = "A sunken wartime outpost in a green-lit swamp, its searchlights still sweeping the fog. Something sleeps " +
-                                  "on the airstrip. When it wakes it takes to the sky, and the cannonballs follow.",
-                },
-                new()
-                {
-                    region = "Bleached Atoll", boss = "Shark", bossId = "shark", maskId = "shark", maskName = "Shark Mask",
-                    epithet = "It swims where there is no water", scene = SceneFlow.Beach, vista = VistaTex("shark"),
-                    description = "A crescent of bone-white sand around a still lagoon, a whale skeleton half buried, a wreck on the reef. " +
-                                  "The fight is on the old dock. Watch the water, and then watch the planks.",
-                },
-                new()
-                {
-                    region = "Verdant Cathedral", boss = "Druid", bossId = "druid", maskId = "druid", maskName = "Druid Mask",
-                    epithet = "The grove walks, and it is angry", scene = SceneFlow.Forest, vista = VistaTex("druid"),
-                    description = "A clearing ringed by standing stones beneath a great kapok, morning light falling through the mist in " +
-                                  "shafts. The forest here is not still. Something in it is older than the stones.",
-                },
-                new()
-                {
-                    region = "Starlit Grotto", boss = "Fairy", bossId = "fairy", maskId = "fairy", maskName = "Fairy Mask",
-                    epithet = "She will not let you near", scene = SceneFlow.Cave, vista = VistaTex("fairy"),
-                    description = "A cavern with stars for a ceiling, glowing mushrooms and mirror-still pools, gnomes keeping house at " +
-                                  "its edges. At its heart, a shaft of moonlight. She dances in it, and she does not want company.",
-                },
-            };
             EditorSceneManager.SaveScene(scene, MainMenuScenePath);
             RegisterBuildScenes();
-            return "Main menu built: " + MainMenuScenePath;
+            return catLog + " / Main menu built: " + MainMenuScenePath;
         }
 
         [MenuItem("Elder Tree/9m. Capture Vistas + Build Main Menu")]

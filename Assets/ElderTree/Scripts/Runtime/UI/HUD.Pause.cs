@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 namespace ElderTree.UI
 {
     /// <summary>
-    /// Esc / Start menu: Game (resume, summons, reset, boss select, main menu, quit), then the same pages as the
+    /// Esc / Start menu: Game (resume, summons, reset, level select, main menu, quit), then the same pages as the
     /// main menu (<see cref="SettingsPages"/>): Options (cinematics, hints, shake, camera), Graphics, Audio and
     /// Controls (remapping for keyboard &amp; mouse and gamepad). Tabs switch with Q / E or LB / RB; everything
     /// also works with the mouse.
@@ -26,13 +26,12 @@ namespace ElderTree.UI
 
         public Action ResetTrainingRequested;
         public Action QuitRequested;
-        public Action BossSelectRequested;
         public Action MainMenuRequested;
         public Action<bool> PauseChanged;
 
         const int TabGame = 0, TabOptions = 1, TabGraphics = 2, TabAudio = 3, TabControls = 4;
         static readonly string[] TabNames = { "GAME", "OPTIONS", "GRAPHICS", "AUDIO", "CONTROLS" };
-        static readonly string[] MenuNames = { "Resume", "Summon Crocodile", "Summon Shark", "Summon Druid", "Summon Fairy", "Reset Training", "Boss Select", "Main Menu", "Quit" };
+        static readonly string[] MenuNames = { "Resume", "Summon Crocodile", "Summon Shark", "Summon Druid", "Summon Fairy", "Reset Training", "Level Select", "Main Menu", "Quit" };
 
         // ================================================================== build
         void BuildPause()
@@ -199,8 +198,8 @@ namespace ElderTree.UI
                 {
                     var t = Lbl("Choose your next foe.", "panel__flavor", pausePanel);
                     ApplySerif(t);
-                    Lbl("Leave this place and return to the boss select screen. Felled bosses show their true face there.", "panel__text", pausePanel);
-                    Lbl("Press Select to leave.", "panel__text panel__text--dim", pausePanel);
+                    Lbl("Travel to another stage: the training grounds, or the domain of a boss. Felled bosses show their true face there.", "panel__text", pausePanel);
+                    Lbl("Press Select to choose. F2 opens it from anywhere.", "panel__text panel__text--dim", pausePanel);
                     break;
                 }
                 case 7:
@@ -229,7 +228,7 @@ namespace ElderTree.UI
                 case 3: SetPause(false); SummonBossRequested?.Invoke(2); return;
                 case 4: SetPause(false); SummonBossRequested?.Invoke(3); return;
                 case 5: ResetTrainingRequested?.Invoke(); SetPause(false); return;
-                case 6: SetPause(false); BossSelectRequested?.Invoke(); return;
+                case 6: SetLevelSelect(true); return;
                 case 7: SetPause(false); MainMenuRequested?.Invoke(); return;
                 case 8: QuitRequested?.Invoke(); return;
             }

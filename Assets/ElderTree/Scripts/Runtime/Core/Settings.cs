@@ -29,7 +29,17 @@ namespace ElderTree
         public static float ShakeScale = 1f;
         // game
         public static IntroMode IntroCinematics = IntroMode.FirstMeeting;
-        public static bool ControlHints = true;
+        public static HintsMode ControlHints = HintsMode.TrainingOnly;
+
+        /// <summary>Where the control list shows on arrival (the Help button always toggles it).</summary>
+        public enum HintsMode { TrainingOnly, EveryStage, Off }
+
+        public static string HintsModeName(HintsMode m) => m switch
+        {
+            HintsMode.EveryStage => "Every stage",
+            HintsMode.Off => "Off",
+            _ => "Training only",
+        };
 
         /// <summary>When bosses play their intro cinematic.</summary>
         public enum IntroMode { FirstMeeting, EveryVisit, Never }
@@ -71,7 +81,7 @@ namespace ElderTree
                 Pixelation = PlayerPrefs.GetInt("eldertree.pixel", 1) == 1;
                 ShakeScale = PlayerPrefs.GetFloat("eldertree.shake", 1f);
                 IntroCinematics = (IntroMode)Mathf.Clamp(PlayerPrefs.GetInt("eldertree.intros", 0), 0, 2);
-                ControlHints = PlayerPrefs.GetInt("eldertree.hints", 1) == 1;
+                ControlHints = (HintsMode)Mathf.Clamp(PlayerPrefs.GetInt("eldertree.hintsmode", 0), 0, 2);
             }
             Push();
         }
@@ -91,7 +101,7 @@ namespace ElderTree
             PlayerPrefs.SetInt("eldertree.pixel", Pixelation ? 1 : 0);
             PlayerPrefs.SetFloat("eldertree.shake", ShakeScale);
             PlayerPrefs.SetInt("eldertree.intros", (int)IntroCinematics);
-            PlayerPrefs.SetInt("eldertree.hints", ControlHints ? 1 : 0);
+            PlayerPrefs.SetInt("eldertree.hintsmode", (int)ControlHints);
             PlayerPrefs.Save();
             Push();
             Changed?.Invoke();
@@ -103,7 +113,7 @@ namespace ElderTree
             CameraSensitivity = 1f; InvertY = false; Rumble = true;
             MasterVolume = 0.9f; SfxVolume = 1f; MusicVolume = 1f; AmbienceVolume = 1f; FootstepVolume = 1f;
             PsxEffect = true; Pixelation = true; ShakeScale = 1f;
-            IntroCinematics = IntroMode.FirstMeeting; ControlHints = true;
+            IntroCinematics = IntroMode.FirstMeeting; ControlHints = HintsMode.TrainingOnly;
             Apply();
         }
 
