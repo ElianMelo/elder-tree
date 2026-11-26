@@ -387,12 +387,14 @@
 .pause__foot {
     flex-direction: row;
     justify-content: flex-end;
+    align-items: center;
     border-top-width: 1px;
     border-color: rgba(216, 180, 106, 0.2);
     padding-top: 12px;
 }
 
-.pause__footnote { font-size: 15px; color: rgb(154, 146, 127); letter-spacing: 2px; }
+.pause__footnote { font-size: 15px; color: rgb(154, 146, 127); letter-spacing: 2px; flex-shrink: 0; }
+.pause__help { flex-grow: 1; flex-shrink: 1; font-size: 15px; color: rgb(200, 190, 168); white-space: normal; margin-right: 32px; -unity-font-style: italic; }
 
 .panel__flavor { font-size: 28px; color: rgb(244, 223, 166); margin-bottom: 18px; white-space: normal; }
 .panel__text { font-size: 19px; color: rgb(237, 230, 214); white-space: normal; margin-bottom: 12px; }
@@ -427,7 +429,7 @@
 
 .setting__name { font-size: 20px; }
 .setting__value-box { flex-direction: row; align-items: center; }
-.setting__value { width: 90px; -unity-text-align: middle-center; font-size: 20px; color: rgb(244, 223, 166); }
+.setting__value { width: 150px; -unity-text-align: middle-center; font-size: 20px; color: rgb(244, 223, 166); }
 .setting__arrow { font-size: 22px; color: rgb(154, 146, 127); padding: 0 6px; }
 .setting__arrow:hover { color: rgb(244, 223, 166); }
 .setting--button .setting__name { color: rgb(216, 180, 106); letter-spacing: 1px; }

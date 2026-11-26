@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/ElderTree/Scenes/MainMenu.unity
+    guid: 65404a8a68837684d826b8cf9ca15950
+  - enabled: 1
     path: Assets/ElderTree/Scenes/BossSelect.unity
     guid: bca459ee098e4974db4860fbd8d60543
   - enabled: 1

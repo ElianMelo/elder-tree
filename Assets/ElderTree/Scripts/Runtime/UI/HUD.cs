@@ -59,7 +59,21 @@ namespace ElderTree.UI
         }
 
         void Awake() => Instance = this;
-        void OnDestroy() { if (Instance == this) Instance = null; }
+        void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+            Settings.Changed -= OnSettingsChanged;
+        }
+
+        bool hintsPref;
+
+        /// <summary>The Control hints option was flipped in a menu: show or fold the list right away.</summary>
+        void OnSettingsChanged()
+        {
+            if (hintsBox == null || Settings.ControlHints == hintsPref) return;
+            hintsPref = Settings.ControlHints;
+            SetHints(hintsPref);
+        }
 
         void Start()
         {
@@ -85,6 +99,9 @@ namespace ElderTree.UI
             BuildDebugMenu();
             BuildMasks();
             BuildTitle();
+            hintsPref = Settings.ControlHints;
+            if (!hintsPref) SetHints(false);
+            Settings.Changed += OnSettingsChanged;
 
             if (input != null) input.DeviceChanged += _ => { RefreshHints(); RefreshMaskBar(); };
             if (lockOn != null) lockOn.Changed += OnLockChanged;
@@ -95,19 +112,7 @@ namespace ElderTree.UI
             }
         }
 
-        static FontAsset LoadSerif()
-        {
-            foreach (var fam in new[] { "Cinzel", "Trajan Pro", "Palatino Linotype", "Book Antiqua", "Georgia", "Cambria", "Times New Roman" })
-            {
-                try
-                {
-                    var fa = FontAsset.CreateFontAsset(fam, "Regular", 90);
-                    if (fa != null) return fa;
-                }
-                catch { /* not installed on this OS */ }
-            }
-            return null;
-        }
+        static FontAsset LoadSerif() => UIFonts.Serif;
 
         void ApplySerif(VisualElement e)
         {

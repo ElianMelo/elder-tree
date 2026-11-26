@@ -14,7 +14,7 @@ namespace ElderTree.UI
     /// training yard), the bosses around it, sealed slots for the bosses still to come. A boss you have not
     /// felled shows only its silhouette; once felled, its in-game portrait. Picking a boss plays the
     /// stage-intro band (portrait + name typed out) and loads its arena.
-    /// Pad: D-pad / left stick + A, Start. Keyboard: arrows / WASD + Enter / Space. Mouse: hover + click.
+    /// Pad: D-pad / left stick + A, Start; B back to the main menu. Keyboard: arrows / WASD + Enter / Space, Esc. Mouse: hover + click.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class BossSelectScreen : MonoBehaviour
@@ -66,15 +66,7 @@ namespace ElderTree.UI
             StartCoroutine(FadeIn());
         }
 
-        static FontAsset LoadSerif()
-        {
-            foreach (var fam in new[] { "Cinzel", "Trajan Pro", "Palatino Linotype", "Book Antiqua", "Georgia", "Cambria", "Times New Roman" })
-            {
-                try { var fa = FontAsset.CreateFontAsset(fam, "Regular", 90); if (fa != null) return fa; }
-                catch { /* not installed */ }
-            }
-            return null;
-        }
+        static FontAsset LoadSerif() => UIFonts.Serif;
 
         Label Text(string s, VisualElement parent, int size, Color c, bool serifFont = true, FontStyle style = FontStyle.Normal)
         {
@@ -158,7 +150,7 @@ namespace ElderTree.UI
             infoState = Text("", info, 16, Dim, false);
             infoState.style.marginTop = 8; infoState.style.letterSpacing = 3;
 
-            var hint = Text("D-Pad / Arrows: choose     A / Enter: challenge", root, 15, new Color(Dim.r, Dim.g, Dim.b, 0.8f), false);
+            var hint = Text("D-Pad / Arrows: choose     A / Enter: challenge     B / Esc: title", root, 15, new Color(Dim.r, Dim.g, Dim.b, 0.8f), false);
             hint.style.position = Position.Absolute; hint.style.bottom = 18; hint.style.left = 0; hint.style.right = 0;
             hint.style.letterSpacing = 2;
 
@@ -326,6 +318,23 @@ namespace ElderTree.UI
                 navCooldown = fresh ? 0.42f : 0.16f;
             }
             if (ConfirmPressed()) Confirm();
+            else if (BackPressed()) StartCoroutine(BackToMenu());
+        }
+
+        static bool BackPressed()
+        {
+            var k = Keyboard.current;
+            var g = Gamepad.current;
+            return (k != null && (k.escapeKey.wasPressedThisFrame || k.backspaceKey.wasPressedThisFrame)) ||
+                   (g != null && g.buttonEast.wasPressedThisFrame);
+        }
+
+        IEnumerator BackToMenu()
+        {
+            locked = true;
+            AudioManager.Play2D(Sfx.UIBack, 0.7f);
+            yield return FadeTo(1f, 0.5f);
+            SceneFlow.Load(SceneFlow.MainMenu);
         }
 
         static Vector2Int ReadNav()

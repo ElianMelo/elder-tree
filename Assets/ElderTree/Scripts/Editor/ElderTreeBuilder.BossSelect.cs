@@ -291,6 +291,7 @@ namespace ElderTree.EditorTools
             log.AppendLine(BuildCaveScene());
             log.AppendLine(CaptureBossPortraits());
             log.AppendLine(BuildBossSelectScene());
+            log.AppendLine(BuildMainMenuAll());
             return log.ToString();
         }
     }

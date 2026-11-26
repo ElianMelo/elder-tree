@@ -434,7 +434,7 @@ namespace ElderTree.EditorTools
         public static void RegisterBuildScenes()
         {
             var list = new System.Collections.Generic.List<EditorBuildSettingsScene>();
-            foreach (var path in new[] { BossSelectScenePath, ScenePath, SwampScenePath, BeachScenePath, ForestScenePath, CaveScenePath })
+            foreach (var path in new[] { MainMenuScenePath, BossSelectScenePath, ScenePath, SwampScenePath, BeachScenePath, ForestScenePath, CaveScenePath })
                 if (File.Exists(path)) list.Add(new EditorBuildSettingsScene(path, true));
             EditorBuildSettings.scenes = list.ToArray();
         }

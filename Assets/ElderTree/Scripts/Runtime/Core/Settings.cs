@@ -27,6 +27,22 @@ namespace ElderTree
         public static bool PsxEffect = true;
         public static bool Pixelation = true;
         public static float ShakeScale = 1f;
+        // game
+        public static IntroMode IntroCinematics = IntroMode.FirstMeeting;
+        public static bool ControlHints = true;
+
+        /// <summary>When bosses play their intro cinematic.</summary>
+        public enum IntroMode { FirstMeeting, EveryVisit, Never }
+
+        public static string IntroModeName(IntroMode m) => m switch
+        {
+            IntroMode.EveryVisit => "Every visit",
+            IntroMode.Never => "Never",
+            _ => "First meeting",
+        };
+
+        /// <summary>Fired after <see cref="Apply"/> or <see cref="ResetDefaults"/> so open screens can refresh.</summary>
+        public static event System.Action Changed;
 
         static bool loaded;
 
@@ -54,6 +70,8 @@ namespace ElderTree
                 PsxEffect = PlayerPrefs.GetInt("eldertree.psx", 1) == 1;
                 Pixelation = PlayerPrefs.GetInt("eldertree.pixel", 1) == 1;
                 ShakeScale = PlayerPrefs.GetFloat("eldertree.shake", 1f);
+                IntroCinematics = (IntroMode)Mathf.Clamp(PlayerPrefs.GetInt("eldertree.intros", 0), 0, 2);
+                ControlHints = PlayerPrefs.GetInt("eldertree.hints", 1) == 1;
             }
             Push();
         }
@@ -72,8 +90,21 @@ namespace ElderTree
             PlayerPrefs.SetInt("eldertree.psx", PsxEffect ? 1 : 0);
             PlayerPrefs.SetInt("eldertree.pixel", Pixelation ? 1 : 0);
             PlayerPrefs.SetFloat("eldertree.shake", ShakeScale);
+            PlayerPrefs.SetInt("eldertree.intros", (int)IntroCinematics);
+            PlayerPrefs.SetInt("eldertree.hints", ControlHints ? 1 : 0);
             PlayerPrefs.Save();
             Push();
+            Changed?.Invoke();
+        }
+
+        /// <summary>Every option back to its default (display mode and resolution are left alone), saved and pushed.</summary>
+        public static void ResetDefaults()
+        {
+            CameraSensitivity = 1f; InvertY = false; Rumble = true;
+            MasterVolume = 0.9f; SfxVolume = 1f; MusicVolume = 1f; AmbienceVolume = 1f; FootstepVolume = 1f;
+            PsxEffect = true; Pixelation = true; ShakeScale = 1f;
+            IntroCinematics = IntroMode.FirstMeeting; ControlHints = true;
+            Apply();
         }
 
         static void Push()

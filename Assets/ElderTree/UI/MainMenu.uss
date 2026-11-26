@@ -1,0 +1,417 @@
+/* Elder Tree main menu: Elden Ring restraint. Dark grade over a drifting vista, pale gold serif, soft glows,
+   hairline rules that fade at both ends. Option rows reuse .setting / .slider / .bindrow from ElderTreeHUD.uss. */
+
+.mm-root {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background-color: rgb(4, 4, 6);
+    color: rgb(237, 230, 214);
+    font-size: 18px;
+    overflow: hidden;
+}
+
+.mm-fill { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+
+.mm-vista {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    -unity-background-scale-mode: scale-and-crop;
+    -unity-background-image-tint-color: rgb(190, 184, 176);
+}
+
+.mm-fade { background-color: rgb(0, 0, 0); }
+
+/* fade-in/out for every screen part */
+.mm-fadeable {
+    transition-property: opacity, translate;
+    transition-duration: 0.28s;
+    transition-timing-function: ease-out-cubic;
+}
+.mm-off { opacity: 0; translate: 0 14px; }
+
+.mm-ember {
+    position: absolute;
+    border-radius: 50%;
+}
+
+/* ---------------------------------------------------------------- title */
+.mm-title {
+    position: absolute;
+    left: 0; right: 0;
+    top: 22%;
+    align-items: center;
+}
+
+.mm-emblem {
+    position: absolute;
+    width: 540px;
+    height: 540px;
+    top: -188px;
+    left: 50%;
+    margin-left: -270px;
+    opacity: 0.5;
+}
+
+.mm-title__kicker {
+    font-size: 18px;
+    letter-spacing: 9px;
+    color: rgb(176, 160, 124);
+    margin-bottom: 4px;
+    -unity-text-align: middle-center;
+}
+
+.mm-title__main {
+    font-size: 112px;
+    letter-spacing: 22px;
+    color: rgb(240, 226, 190);
+    -unity-text-align: middle-center;
+    text-shadow: 0 0 18px rgba(255, 196, 110, 0.35);
+    padding-left: 22px; /* letter spacing trails the last glyph: keep it optically centred */
+}
+
+.mm-ornament {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 6px;
+}
+.mm-ornament__line { width: 220px; height: 1px; }
+.mm-ornament__gem {
+    width: 8px; height: 8px;
+    margin: 0 14px;
+    rotate: 45deg;
+    border-width: 1px;
+    border-color: rgb(216, 180, 106);
+    background-color: rgba(216, 180, 106, 0.35);
+}
+
+.mm-press {
+    position: absolute;
+    left: 0; right: 0;
+    top: 68%;
+    font-size: 24px;
+    letter-spacing: 8px;
+    color: rgb(232, 214, 170);
+    -unity-text-align: middle-center;
+    text-shadow: 0 0 10px rgba(255, 190, 100, 0.4);
+}
+
+/* ---------------------------------------------------------------- main list */
+.mm-main {
+    position: absolute;
+    left: 0; right: 0;
+    top: 55%;
+    align-items: center;
+}
+
+.mm-item {
+    width: 560px;
+    height: 54px;
+    align-items: center;
+    justify-content: center;
+}
+
+.mm-item__glow {
+    position: absolute;
+    left: 0; right: 0; top: -6px; bottom: -6px;
+    opacity: 0;
+    transition-property: opacity, scale;
+    transition-duration: 0.22s;
+    scale: 0.8 1;
+}
+.mm-item__line {
+    position: absolute;
+    left: 60px; right: 60px;
+    height: 1px;
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.22s;
+}
+.mm-item__line--top { top: 4px; }
+.mm-item__line--bottom { bottom: 4px; }
+
+.mm-item__text {
+    font-size: 25px;
+    letter-spacing: 6px;
+    color: rgb(160, 150, 128);
+    -unity-text-align: middle-center;
+    transition-property: color, letter-spacing;
+    transition-duration: 0.2s;
+}
+
+.mm-item:hover .mm-item__text { color: rgb(205, 194, 168); }
+.mm-item--active .mm-item__glow { opacity: 1; scale: 1 1; }
+.mm-item--active .mm-item__line { opacity: 0.55; }
+.mm-item--active .mm-item__text {
+    color: rgb(250, 238, 206);
+    letter-spacing: 8px;
+    text-shadow: 0 0 12px rgba(255, 200, 120, 0.45);
+}
+
+/* ---------------------------------------------------------------- pages */
+.mm-page {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    padding: 64px 96px 110px 96px;
+}
+
+.mm-page__head {
+    flex-direction: row;
+    align-items: flex-end;
+}
+
+.mm-back {
+    font-size: 54px;
+    color: rgb(176, 160, 124);
+    margin-right: 22px;
+    margin-bottom: -6px;
+    transition-property: color, translate;
+    transition-duration: 0.15s;
+}
+.mm-back:hover { color: rgb(250, 238, 206); translate: -4px 0; }
+
+.mm-page__kicker {
+    font-size: 14px;
+    letter-spacing: 7px;
+    color: rgb(176, 160, 124);
+}
+.mm-page__title {
+    font-size: 44px;
+    letter-spacing: 10px;
+    color: rgb(240, 226, 190);
+    text-shadow: 0 0 14px rgba(255, 196, 110, 0.25);
+}
+.mm-page__rule {
+    height: 1px;
+    width: 900px;
+    margin-top: 14px;
+    margin-bottom: 18px;
+    -unity-background-scale-mode: stretch-to-fill;
+    opacity: 0.6;
+}
+
+/* panels that hold an option list */
+.mm-panel {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    width: 1180px;
+    align-self: center;
+    padding: 18px 34px 12px 34px;
+    background-color: rgba(8, 8, 11, 0.86);
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-color: rgba(216, 180, 106, 0.4);
+}
+.mm-panel--narrow { width: 900px; }
+.mm-options { flex-grow: 1; }
+.mm-tabs {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    border-bottom-width: 1px;
+    border-color: rgba(216, 180, 106, 0.2);
+}
+
+/* ---------------------------------------------------------------- level select */
+.mm-levels__side {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 900px;
+}
+
+.mm-levels__list {
+    width: 640px;
+    margin-top: 10px;
+}
+
+.mm-stage {
+    flex-direction: row;
+    align-items: center;
+    height: 84px;
+    padding-left: 26px;
+    margin-bottom: 6px;
+}
+.mm-stage__glow {
+    position: absolute;
+    left: -60px; right: 0; top: 0; bottom: 0;
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.2s;
+}
+.mm-stage__gem {
+    width: 12px; height: 12px;
+    margin-right: 26px;
+    rotate: 45deg;
+    border-width: 1px;
+    border-color: rgba(216, 180, 106, 0.6);
+    background-color: rgba(0, 0, 0, 0);
+}
+.mm-stage--felled .mm-stage__gem { background-color: rgb(216, 180, 106); border-color: rgb(244, 223, 166); }
+.mm-stage--training .mm-stage__gem { border-radius: 6px; rotate: 0deg; }
+.mm-stage__name {
+    font-size: 27px;
+    letter-spacing: 5px;
+    color: rgb(170, 160, 138);
+    transition-property: color;
+    transition-duration: 0.2s;
+}
+.mm-stage__sub {
+    font-size: 15px;
+    letter-spacing: 2px;
+    color: rgb(130, 122, 106);
+    margin-top: 2px;
+}
+.mm-stage:hover .mm-stage__name { color: rgb(215, 204, 178); }
+.mm-stage--active .mm-stage__glow { opacity: 1; }
+.mm-stage--active .mm-stage__name { color: rgb(250, 238, 206); text-shadow: 0 0 10px rgba(255, 200, 120, 0.4); }
+.mm-stage--active .mm-stage__sub { color: rgb(200, 186, 150); }
+
+.mm-stageinfo {
+    position: absolute;
+    right: 110px;
+    bottom: 140px;
+    width: 760px;
+    align-items: flex-end;
+    opacity: 0;
+    translate: 18px 0;
+    transition-property: opacity, translate;
+    transition-duration: 0.3s;
+    transition-timing-function: ease-out-cubic;
+}
+.mm-stageinfo--in { opacity: 1; translate: 0 0; }
+.mm-stageinfo__kicker { font-size: 14px; letter-spacing: 6px; color: rgb(190, 172, 132); -unity-text-align: middle-right; }
+.mm-stageinfo__name {
+    font-size: 62px;
+    letter-spacing: 8px;
+    color: rgb(245, 232, 198);
+    -unity-text-align: middle-right;
+    text-shadow: 0 0 16px rgba(0, 0, 0, 0.9);
+}
+.mm-stageinfo__epithet {
+    font-size: 22px;
+    color: rgb(200, 190, 160);
+    -unity-font-style: italic;
+    -unity-text-align: middle-right;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.95);
+}
+.mm-stageinfo__rule { width: 420px; height: 1px; margin: 14px 0 12px 0; opacity: 0.7; }
+.mm-stageinfo__desc {
+    font-size: 18px;
+    color: rgb(226, 218, 200);
+    white-space: normal;
+    -unity-text-align: upper-right;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 1);
+}
+
+.mm-chips { flex-direction: row; justify-content: flex-end; margin-top: 16px; }
+.mm-chip {
+    font-size: 13px;
+    letter-spacing: 3px;
+    padding: 5px 12px;
+    margin-left: 10px;
+    border-width: 1px;
+    background-color: rgba(6, 6, 8, 0.75);
+}
+.mm-chip--done { color: rgb(244, 223, 166); border-color: rgba(216, 180, 106, 0.8); }
+.mm-chip--open { color: rgb(160, 150, 128); border-color: rgba(160, 150, 128, 0.4); }
+
+/* ---------------------------------------------------------------- footer */
+.mm-foot {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 74px;
+    padding: 0 64px;
+    background-color: rgba(4, 4, 6, 0.55);
+}
+.mm-foot__rule { height: 1px; opacity: 0.45; }
+.mm-foot__row {
+    flex-grow: 1;
+    flex-direction: row;
+    align-items: center;
+}
+.mm-foot__left { width: 380px; font-size: 13px; letter-spacing: 3px; color: rgb(140, 130, 110); }
+.mm-foot__help {
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-size: 18px;
+    color: rgb(222, 212, 188);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    -unity-font-style: italic;
+}
+.mm-foot__keys { width: 520px; font-size: 15px; letter-spacing: 2px; color: rgb(176, 166, 142); -unity-text-align: middle-right; }
+.mm-foot__keys { font-size: 16px; }
+
+/* ---------------------------------------------------------------- confirm dialog, toast, travel card */
+.mm-modal {
+    background-color: rgba(0, 0, 0, 0.7);
+    align-items: center;
+    justify-content: center;
+}
+.mm-modal__box {
+    width: 820px;
+    padding: 0 0 6px 0;
+    background-color: rgba(10, 10, 13, 0.97);
+    align-items: center;
+}
+.mm-modal__rule { width: 100%; height: 1px; opacity: 0.7; }
+.mm-modal__title {
+    font-size: 32px;
+    letter-spacing: 4px;
+    color: rgb(244, 223, 166);
+    margin: 34px 0 14px 0;
+    -unity-text-align: middle-center;
+}
+.mm-modal__body {
+    font-size: 18px;
+    color: rgb(222, 212, 188);
+    white-space: normal;
+    -unity-text-align: middle-center;
+    max-width: 680px;
+    margin-bottom: 26px;
+}
+.mm-modal__btns { flex-direction: row; margin-bottom: 28px; }
+.mm-modal__btn {
+    width: 220px;
+    padding: 10px 0;
+    margin: 0 14px;
+    font-size: 20px;
+    letter-spacing: 5px;
+    color: rgb(160, 150, 128);
+    -unity-text-align: middle-center;
+    border-width: 1px;
+    border-color: rgba(216, 180, 106, 0.2);
+    transition-property: color, background-color, border-color;
+    transition-duration: 0.15s;
+}
+.mm-modal__btn--active {
+    color: rgb(250, 238, 206);
+    border-color: rgb(216, 180, 106);
+    background-color: rgba(216, 180, 106, 0.14);
+}
+
+.mm-toast {
+    position: absolute;
+    bottom: 104px;
+    left: 0; right: 0;
+    font-size: 19px;
+    letter-spacing: 3px;
+    color: rgb(244, 223, 166);
+    -unity-text-align: middle-center;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 1);
+    transition-property: opacity, translate;
+    transition-duration: 0.3s;
+}
+
+.mm-card { align-items: center; justify-content: center; }
+.mm-card__title {
+    font-size: 64px;
+    letter-spacing: 14px;
+    color: rgb(240, 226, 190);
+    -unity-text-align: middle-center;
+    padding-left: 14px;
+}
+.mm-rule { width: 560px; height: 1px; margin: 16px 0; }
+.mm-card__sub { font-size: 20px; letter-spacing: 3px; color: rgb(190, 178, 150); -unity-font-style: italic; }

@@ -21,7 +21,7 @@ namespace ElderTree.Masks
         public MaskData[] slots = new MaskData[4];
         public MaskCinematic cinematic;
 
-        const string OwnedKey = "ElderTree.Masks.Owned";
+        public const string OwnedKey = "ElderTree.Masks.Owned";
         public static MaskSystem Instance { get; private set; }
         public MaskData Worn { get; private set; }
         public event System.Action Changed;

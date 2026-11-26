@@ -30,8 +30,8 @@ namespace ElderTree.Enemies
         CinemachineBrain brain;
         float fovWas;
 
-        /// <summary>Would meeting this boss now play its cinematic?</summary>
-        public static bool ShouldPlay(BossBase b) => b != null && b.HasIntroCinematic && !Progress.IntroSeen(Progress.IdOf(b));
+        /// <summary>Would meeting this boss now play its cinematic (Options: first meeting / every visit / never)?</summary>
+        public static bool ShouldPlay(BossBase b) => b != null && b.HasIntroCinematic && Progress.IntroPlays(Progress.IdOf(b));
 
         public IEnumerator Run(BossBase boss, PlayerController player, HUD hud)
         {

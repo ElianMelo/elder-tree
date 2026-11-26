@@ -41,8 +41,8 @@ namespace ElderTree.Enemies
 
         void Start()
         {
-            // the Druid has been met before (the cinematic marks itself seen as it starts): the path it tore stays torn
-            if (Progress.IntroSeen("druid")) Aftermath();
+            // no cinematic this visit (met before, or intros off in Options): the path it tore stays torn
+            if (!Progress.IntroPlays("druid")) Aftermath();
         }
 
         void Capture()
