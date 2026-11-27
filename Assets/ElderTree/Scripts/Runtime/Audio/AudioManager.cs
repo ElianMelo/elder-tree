@@ -211,6 +211,7 @@ namespace ElderTree.Audio
 
         public static void Play(Sfx id, Vector3 pos, float volumeScale = 1f, float pitchScale = 1f)
         {
+            Coop.OnSfx(id, pos, volumeScale, pitchScale);   // co-op: the other players hear it too
             if (Instance == null) return;
             Instance.PlayInternal(id, pos, volumeScale, pitchScale);
         }

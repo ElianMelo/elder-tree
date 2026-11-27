@@ -103,6 +103,15 @@ namespace ElderTree.Player
 
         public bool HasStamina => Stamina > 0.01f;
 
+        /// <summary>Co-op: another player's tree shows the health its owner reports.</summary>
+        public void SetHealthFraction(float k)
+        {
+            float h = Mathf.Clamp01(k) * maxHealth;
+            if (Mathf.Abs(h - Health) < 0.01f) return;
+            Health = h;
+            Changed?.Invoke();
+        }
+
         public bool TrySpendStamina(float amount)
         {
             if (!HasStamina) return false;

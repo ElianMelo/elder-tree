@@ -40,6 +40,18 @@ namespace ElderTree.Enemies
             target = encounter.Find(want);
             if (target == null) yield break;
             encounter.FightWon += () => { if (!won) { won = true; StartCoroutine(AfterVictory()); } };
+            if (Coop.InStage)
+            {
+                // co-op: the host calls the boss once everyone has arrived; after a wipe, once everyone stands again.
+                // Clients follow the host's encounter.
+                if (Coop.IsClient) yield break;
+                encounter.WipeFinished += () => { if (!won) StartCoroutine(Rematch()); };
+                float waited = 0f;
+                while (!Coop.StageReady && waited < 20f) { waited += Time.deltaTime; yield return null; }
+                yield return new WaitForSeconds(startDelay + 1.2f);
+                if (!won) encounter.Spawn(target);
+                yield break;
+            }
             if (player != null) player.Died += () => { if (!won) StartCoroutine(Rematch()); };
             while (hud != null && hud.TitleShowing) yield return null;
             // the first time you meet this boss its cinematic plays; after that (deaths, later visits) it just arrives
@@ -62,6 +74,9 @@ namespace ElderTree.Enemies
             yield return new WaitForSeconds(1f);
             while (player != null && player.IsDead) yield return null;
             while (encounter.Active) yield return null;
+            // co-op: the whole party back on its feet (or a few seconds, if someone is slow to come back)
+            float waited = 0f;
+            while (Coop.InStage && !Coop.AllAlive && waited < 6f) { waited += Time.deltaTime; yield return null; }
             yield return new WaitForSeconds(rematchDelay);
             if (!won && player != null && !player.IsDead) encounter.Spawn(target);
         }
@@ -81,6 +96,13 @@ namespace ElderTree.Enemies
             yield return null;
             while (cine != null && cine.Playing) yield return null;
             yield return new WaitForSeconds(returnDelay);
+            // co-op: tell the host this player is done; the host takes everyone back to the vote together
+            if (Coop.InStage)
+            {
+                Coop.StageDone();
+                hud?.ShowBanner("WAITING FOR THE PARTY");
+                yield break;
+            }
             SceneFlow.OpenLevelSelect = true;
             yield return SceneFlow.FadeAndLoad(hud, SceneFlow.MainMenu);
         }

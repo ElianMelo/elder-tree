@@ -158,7 +158,7 @@ namespace ElderTree.UI
             if (TitleShowing && titleFade < 0f)
             {
                 titlePrompt.style.opacity = 0.45f + 0.55f * (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 2.6f));
-                if (Time.unscaledTime > 1.2f && input != null && input.AnyGameplayButtonPressed)
+                if ((Time.unscaledTime > 1.2f && input != null && input.AnyGameplayButtonPressed) || (Coop.InStage && Time.timeSinceLevelLoad > 2.6f))
                 {
                     titleFade = 0f;
                     AudioManager.Play2D(Sfx.Title, 0.9f);

@@ -35,7 +35,9 @@ namespace ElderTree.Enemies
         public bool Free => mode == Mode.Idle;
         public bool Flying => mode == Mode.Flying;
 
-        PlayerController Player => PlayerController.Instance;
+        // co-op: motes home on the nearest tree, and burst on whichever tree they touch
+        PlayerController Player => Coop.Nearest(transform.position);
+        PlayerController touched;
 
         void Awake()
         {
@@ -189,23 +191,29 @@ namespace ElderTree.Enemies
             if (age > life) Burst(false, 0.6f);
         }
 
-        static Vector3 PlayerChest => PlayerController.Instance != null ? PlayerController.Instance.transform.position + Vector3.up * 1.1f : Vector3.zero;
+        Vector3 PlayerChest { get { var p = touched != null ? touched : Player; return p != null ? p.transform.position + Vector3.up * 1.1f : Vector3.zero; } }
 
         /// <summary>Distance from the mote to the player's body (a capsule from the ankles to the head).</summary>
         bool TouchesPlayer(float r)
         {
-            var p = Player;
-            if (p == null || p.IsDead) return false;
-            Vector3 a = p.transform.position + Vector3.up * 0.25f, b = p.transform.position + Vector3.up * 1.75f;
-            Vector3 x = transform.position;
-            float t = Mathf.Clamp01(Vector3.Dot(x - a, b - a) / (b - a).sqrMagnitude);
-            return Vector3.Distance(x, a + (b - a) * t) < r + 0.35f;
+            touched = null;
+            foreach (var p in PlayerController.All)
+            {
+                if (p == null || p.IsDead) continue;
+                Vector3 a = p.transform.position + Vector3.up * 0.25f, b = p.transform.position + Vector3.up * 1.75f;
+                Vector3 x = transform.position;
+                float t = Mathf.Clamp01(Vector3.Dot(x - a, b - a) / (b - a).sqrMagnitude);
+                if (Vector3.Distance(x, a + (b - a) * t) < r + 0.35f) { touched = p; return true; }
+            }
+            return false;
         }
 
         bool HitPlayer(Vector3 dir)
         {
             dir.y = 0f;
-            return Player.TakeHit(new DamageInfo
+            var victim = touched != null ? touched : Player;
+            if (victim == null) return false;
+            return victim.TakeHit(new DamageInfo
             {
                 damage = damage, poiseDamage = poise, point = transform.position,
                 direction = dir.sqrMagnitude > 1e-4f ? dir.normalized : Vector3.forward, weight = weight, source = source

@@ -31,7 +31,7 @@ namespace ElderTree.Enemies
         float fovWas;
 
         /// <summary>Would meeting this boss now play its cinematic (Options: first meeting / every visit / never)?</summary>
-        public static bool ShouldPlay(BossBase b) => b != null && b.HasIntroCinematic && Progress.IntroPlays(Progress.IdOf(b));
+        public static bool ShouldPlay(BossBase b) => b != null && b.HasIntroCinematic && !Coop.InStage && Progress.IntroPlays(Progress.IdOf(b));
 
         public IEnumerator Run(BossBase boss, PlayerController player, HUD hud)
         {

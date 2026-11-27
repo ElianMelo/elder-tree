@@ -85,16 +85,17 @@ namespace ElderTree.Enemies
         public float mineDamage = 70f;
 
         public Mode State { get; private set; } = Mode.Dormant;
-        public override bool IsAlive => State != Mode.Dead && State != Mode.Dormant && State != Mode.Cinematic;
-        public override bool IsStaggered => State == Mode.Staggered;
-        public override bool PhaseTwo => phaseTwo;
-        public override float Health => health;
-        public override float Poise => poise;
-        public override string CurrentMove => currentMove;
+        protected override bool LocalIsAlive => State != Mode.Dead && State != Mode.Dormant && State != Mode.Cinematic;
+        protected override bool LocalIsStaggered => State == Mode.Staggered;
+        protected override bool LocalPhaseTwo => phaseTwo;
+        protected override float LocalHealth => health;
+        protected override float LocalPoise => poise;
+        protected override string LocalCurrentMove => currentMove;
         public override string DisplayName => displayName;
-        public override float MaxHealth => maxHealth;
-        public override string StateLabel => State.ToString();
-        public override bool IsDead => State == Mode.Dead;
+        protected override float LocalMaxHealth => maxHealth;
+        protected override float MaxHealthField { get => maxHealth; set => maxHealth = value; }
+        protected override string LocalStateLabel => State.ToString();
+        protected override bool LocalIsDead => State == Mode.Dead;
         public override Vector3 ArenaCenter => arenaCenter;
 
         bool phaseTwo;
@@ -107,7 +108,7 @@ namespace ElderTree.Enemies
         static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
         float SpeedMul => phaseTwo ? 1.2f : 1f;
 
-        PlayerController Player => PlayerController.Instance;
+        PlayerController Player => Aggro;
         Vector3 PlayerPos => Player != null ? Player.transform.position : arenaCenter;
         Vector3 PlayerChest => PlayerPos + Vector3.up * 1.1f;
         bool PlayerAlive => Player != null && !Player.IsDead;
@@ -260,7 +261,7 @@ namespace ElderTree.Enemies
                 if (FleeDue) { yield return Flee(); continue; }
                 if (forcedMove == null)
                 {
-                    yield return Drift(Random.Range(phaseTwo ? 0.6f : 0.9f, phaseTwo ? 1.3f : 1.9f));
+                    yield return Drift(Random.Range(phaseTwo ? 0.6f : 0.9f, phaseTwo ? 1.3f : 1.9f) / Aggression);
                     if (FleeDue) continue;
                 }
 
@@ -430,6 +431,14 @@ namespace ElderTree.Enemies
             var em = wingDust.emission;
             em.rateOverTime = dustBase * mul;
         }
+
+        // co-op: clients mirror the motes and pillars under the same root
+        public override Transform NetPoolRoot(bool create)
+        {
+            if (fxRoot == null && create) fxRoot = new GameObject("Fairy FX").transform;
+            return fxRoot;
+        }
+        public override GameObject[] NetPoolPrefabs => new[] { motePrefab ? motePrefab.gameObject : null, pillarPrefab ? pillarPrefab.gameObject : null };
 
         FairyMote GetMote()
         {
@@ -611,12 +620,12 @@ namespace ElderTree.Enemies
                 Vector3 g = Blast.Ground(transform.position);
                 FXManager.Spawn(FXType.SlamRing, g + Vector3.up * 0.05f, Quaternion.identity, 2.6f);
                 FXManager.Spawn(FXType.Dust, g, Quaternion.identity, 1.6f);
-                if (PlayerAlive && FlatDist < closeRange + 0.4f)
+                HitEach(false, () => PlayerAlive && FlatDist < closeRange + 0.4f &&
                     Player.TakeHit(new DamageInfo
                     {
                         damage = gustDamage, poiseDamage = 40f, point = PlayerChest,
                         direction = Flat(PlayerPos - transform.position).normalized, weight = ImpactWeight.Heavy, source = gameObject
-                    });
+                    }));
                 tWingOpen = 35f; wingOpen = 35f;
             }
             else
@@ -887,13 +896,17 @@ namespace ElderTree.Enemies
                 Arms(-5f, 25f, 0f, -5f, 25f, 0f);
                 tHip[0] = tHip[1] = -20f; tKnee[0] = tKnee[1] = 15f;
                 Wings(-20f, 20f, 14f, 0f);
+                if (HitEach(hit, () =>
+                {
+                    Vector3 rl = transform.InverseTransformPoint(PlayerPos);
+                    return PlayerAlive && Mathf.Abs(rl.x) < 1.4f && Mathf.Abs(rl.z) < 1.3f && rl.y > -2.5f && rl.y < 1.2f &&
+                        Player.TakeHit(new DamageInfo
+                        {
+                            damage = swoopDamage, poiseDamage = 70f, point = PlayerChest, direction = dir + transform.right * Mathf.Sign(rl.x + 0.01f) * 0.5f,
+                            weight = ImpactWeight.Heavy, source = gameObject
+                        });
+                })) hit = true;
                 Vector3 rel = transform.InverseTransformPoint(PlayerPos);
-                if (!hit && PlayerAlive && Mathf.Abs(rel.x) < 1.4f && Mathf.Abs(rel.z) < 1.3f && rel.y > -2.5f && rel.y < 1.2f)
-                    hit = Player.TakeHit(new DamageInfo
-                    {
-                        damage = swoopDamage, poiseDamage = 70f, point = PlayerChest, direction = dir + transform.right * Mathf.Sign(rel.x + 0.01f) * 0.5f,
-                        weight = ImpactWeight.Heavy, source = gameObject
-                    });
                 if (!passed && rel.z < -0.5f) passed = true;
                 if (passed && (after += dt) > 0.22f) break;
                 if (Flat(transform.position - arenaCenter).magnitude > Limit - 0.6f && t > 0.2f) break;
@@ -1081,7 +1094,7 @@ namespace ElderTree.Enemies
         }
 
         // ================================================================== damage
-        public override bool ReceiveHit(in DamageInfo info)
+        protected override bool LocalReceiveHit(in DamageInfo info)
         {
             if (!IsAlive) return false;
             lastHitTime = Time.time;

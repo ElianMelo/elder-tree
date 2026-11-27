@@ -38,6 +38,8 @@ namespace ElderTree.Player
         {
             if (IsDead || Invulnerable || !isActiveAndEnabled) return false;
             if (Time.time - LastHurtTime < hurtGrace) return false;
+            // co-op: another player's tree. Its owner takes the blow (and judges their own i-frames and guard).
+            if (IsRemote) { LastHurtTime = Time.time; Coop.ForwardPlayerHit(this, info); return true; }
 
             Vector3 dir = info.direction; dir.y = 0f;
             if (dir.sqrMagnitude < 1e-4f) dir = -transform.forward;
@@ -149,7 +151,7 @@ namespace ElderTree.Player
         /// </summary>
         public void TakeHazardDamage(float damage, Vector3 dir)
         {
-            if (IsDead || !isActiveAndEnabled) return;
+            if (IsDead || !isActiveAndEnabled || IsRemote) return;
             dir.y = 0f;
             if (dir.sqrMagnitude < 1e-4f) dir = -transform.forward;
             dir.Normalize();

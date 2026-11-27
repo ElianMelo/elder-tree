@@ -92,21 +92,24 @@ namespace ElderTree.Enemies
         public struct HullPoint { public Transform bone; public Vector3 local; }
 
         public Mode State { get; private set; } = Mode.Dormant;
-        public override bool IsAlive => State != Mode.Dead && State != Mode.Dormant && State != Mode.Cinematic;
-        public override bool IsStaggered => false;               // only the face goes critical (DruidPart)
-        public override bool PhaseTwo => phaseTwo;
-        public override float Health => health;
+        protected override bool LocalIsAlive => State != Mode.Dead && State != Mode.Dormant && State != Mode.Cinematic;
+        protected override bool LocalIsStaggered => false;               // only the face goes critical (DruidPart)
+        protected override bool LocalPhaseTwo => phaseTwo;
+        protected override float LocalHealth => health;
         /// <summary>Footing left before it topples (shown where other bosses show poise).</summary>
-        public override float Poise => Mathf.Max(0f, FootingCap - footing);
-        public override string CurrentMove => currentMove;
+        protected override float LocalPoise => Mathf.Max(0f, FootingCap - footing);
+        protected override string LocalCurrentMove => currentMove;
         public override string DisplayName => displayName;
-        public override float MaxHealth => maxHealth;
-        public override string StateLabel => State.ToString();
-        public override bool IsDead => State == Mode.Dead;
+        protected override float LocalMaxHealth => maxHealth;
+        protected override float MaxHealthField { get => maxHealth; set => maxHealth = value; }
+        protected override string LocalStateLabel => State.ToString();
+        protected override bool LocalIsDead => State == Mode.Dead;
         public override Vector3 ArenaCenter => arenaCenter;
         public bool Toppled => State == Mode.Toppled;
         public float Footing01 => Mathf.Clamp01(footing / FootingCap);
-        public bool PartIsCritical(Part p) => p == Part.Head && State == Mode.Toppled;
+        public bool PartIsCritical(Part p) => p == Part.Head && (Mirror != null ? Mirror.staggered : State == Mode.Toppled);
+        /// <summary>Co-op: a client's mirror shows the head as critical while the host's Druid lies toppled.</summary>
+        public override bool NetCritical => State == Mode.Toppled;
 
         bool phaseTwo;
         float health, footing, lastFootHit = -99f;
@@ -120,7 +123,7 @@ namespace ElderTree.Enemies
         float lastHitTime = -99f;
         int lastHitFrame = -1;
 
-        PlayerController Player => PlayerController.Instance;
+        PlayerController Player => Aggro;
         Vector3 PlayerPos => Player != null ? Player.transform.position : arenaCenter;
         bool PlayerAlive => Player != null && !Player.IsDead;
 
@@ -321,7 +324,7 @@ namespace ElderTree.Enemies
             {
                 if (!phaseTwo && health <= maxHealth * phaseTwoAt) yield return PhaseShift();
                 if (forcedMove == null)
-                    yield return Stalk(Random.Range(phaseTwo ? 0.4f : 0.7f, phaseTwo ? 1.1f : 1.7f));
+                    yield return Stalk(Random.Range(phaseTwo ? 0.4f : 0.7f, phaseTwo ? 1.1f : 1.7f) / Aggression);
 
                 string move = forcedMove ?? PickMove(last);
                 forcedMove = null;
@@ -716,13 +719,17 @@ namespace ElderTree.Enemies
             Player?.GetComponent<InputHandling.PlayerInputReader>()?.Rumble(0.7f, 0.5f, 0.3f);
             agitation = 1f;
             Shed(3);
-            if (!PlayerAlive) return;
-            Vector3 d = Flat(PlayerPos - p);
-            float dist = d.magnitude;
-            if (dist < stompRadius && PlayerPos.y < p.y + 2.6f)
-                HitPlayer(stompDamage, ImpactWeight.Slam, d, 100f);
-            else if (dist < shockRadius && Player.motor.Grounded)   // the shockwave runs along the ground: jump it
-                HitPlayer(shockDamage, ImpactWeight.Heavy, d, 40f);
+            HitEach(false, () =>
+            {
+                if (!PlayerAlive) return false;
+                Vector3 d = Flat(PlayerPos - p);
+                float dist = d.magnitude;
+                if (dist < stompRadius && PlayerPos.y < p.y + 2.6f)
+                    return HitPlayer(stompDamage, ImpactWeight.Slam, d, 100f);
+                if (dist < shockRadius && Player.motor.Grounded)   // the shockwave runs along the ground: jump it
+                    return HitPlayer(shockDamage, ImpactWeight.Heavy, d, 40f);
+                return false;
+            });
         }
 
         // ================================================================== kick
@@ -777,6 +784,7 @@ namespace ElderTree.Enemies
                     tPitch = Mathf.Lerp(8f, -12f, e); tTorsoPitch = Mathf.Lerp(6f, -6f, e);
                     tHand[l] = Arm(l, 0.9f, 0.4f, Mathf.Lerp(1.6f, -0.8f, e));
                     tHand[1 - l] = Arm(1 - l, 0.9f, 0.6f, Mathf.Lerp(-0.8f, 1.2f, e));
+                    if (k > 0.2f) HitEach(true, () => KickTouches(l) && HitPlayer(kickDamage, ImpactWeight.Slam, Heading, 90f));
                     if (!hit && k > 0.2f && KickTouches(l))
                     {
                         hit = HitPlayer(kickDamage, ImpactWeight.Slam, Heading, 90f);
@@ -1208,7 +1216,7 @@ namespace ElderTree.Enemies
         }
 
         // ================================================================== damage
-        public override bool ReceiveHit(in DamageInfo info) => ReceivePartHit(info, Part.Body);
+        protected override bool LocalReceiveHit(in DamageInfo info) => ReceivePartHit(info, Part.Body);
 
         /// <summary>Matches the critical multiplier the player's weapons apply on staggered targets.</summary>
         const float PlayerCriticalMultiplier = 2.6f;

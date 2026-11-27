@@ -97,6 +97,8 @@ namespace ElderTree.Player
 
         void Awake()
         {
+            All.Add(this);
+            if (SpawningRemote) { AwakeRemote(); return; }
             Instance = this;
             input = GetComponent<PlayerInputReader>();
             if (!motor) motor = GetComponent<PlayerMotor>();
@@ -109,6 +111,8 @@ namespace ElderTree.Player
 
         void OnDestroy()
         {
+            All.Remove(this);
+            if (IsRemote) return;
             VineSeeker.HitTarget -= OnVineSeekerHit;
             if (Instance == this) Instance = null;
         }
@@ -128,6 +132,7 @@ namespace ElderTree.Player
         {
             float dt = Time.deltaTime;
             if (dt <= 0f) return; // paused
+            if (IsRemote) { UpdateRemote(dt); return; }   // co-op: another player's tree, posed from the network
             if (cam == null) cam = Camera.main;
             ReadMovementInput();
 
@@ -196,6 +201,7 @@ namespace ElderTree.Player
 
         void LateUpdate()
         {
+            if (IsRemote) return;
             // bones are posed now: turn the blade for this cut, then sweep the weapon
             UpdateBladeRoll(Time.deltaTime);
             if (weapon && !HammerThrown) weapon.Tick();

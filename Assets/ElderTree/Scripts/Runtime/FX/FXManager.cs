@@ -47,6 +47,7 @@ namespace ElderTree.FX
 
         public static ParticleSystem Spawn(FXType type, Vector3 pos, Quaternion rot, float scale = 1f)
         {
+            Coop.OnFx(type, pos, rot, scale);            // co-op: the other players see it too
             PushGroundFog(type, pos, scale);
             if (Instance == null || !Instance.prefabs.ContainsKey(type)) return null;
             var q = Instance.pools[type];

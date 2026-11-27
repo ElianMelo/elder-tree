@@ -17,6 +17,12 @@ namespace ElderTree.Enemies
         public bool IsAlive => boss != null && boss.IsAlive;
         public Transform Root => boss != null ? boss.transform : transform;
         public bool IsStaggered => boss != null && boss.PartIsCritical(part);
-        public bool ReceiveHit(in DamageInfo info) => boss != null && boss.ReceivePartHit(info, part);
+        public bool ReceiveHit(in DamageInfo info)
+        {
+            if (boss == null) return false;
+            if (Coop.ForwardBossHit(boss, this, info)) return true;     // co-op client: the host's Druid takes it
+            boss.NoteThreat(info);
+            return boss.ReceivePartHit(info, part);
+        }
     }
 }

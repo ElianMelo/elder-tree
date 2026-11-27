@@ -1,5 +1,37 @@
 # Handoff — Elder Tree soulslike slice
 
+## 000000000000000000000000000000000. Online co-op (up to 4 players): FishNet over Unity Relay
+
+**What you get.** Main menu → **CO-OP**: host a party, join by code, or pick an open party from the list. In the party room the host presses **Begin the Vote**; everyone lands on the vote screen (every stage + Random + Leave). The first vote starts a **15 s** countdown; everyone voting the same thing goes at once (all Random → a random boss stage); at zero the most-voted option wins, ties and Random are drawn. A travel card plays and everyone loads in together. After a victory each player collects their own mask; once everyone is done the party returns to the vote.
+
+**Saves and masks** stay per player (each machine's own PlayerPrefs). A felled boss drops its mask for every player who doesn't own it yet; pickups and the mask cinematic are local only.
+
+**Bosses in co-op** (`BossBase`):
+- **+70% health per extra player** and **+16% aggression per extra player** (rests between moves divided by `Aggression`). Tunables: `Coop.HealthPerExtraPlayer` / `AggressionPerExtraPlayer`.
+- **Aggro**: the boss hunts one player (`BossBase.Aggro`; each boss's `Player` now reads it) and switches every 7–13 s (`aggroHold`), only between moves ("-", Stalk, Drift, Grounded; or 8 s overdue). The pick is weighted by recent damage dealt, distance, and against repeating the current quarry. HUD shows "‹Boss› hunts ‹name›" / "hunts you" under the boss bar.
+- **Bystanders get hit**: every melee check runs per player through `BossBase.HitEach` (21 call sites converted); blasts, motes, light columns and walkers hit any tree.
+
+**Death**: a fallen player sees YOU DIED then spectates the nearest living ally. A **wipe** (everyone down) fades everyone back to the grace and the boss returns for a rematch. A victory revives the fallen for the spoils. In co-op the pause menu doesn't freeze time, there's no slow-mo, intro cinematics are skipped, and the title card dismisses itself.
+
+**Architecture** (`Assets/ElderTree/Scripts/Net`, asmdef `ElderTree.Net`; the game assembly only knows the `Coop` facade in `Core/Coop.cs`):
+- `RelayTransport`: FishNet transport on Unity Transport 2.7 + Relay (DTLS); the host's own client is a loopback. `CoopNetworkHandler` plugs it into Multiplayer Services 2.5 sessions. Note: a client's Relay data arrives in `NetworkConfiguration.RelayServerData`, not `RelayClientData`.
+- `CoopSession`: sign-in (anonymous; per-editor profile, `-coopProfile` for builds), create/join/browse/leave, and FishNet **broadcasts** (one `CoopPacket`, no NetworkObjects or networked scenes). Its server half (host) keeps roster/phase/votes and only routes gameplay messages. `Resources/CoopNetworkManager.prefab` is the FishNet setup.
+- `NetStage` (created per stage): your tree's transform/state/bones at 20 Hz; others' trees are stripped clones of yours in "remote" mode (`PlayerController.Remote.cs`). The host runs bosses; clients get a **mirror** (`BossBase.BeginMirror`, stats from the host) posed by `PoseStream`. Boss hazards (croc bombs/walkers, fairy motes/pillars) are mirrored as ghosts under the same pool root. Hits: client → host for bosses/walkers, host → owner for players (the owner judges i-frames/guard). FX and positional SFX are echoed (`Coop.LocalOnly()` keeps things local).
+- `PoseStream`: generic hierarchy sync by path hash (local pose + active/renderer/particles/light/collider/audio), delta + 1.1 s refresh, chunked under the 1100-byte MTU.
+- `CoopMenu` + `Resources/CoopMenu.uss`: the CO-OP page (browser, party room, vote). `HUD.Coop.cs`: ally health, nameplates, the hunt line.
+
+**Tested** with two development builds on one PC through Relay (`CoopAutoTest`, below): join, vote, load, the joiner's blows lowering the host's boss, boss hits reaching the joiner, aggro switching, per-player mask drops and pickup, back to the vote, a second round, a wipe + rematch, and masks/forms seen on the other side. Bosses covered: Crocodile, Shark, Druid, Fairy. No network warnings in the logs.
+
+**Test it on one PC**: build, then run two copies:
+`ElderTree.exe -coopTest host -coopProfile p1 -coopPlayers 2 -coopStage 1 -coopShots <dir>` and `ElderTree.exe -coopTest join -coopProfile p2 -coopStage 1 -coopShots <dir>` (add `-coopWipe` to test a wipe; `-coopUdp` skips DTLS). Two copies on one PC share PlayerPrefs, so "own save" only really shows on separate machines.
+
+**Known limits / open questions**
+- **Restart the Unity Editor once**: Burst was installed with Multiplayer Services while the editor was open, so in this editor session Unity Transport can't compile its Burst function pointers and hosting fails in Play mode. Builds are fine.
+- Not synced: other players' projectiles in flight (arrows, chakram, orbs, moon: their impacts and sounds are), weapon trails/slash arcs, hit-flash emission, cut vines/breakables (local per player), training dummies (local).
+- Hits on players are judged with the host's view of them, so a dodge can feel slightly late at high ping. The Druid can't carry a remote player; its grab lands as a crushing blow.
+- Lobby closes while the party is in a stage; joining is allowed in the party room and during the vote. No host migration: the host leaving ends the party.
+- Questions: are +70% health / +16% aggression right? Should the dead respawn mid-fight (e.g. after 30 s) instead of spectating? Should the vote also offer training-yard "warm up"?
+
 ## 00000000000000000000000000000000. The Shark's intro cinematic: in from the open sea, two breaches, onto the dock
 
 Same system as the other three: it plays once per save, the first time you reach `Beach_Shark`. Skip and replay work the same way (see the Fairy's section). All four bosses now have one.

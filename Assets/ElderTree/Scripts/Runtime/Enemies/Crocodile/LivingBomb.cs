@@ -36,7 +36,9 @@ namespace ElderTree.Enemies
 
         public static readonly List<LivingBomb> Active = new();
         public Phase State { get; private set; } = Phase.Inactive;
-        public bool IsAlive => State != Phase.Inactive;
+        public bool IsAlive => Ghost ? gameObject.activeInHierarchy : State != Phase.Inactive;
+        /// <summary>Co-op client: a mirror of the host's walker (posed from the network; hits go to the host).</summary>
+        public bool Ghost { get; set; }
         public Transform Root => transform;
         public float Health { get; private set; }
 
@@ -98,7 +100,7 @@ namespace ElderTree.Enemies
             if (dt <= 0f || State == Phase.Inactive) return;
             stateTime += dt;
             life += dt;
-            var pc = PlayerController.Instance;
+            var pc = Coop.Nearest(transform.position);     // co-op: walkers chase the nearest tree
             Vector3 toPlayer = pc != null ? pc.transform.position - transform.position : Vector3.zero;
             toPlayer.y = 0f;
             float dist = toPlayer.magnitude;
@@ -213,6 +215,7 @@ namespace ElderTree.Enemies
 
         public bool ReceiveHit(in DamageInfo info)
         {
+            if (Coop.ForwardHazardHit(this, info)) return true;   // co-op client: the host's walker takes it
             if (!IsAlive) return false;
             Health -= info.damage;
             flash = Mathf.Max(flash, 0.6f);

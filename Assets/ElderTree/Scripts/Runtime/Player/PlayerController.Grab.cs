@@ -21,6 +21,13 @@ namespace ElderTree.Player
         public bool TryGrab()
         {
             if (IsDead || Invulnerable || !isActiveAndEnabled) return false;
+            // co-op: a hand can't carry another player's tree across the wire; the grab lands as a crushing blow instead
+            if (IsRemote)
+            {
+                TakeHit(new DamageInfo { damage = 95f, poiseDamage = 60f, point = transform.position + Vector3.up * 1.2f,
+                                         direction = -transform.forward, weight = ImpactWeight.Slam });
+                return false;
+            }
             if (State == PlayerState.Cinematic || State == PlayerState.Transform || State == PlayerState.Held) return false;
             if (State == PlayerState.Aim) ExitAim();
             EndSwing();

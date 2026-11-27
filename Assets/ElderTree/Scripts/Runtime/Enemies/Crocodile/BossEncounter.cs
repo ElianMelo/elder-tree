@@ -38,6 +38,17 @@ namespace ElderTree.Enemies
         /// <summary>Raised once the victory sequence is over (banner shown, rewards dropped).</summary>
         public event System.Action FightWon;
 
+        // co-op: what the host's encounter does, so the network layer can tell the clients
+        /// <summary>Host: a boss entered the fight (<c>afterIntro</c>: from its cinematic).</summary>
+        public event System.Action<BossBase, bool> Spawned;
+        /// <summary>Host: the fight was called off (no fanfare; <c>keepWreck</c> leaves felled bosses where they lie).</summary>
+        public event System.Action<bool> FightEnded;
+        /// <summary>Host: every tree fell. The wipe sequence starts everywhere.</summary>
+        public event System.Action Wiped;
+        /// <summary>The wipe is over here: everyone is back at the start and the boss is gone.</summary>
+        public event System.Action WipeFinished;
+        bool wiping;
+
         readonly List<TrainingDummy> dummies = new();
         Coroutine ending;
         bool primaryFelled;
@@ -59,6 +70,7 @@ namespace ElderTree.Enemies
             {
                 b.Felled += OnBossFelled;
                 b.ResetBoss();
+                if (Coop.IsClient && Coop.InStage) b.BeginMirror();     // co-op: the host runs the bosses
             }
             if (player != null) player.Died += OnPlayerDied;
             if (hud != null)
@@ -73,6 +85,7 @@ namespace ElderTree.Enemies
         /// <summary>Pause menu: summon boss <paramref name="index"/> of the roster on its own.</summary>
         public void Summon(int index)
         {
+            if (Coop.IsClient && Coop.InStage) return;                 // co-op: only the host calls bosses
             if (index < 0 || index >= bosses.Count || bosses[index] == null) return;
             var b = bosses[index];
             foreach (var o in bosses) if (o != null && o != b && IsSpawned(o)) o.ResetBoss();
@@ -97,8 +110,24 @@ namespace ElderTree.Enemies
         public void Spawn(BossBase b, bool afterIntro = false)
         {
             if (b == null) return;
-            if (player != null && player.IsDead) return;
-            if (ending != null) { StopCoroutine(ending); ending = null; }
+            if (Coop.IsClient && Coop.InStage) return;                 // co-op: clients follow the host (MirrorSpawn)
+            if (Coop.InStage ? !Coop.AnyAlive : player != null && player.IsDead) return;
+            Present(b);
+            b.ApplyPartyScaling();                                     // more health and less rest per extra player
+            if (afterIntro) b.BeginFightAfterIntro(); else b.BeginFight();
+            Spawned?.Invoke(b, afterIntro);
+        }
+
+        /// <summary>Co-op client: the boss entered the fight on the host. Everything but the boss itself (the host poses it).</summary>
+        public void MirrorSpawn(BossBase b) { if (b != null) Present(b); }
+
+        /// <summary>Co-op client: the host called the fight off.</summary>
+        public void MirrorEndFight(bool keepWreck) => EndFightLocal(keepWreck);
+
+        /// <summary>The fight starts here: music, bar, the dummies leave, special charges reset.</summary>
+        void Present(BossBase b)
+        {
+            if (ending != null && !wiping) { StopCoroutine(ending); ending = null; }
             if (!Active)
             {
                 primaryFelled = false;
@@ -109,9 +138,13 @@ namespace ElderTree.Enemies
             Active = true;
             AudioManager.SetMusic(MusicMood.Boss);
             SetDummies(false);
-            if (afterIntro) b.BeginFightAfterIntro(); else b.BeginFight();
             hud?.ShowBossBar(b);
         }
+
+        /// <summary>Index of a boss in the roster (the same on every machine: the scene defines it).</summary>
+        public int IndexOf(BossBase b) => bosses.IndexOf(b);
+        public BossBase At(int i) => i >= 0 && i < bosses.Count ? bosses[i] : null;
+        public IReadOnlyList<BossBase> Roster => bosses;
 
         /// <summary>Send one boss away. The fight ends once no boss is left standing.</summary>
         public void Despawn(BossBase b)
@@ -135,6 +168,13 @@ namespace ElderTree.Enemies
         /// <summary>Stop the fight and put the training yard back (no fanfare).</summary>
         public void EndFight(bool keepWreck)
         {
+            if (Coop.IsClient && Coop.InStage) return;                 // co-op: only the host calls the fight off
+            EndFightLocal(keepWreck);
+            FightEnded?.Invoke(keepWreck);
+        }
+
+        void EndFightLocal(bool keepWreck)
+        {
             if (ending != null) { StopCoroutine(ending); ending = null; }
             Active = false;
             if (player != null) player.stats.EndBossFight();
@@ -150,7 +190,7 @@ namespace ElderTree.Enemies
             foreach (var d in dummies)
             {
                 if (d == null || d.gameObject.activeSelf == on) continue;
-                FXManager.Spawn(FXType.Dust, d.transform.position, Quaternion.identity, 1.1f);
+                using (Coop.LocalOnly()) FXManager.Spawn(FXType.Dust, d.transform.position, Quaternion.identity, 1.1f);
                 d.gameObject.SetActive(on);
                 if (on) d.ResetDummy();
             }
@@ -181,6 +221,13 @@ namespace ElderTree.Enemies
             AudioManager.Play2D(Sfx.GreatEnemyFelled, 1f);
             hud?.ShowBanner("GREAT ENEMY FELLED");
             yield return new WaitForSeconds(2.2f);
+            // co-op: a tree that fell before the end stands back up for the spoils
+            if (Coop.InStage && player != null && player.IsDead)
+            {
+                if (hud != null) yield return hud.FadeScreen(1f, 0.6f);
+                Respawn();
+                if (hud != null) yield return hud.FadeScreen(0f, 0.8f);
+            }
             // each felled boss's mask rises out of its wreck (only the first time: you can't win it twice)
             var ms = MaskSystem.Instance;
             foreach (var b in felled)
@@ -241,7 +288,86 @@ namespace ElderTree.Enemies
         void OnPlayerDied()
         {
             if (!Active) { ending = StartCoroutine(RespawnOnly()); return; }
+            if (Coop.InStage) { StartCoroutine(CoopDown()); return; }
             ending = StartCoroutine(Defeat());
+        }
+
+        // ================================================================== co-op: down, spectate, wipe
+        /// <summary>Your tree fell but the others fight on: YOU DIED, then the camera follows a living ally until the
+        /// fight ends (victory revives you; a wipe sends everyone back).</summary>
+        IEnumerator CoopDown()
+        {
+            yield return new WaitForSeconds(1.6f);
+            if (player == null || !player.IsDead || wiping) yield break;
+            AudioManager.Play2D(Sfx.YouDied, 1f);
+            hud?.ShowDeath();
+            yield return new WaitForSeconds(3.4f);
+            while (player != null && player.IsDead && Active && !wiping)
+            {
+                Spectate(NextAlly());
+                yield return new WaitForSeconds(0.5f);
+            }
+        }
+
+        PlayerController NextAlly()
+        {
+            PlayerController best = null;
+            float bd = float.MaxValue;
+            foreach (var pc in PlayerController.All)
+            {
+                if (pc == null || pc == player || pc.IsDead) continue;
+                float d = (pc.transform.position - player.transform.position).sqrMagnitude;
+                if (d < bd) { bd = d; best = pc; }
+            }
+            return best;
+        }
+
+        static void Spectate(PlayerController pc)
+        {
+            var cd = CameraSystem.CameraDirector.Instance;
+            if (cd == null) return;
+            var t = pc != null ? pc.transform : PlayerController.Instance != null ? PlayerController.Instance.transform : null;
+            if (t != null && cd.player != t) cd.player = t;
+        }
+
+        void Update()
+        {
+            // co-op host: the last tree standing fell
+            if (Coop.InStage && Coop.IsHost && Active && !wiping && ending == null && !Coop.AnyAlive)
+            {
+                Wiped?.Invoke();
+                RunWipe();
+            }
+        }
+
+        /// <summary>Co-op: the whole party fell. Everyone fades out, the boss leaves, and everyone stands up at the start.</summary>
+        public void RunWipe()
+        {
+            if (wiping) return;
+            if (ending != null) StopCoroutine(ending);
+            ending = StartCoroutine(Wipe());
+        }
+
+        IEnumerator Wipe()
+        {
+            wiping = true;
+            yield return new WaitForSeconds(2.4f);
+            if (hud != null) yield return hud.FadeScreen(1f, 0.9f);
+            Active = false;
+            if (player != null) player.stats.EndBossFight();
+            if (Coop.IsHost)
+            {
+                ResetAllBosses();
+                foreach (var l in LivingBomb.Active.ToArray()) l.Despawn();
+            }
+            hud?.HideBossBar();
+            SetDummies(true);
+            Respawn();
+            yield return new WaitForSeconds(0.4f);
+            if (hud != null) yield return hud.FadeScreen(0f, 1.1f);
+            ending = null;
+            wiping = false;
+            WipeFinished?.Invoke();
         }
 
         IEnumerator Defeat()
@@ -281,8 +407,24 @@ namespace ElderTree.Enemies
             if (player == null) return;
             Vector3 p = spawnPoint != null ? spawnPoint.position : Vector3.zero;
             Quaternion r = spawnPoint != null ? spawnPoint.rotation : Quaternion.identity;
+            p += SpawnOffset(r);
             player.Revive(p, r);
+            Spectate(player);
             CameraSystem.CameraDirector.Instance?.Recenter();
+        }
+
+        /// <summary>Co-op: each player stands at their own spot beside the grace (slot 0 at the grace itself).</summary>
+        public static Vector3 SpawnOffset(Quaternion facing)
+        {
+            var me = Coop.InStage ? Coop.Local : null;
+            if (me == null || me.slot == 0) return Vector3.zero;
+            Vector3 local = me.slot switch
+            {
+                1 => new Vector3(1.8f, 0f, 0f),
+                2 => new Vector3(-1.8f, 0f, 0f),
+                _ => new Vector3(0f, 0f, -1.8f),
+            };
+            return facing * local;
         }
     }
 }

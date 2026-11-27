@@ -1,0 +1,108 @@
+/* CO-OP page (ElderTree.Net CoopMenu): extends LevelSelect.uss (ls-*). Same restraint: pale gold serif,
+   hairlines, dark bands. Player marks use each slot's colour (set from code). */
+
+.co-list { width: 700px; }
+
+.co-row { height: 74px; }
+.co-row--idle .ls-stage__name { color: rgb(130, 122, 106); }
+.co-row--code { height: 92px; }
+
+/* the stage you voted for: a gold frame */
+.co-row--mine {
+    border-left-width: 2px;
+    border-left-color: rgb(216, 180, 106);
+}
+.co-row--mine .ls-stage__gem { background-color: rgb(216, 180, 106); border-color: rgb(244, 223, 166); }
+/* the stage the party settled on */
+.co-row--picked .ls-stage__glow { opacity: 1; }
+.co-row--picked .ls-stage__name { color: rgb(255, 236, 190); text-shadow: 0 0 14px rgba(255, 196, 110, 0.6); }
+
+.co-section {
+    font-size: 13px;
+    letter-spacing: 6px;
+    color: rgb(150, 138, 112);
+    margin: 18px 0 6px 26px;
+}
+
+/* player marks on a vote row */
+.co-marks {
+    flex-direction: row;
+    position: absolute;
+    right: 18px;
+    top: 0; bottom: 0;
+    align-items: center;
+}
+.co-mark {
+    width: 30px; height: 30px;
+    margin-left: 8px;
+    border-radius: 15px;
+    border-width: 1px;
+    border-color: rgba(10, 8, 6, 0.8);
+    font-size: 15px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: rgb(16, 12, 8);
+}
+
+/* the countdown, top right */
+.co-timer {
+    position: absolute;
+    right: 0;
+    bottom: -2px;
+    font-size: 46px;
+    letter-spacing: 6px;
+    color: rgb(240, 226, 190);
+    -unity-text-align: middle-right;
+    text-shadow: 0 0 14px rgba(255, 196, 110, 0.3);
+}
+.co-timer--urgent { color: rgb(255, 176, 120); text-shadow: 0 0 16px rgba(255, 120, 60, 0.55); }
+
+/* the party code */
+.co-code {
+    font-size: 30px;
+    letter-spacing: 10px;
+    color: rgb(244, 223, 166);
+    margin: 4px 0 10px 26px;
+    text-shadow: 0 0 12px rgba(255, 196, 110, 0.3);
+}
+
+/* who is in the party */
+.co-party { flex-direction: row; flex-wrap: wrap; width: 900px; margin: 0 0 6px 26px; }
+.co-member {
+    flex-direction: row;
+    align-items: center;
+    margin: 0 28px 8px 0;
+    padding: 6px 14px 6px 10px;
+    background-color: rgba(6, 6, 8, 0.6);
+    border-width: 1px;
+    border-color: rgba(216, 180, 106, 0.25);
+}
+.co-member__gem { width: 10px; height: 10px; rotate: 45deg; margin-right: 12px; }
+.co-member__name { font-size: 18px; letter-spacing: 3px; color: rgb(232, 220, 192); }
+.co-member__tag { font-size: 11px; letter-spacing: 3px; color: rgb(176, 160, 124); margin-left: 12px; }
+
+/* status / errors under the list */
+.co-status { font-size: 15px; letter-spacing: 1px; color: rgb(190, 178, 150); margin: 18px 0 0 26px; white-space: normal; width: 640px; }
+.co-status--error { color: rgb(230, 150, 120); }
+
+/* the join code field */
+.co-field {
+    position: absolute;
+    right: 18px;
+    top: 22px;
+    width: 190px;
+    height: 40px;
+    margin: 0;
+}
+.co-field .unity-text-field__input {
+    background-color: rgba(6, 6, 8, 0.85);
+    border-width: 1px;
+    border-color: rgba(216, 180, 106, 0.55);
+    border-radius: 0;
+    color: rgb(244, 223, 166);
+    font-size: 22px;
+    letter-spacing: 6px;
+    -unity-text-align: middle-center;
+    padding: 0 8px;
+}
+.co-field:focus .unity-text-field__input { border-color: rgb(244, 223, 166); }

@@ -947,3 +947,63 @@
 .charge--full .charge__gem { background-color: rgb(250, 205, 102); border-color: rgb(255, 236, 190); }
 .charge--spent { opacity: 0.45; }
 .charge--spent .charge__gem { background-color: rgba(60, 20, 18, 0.9); border-color: rgba(120, 60, 50, 0.6); }
+
+
+/* ---------------------------------------------------------------- co-op (HUD.Coop) */
+.party {
+    position: absolute;
+    left: 64px;
+    top: 176px;
+}
+.party__row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.party__row--dead { opacity: 0.55; }
+.party__gem {
+    width: 9px; height: 9px;
+    rotate: 45deg;
+    margin-right: 12px;
+}
+.party__col { width: 220px; }
+.party__name {
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: rgb(226, 216, 194);
+    margin-bottom: 3px;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 1);
+}
+.party__bar {
+    height: 12px;
+    padding: 2px;
+    background-color: rgba(10, 11, 14, 0.78);
+    border-width: 1px;
+    border-color: rgba(190, 170, 120, 0.35);
+}
+.party__fill {
+    height: 100%;
+    background-color: rgb(176, 38, 32);
+}
+
+.plates { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.plate {
+    position: absolute;
+    translate: -50% -100%;
+    font-size: 17px;
+    letter-spacing: 2px;
+    -unity-text-align: lower-center;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 1);
+}
+
+.bossbar__hunt {
+    position: absolute;
+    left: 0;
+    top: 50px;
+    transform-origin: left center;
+    font-size: 17px;
+    letter-spacing: 2px;
+    -unity-font-style: italic;
+    -unity-text-align: middle-left;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 1);
+}

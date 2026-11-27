@@ -116,7 +116,16 @@ namespace ElderTree.UI
         {
             if (pauseRoot == null) return;
             for (int i = 0; i < menuItems.Count; i++)
+            {
                 menuItems[i].EnableInClassList("pause__item--active", i == menuIndex);
+                menuItems[i].style.display = ItemVisible(i) ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+            // co-op: the stage list is the party vote, and leaving means leaving the party
+            if (menuItems.Count > 7)
+            {
+                menuItems[6].text = Coop.InStage ? "Return to Vote" : MenuNames[6];
+                menuItems[7].text = Coop.InStage ? "Leave Party" : MenuNames[7];
+            }
 
             bool pad = input != null && input.Device == InputDeviceKind.Gamepad;
             tabPrevKey.text = pad ? "LB" : "Q";
@@ -217,9 +226,25 @@ namespace ElderTree.UI
             }
         }
 
+        /// <summary>Co-op: only the host calls bosses, resets the yard or takes the party back to the vote.</summary>
+        bool ItemVisible(int i) => !Coop.InStage || Coop.IsHost || !(i >= 1 && i <= 6);
+
+        int NextVisibleItem(int from, int dir)
+        {
+            for (int k = 1; k <= menuItems.Count; k++)
+            {
+                int i = ((from + dir * k) % menuItems.Count + menuItems.Count) % menuItems.Count;
+                if (ItemVisible(i)) return i;
+            }
+            return from;
+        }
+
         void ActivateMenuItem()
         {
             AudioManager.Play2D(Sfx.UISelect, 0.7f);
+            if (!ItemVisible(menuIndex)) return;
+            if (Coop.InStage && menuIndex == 6) { SetPause(false); Coop.ReturnToVote(); return; }
+            if (Coop.InStage && menuIndex == 7) { SetPause(false); Coop.Leave(); return; }
             switch (menuIndex)
             {
                 case 0: SetPause(false); return;
@@ -272,7 +297,7 @@ namespace ElderTree.UI
             {
                 if (nav.y != 0)
                 {
-                    menuIndex = (menuIndex - nav.y + menuItems.Count) % menuItems.Count;
+                    menuIndex = NextVisibleItem(menuIndex, -nav.y);
                     AudioManager.Play2D(Sfx.UIMove, 0.5f);
                     ShowPanel();
                     RefreshMenu();

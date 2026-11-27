@@ -39,6 +39,14 @@ namespace ElderTree.Player
 
         public void SetPlanarVelocityImmediate(Vector3 v) { v.y = 0; PlanarVelocity = v; }
 
+        /// <summary>Co-op: another player's tree reports its motion (nothing is moved here).</summary>
+        public void SetRemote(Vector3 planarVelocity, bool grounded)
+        {
+            planarVelocity.y = 0f;
+            PlanarVelocity = planarVelocity;
+            Grounded = grounded;
+        }
+
         public void AddDisplacement(Vector3 d) => pendingDisplacement += d;
 
         public void Jump(float height)

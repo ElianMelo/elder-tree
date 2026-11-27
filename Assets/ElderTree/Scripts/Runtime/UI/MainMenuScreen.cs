@@ -27,7 +27,7 @@ namespace ElderTree.UI
         [Tooltip("Seconds each vista holds behind the title before the next one fades in.")]
         public float vistaHold = 11f;
 
-        enum Page { Title, Main, Levels, Options, Settings, Reset }
+        enum Page { Title, Main, Levels, Coop, Options, Settings, Reset }
 
         class Item
         {
@@ -59,6 +59,8 @@ namespace ElderTree.UI
         StageCatalog catalog;
         List<StageCatalog.Stage> stages = new();
         LevelSelectView levels;
+        ICoopMenu coop;
+        Item coopItem;
 
         OptionList optionsList, settingsList, resetList;
         readonly List<Label> settingsTabs = new();
@@ -100,8 +102,15 @@ namespace ElderTree.UI
             Build();
             RefreshProgress();
             NextVista(true);
+            // back from a co-op stage (or the session is still running): straight to the party
+            if (Coop.Active && coop != null)
+            {
+                SceneFlow.OpenLevelSelect = false;
+                GoTo(Page.Main, false);
+                GoTo(Page.Coop, false);
+            }
             // back from a stage (a victory, or the level select asked for): straight to the stage list
-            if (SceneFlow.OpenLevelSelect)
+            else if (SceneFlow.OpenLevelSelect)
             {
                 SceneFlow.OpenLevelSelect = false;
                 GoTo(Page.Main, false);
@@ -197,6 +206,10 @@ namespace ElderTree.UI
             BuildFooter();
             levels = new LevelSelectView(root, this, catalog);
             levels.BackRequested += () => GoTo(Page.Main);
+            coop = CoopMenuHook.Create?.Invoke(root, this, catalog);
+            if (coop != null) coop.BackRequested += () => GoTo(Page.Main);
+            coopItem.visible = coop != null;
+            coopItem.el.style.display = coop != null ? DisplayStyle.Flex : DisplayStyle.None;
             BuildModal();
 
             toast = Lbl("", "mm-toast mm-off", root);
@@ -228,6 +241,8 @@ namespace ElderTree.UI
             mainCol = El("mm-main mm-fadeable", root);
             AddItem("CONTINUE", ContinueHelp(), Continue);
             AddItem("LEVEL SELECT", "Travel to any stage: the training grounds, or the domain of a boss.", () => GoTo(Page.Levels));
+            AddItem("CO-OP", "Fight alongside up to three other players online: host a party or join one, then vote on where to go.", () => GoTo(Page.Coop));
+            coopItem = items[items.Count - 1];
             AddItem("OPTIONS", "Boss introductions, control hints, camera shake and the camera.", () => GoTo(Page.Options));
             AddItem("SETTINGS", "Graphics, display, audio and controls.", () => GoTo(Page.Settings));
             AddItem("RESET", "Reset boss progress, masks or introductions, or restore the default settings and controls.", () => GoTo(Page.Reset));
@@ -459,6 +474,11 @@ namespace ElderTree.UI
             cont.visible = SceneFlow.LastStage(out _, out _);
             cont.help = ContinueHelp();
             cont.el.style.display = cont.visible ? DisplayStyle.Flex : DisplayStyle.None;
+            if (coopItem != null)
+            {
+                coopItem.visible = coop != null;
+                coopItem.el.style.display = coopItem.visible ? DisplayStyle.Flex : DisplayStyle.None;
+            }
             if (!items[itemIndex].visible) itemIndex = NextVisible(itemIndex, 1);
             SelectItem(itemIndex, false);
 
@@ -507,6 +527,8 @@ namespace ElderTree.UI
             foreach (var kv in pages) if (kv.Key == p || kv.Key == from) Show(kv.Value, kv.Key == p);
             if (p == Page.Levels) levels.Open();
             else if (from == Page.Levels) levels.Close();
+            if (p == Page.Coop) coop?.Open();
+            else if (from == Page.Coop) coop?.Close();
             switch (p)
             {
                 case Page.Options:
@@ -527,6 +549,14 @@ namespace ElderTree.UI
             if (from == Page.Options || from == Page.Settings) ControlBindings.CancelRebind();
             if (sound && from != p) AudioManager.Play2D(p == Page.Title || (int)p < (int)from && p == Page.Main ? Sfx.UIBack : Sfx.UISelect, 0.6f);
             RefreshFooter();
+        }
+
+        /// <summary>Show the CO-OP page (from anywhere in the menu).</summary>
+        public void OpenCoop()
+        {
+            if (coop == null || page == Page.Coop) return;
+            if (page == Page.Title) GoTo(Page.Main, false);
+            GoTo(Page.Coop, false);
         }
 
         void Back()
@@ -565,6 +595,10 @@ namespace ElderTree.UI
                 case Page.Reset:
                     keys = $"{ok}  Choose      {back}  Back";
                     help = resetList.CurrentHelp;
+                    break;
+                case Page.Coop:
+                    keys = coop != null ? coop.Keys(pad) : "";
+                    help = coop != null ? coop.Help : "";
                     break;
             }
             if (tabPrev != null) { tabPrev.text = pad ? "LB" : "Q"; tabNext.text = pad ? "RB" : "E"; }
@@ -690,6 +724,11 @@ namespace ElderTree.UI
             LevelSelectView.Drift(bgFront, t - frontBorn);
             LevelSelectView.Drift(bgBack, t - backBorn);
             levels.Tick(page == Page.Levels && !ModalOpen && !locked ? input : null);
+            if (coop != null)
+            {
+                coop.Tick(page == Page.Coop && !ModalOpen && !locked && t >= inputAfter ? input : null);
+                if (page == Page.Coop && footKeys != null) { footKeys.text = coop.Keys(Pad); footHelp.text = coop.Help; }
+            }
             if (emblem != null) emblem.Spin(dt);
             if (page == Page.Title) pressAny.style.opacity = 0.45f + 0.55f * (0.5f + 0.5f * Mathf.Sin(t * 2.2f));
             else pressAny.style.opacity = StyleKeyword.Null;
@@ -718,6 +757,7 @@ namespace ElderTree.UI
                     TickList(settingsList);
                     break;
                 case Page.Reset: TickList(resetList); break;
+                case Page.Coop: break;               // the co-op page reads its own input (Tick above)
             }
         }
 

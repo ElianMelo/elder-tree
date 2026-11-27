@@ -106,6 +106,7 @@ namespace ElderTree.UI
             BuildHints();
             BuildBanner();
             BuildBossUI();
+            BuildCoop();
             BuildPause();
             BuildDebugMenu();
             BuildMasks();
@@ -283,6 +284,7 @@ namespace ElderTree.UI
             TickHints();
             TickBanner(dt);
             TickBossBar(dt);
+            TickCoop(dt);
             TickLevelSelect();
             TickDebugMenu(dt);
             TickMasks(dt);

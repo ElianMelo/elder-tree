@@ -32,7 +32,8 @@ namespace ElderTree
 
         public void SetPaused(bool paused)
         {
-            Paused = paused;
+            // co-op: the others are still fighting. Menus open over a running world.
+            Paused = paused && !Coop.InStage;
             Apply();
         }
 
@@ -50,7 +51,7 @@ namespace ElderTree
 
         public static void SlowMo(float seconds, float scale)
         {
-            if (Instance == null) return;
+            if (Instance == null || Coop.InStage) return;    // co-op: one shared world clock, no slow motion
             Instance.slowMoUntil = Time.unscaledTime + seconds;
             Instance.slowMoScale = scale;
         }

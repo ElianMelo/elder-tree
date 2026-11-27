@@ -28,9 +28,12 @@ namespace ElderTree.Masks
             if (prefab == null || m == null) return null;
             var p = Instantiate(prefab, groundPos, Quaternion.identity);
             p.mask = m;
-            FXManager.Spawn(FXType.ChargeFlash, groundPos + Vector3.up * 1.1f, Quaternion.identity, 1.8f);
-            FXManager.Spawn(FXType.Dust, groundPos, Quaternion.identity, 1.2f);
-            AudioManager.Play(Sfx.MaskReceived, groundPos, 0.5f, 1.25f);
+            using (Coop.LocalOnly())        // co-op: every player gets their own mask; nobody sees anyone else's
+            {
+                FXManager.Spawn(FXType.ChargeFlash, groundPos + Vector3.up * 1.1f, Quaternion.identity, 1.8f);
+                FXManager.Spawn(FXType.Dust, groundPos, Quaternion.identity, 1.2f);
+                AudioManager.Play(Sfx.MaskReceived, groundPos, 0.5f, 1.25f);
+            }
             return p;
         }
 

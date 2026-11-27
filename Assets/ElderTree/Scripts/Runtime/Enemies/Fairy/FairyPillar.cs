@@ -113,9 +113,9 @@ namespace ElderTree.Enemies
                 CameraDirector.Instance?.Shake(0.12f, Vector3.down);
                 return;
             }
-            var p = PlayerController.Instance;
-            if (p != null && !p.IsDead)
+            foreach (var p in PlayerController.All)      // co-op: every tree in the column's reach
             {
+                if (p == null || p.IsDead) continue;
                 Vector3 d = p.transform.position - transform.position;
                 float y = d.y;
                 d.y = 0f;
@@ -125,7 +125,7 @@ namespace ElderTree.Enemies
                         damage = damage, poiseDamage = poise, point = p.transform.position + Vector3.up,
                         direction = d.sqrMagnitude > 1e-3f ? d.normalized : Vector3.forward, weight = ImpactWeight.Heavy, source = source
                     });
-                if (d.magnitude < 12f) CameraDirector.Instance?.Shake(0.18f, Vector3.down);
+                if (d.magnitude < 12f && !p.IsRemote) CameraDirector.Instance?.Shake(0.18f, Vector3.down);
             }
         }
 

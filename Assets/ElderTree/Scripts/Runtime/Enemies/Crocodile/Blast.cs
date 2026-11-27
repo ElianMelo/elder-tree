@@ -48,8 +48,11 @@ namespace ElderTree.Enemies
                 if (shake > 0.02f) CameraDirector.Instance?.Shake(shake, Vector3.down);
             }
 
-            if (hurtsPlayer && pc != null && !pc.IsDead)
+            Coop.OnBlast(center, radius, fxScale);         // the other players shake their own cameras
+            if (hurtsPlayer) foreach (var victim in PlayerController.All)    // co-op: every tree in reach
             {
+                pc = victim;
+                if (pc == null || pc.IsDead) continue;
                 Vector3 d = pc.transform.position - center;
                 float vertical = d.y;
                 d.y = 0f;

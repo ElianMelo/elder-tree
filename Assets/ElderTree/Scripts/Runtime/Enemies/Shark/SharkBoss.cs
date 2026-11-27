@@ -84,16 +84,17 @@ namespace ElderTree.Enemies
         public struct HullPoint { public Transform bone; public Vector3 local; }
 
         public Mode State { get; private set; } = Mode.Dormant;
-        public override bool IsAlive => State != Mode.Dead && State != Mode.Dormant;
-        public override bool IsStaggered => State == Mode.Staggered;
-        public override bool PhaseTwo => phaseTwo;
-        public override float Health => health;
-        public override float Poise => poise;
-        public override string CurrentMove => currentMove;
+        protected override bool LocalIsAlive => State != Mode.Dead && State != Mode.Dormant;
+        protected override bool LocalIsStaggered => State == Mode.Staggered;
+        protected override bool LocalPhaseTwo => phaseTwo;
+        protected override float LocalHealth => health;
+        protected override float LocalPoise => poise;
+        protected override string LocalCurrentMove => currentMove;
         public override string DisplayName => displayName;
-        public override float MaxHealth => maxHealth;
-        public override string StateLabel => State.ToString();
-        public override bool IsDead => State == Mode.Dead;
+        protected override float LocalMaxHealth => maxHealth;
+        protected override float MaxHealthField { get => maxHealth; set => maxHealth = value; }
+        protected override string LocalStateLabel => State.ToString();
+        protected override bool LocalIsDead => State == Mode.Dead;
         public override Vector3 ArenaCenter => arenaCenter;
         public bool Burrowed => State == Mode.Burrowed;
 
@@ -108,7 +109,7 @@ namespace ElderTree.Enemies
         static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
         float SpeedMul => phaseTwo ? 1.2f : 1f;
 
-        PlayerController Player => PlayerController.Instance;
+        PlayerController Player => Aggro;
         Vector3 PlayerPos => Player != null ? Player.transform.position : arenaCenter;
         bool PlayerAlive => Player != null && !Player.IsDead;
 
@@ -206,7 +207,7 @@ namespace ElderTree.Enemies
             {
                 if (!phaseTwo && health <= maxHealth * phaseTwoAt) yield return PhaseShift();
                 if (forcedMove == null)
-                    yield return Stalk(Random.Range(phaseTwo ? 0.45f : 0.8f, phaseTwo ? 1.2f : 1.9f));
+                    yield return Stalk(Random.Range(phaseTwo ? 0.45f : 0.8f, phaseTwo ? 1.2f : 1.9f) / Aggression);
 
                 string move = forcedMove ?? PickMove(last);
                 forcedMove = null;
@@ -528,8 +529,8 @@ namespace ElderTree.Enemies
                     Locomote(Heading * speed, dt, 1.4f);
                     float open = Mathf.InverseLerp(10f, 5f, d);
                     Pose(4f, Mathf.Clamp(-yawRate * 0.12f, -12f, 12f), -0.12f, 6f + 44f * open, 9f);
-                    if (!contact && InFront(-2.4f, 3.2f, 1.2f, 2.6f))
-                        contact = HitPlayer(90f, ImpactWeight.Heavy, transform.forward + transform.right * Mathf.Sign(Rel.x + 0.01f), 50f);
+                    if (HitEach(contact, () => InFront(-2.4f, 3.2f, 1.2f, 2.6f) &&
+                                              HitPlayer(90f, ImpactWeight.Heavy, transform.forward + transform.right * Mathf.Sign(Rel.x + 0.01f), 50f))) contact = true;
                     if ((dustT -= dt) <= 0f) { dustT = 0.1f; FXManager.Spawn(FXType.DustSmall, transform.position - transform.forward * 1.2f, Quaternion.LookRotation(-transform.forward), 1.1f); }
                     if (d < 4.8f && ang < 38f) { lunged = true; break; }
                     if (t > 0.6f && ang > 100f) break;                         // ran past: turn round
@@ -546,8 +547,8 @@ namespace ElderTree.Enemies
                         vel = Heading * speed * 1.25f;
                         SlideBy(vel * dt);
                         Pose(13f, 0f, 0.05f, k < 0.6f ? 70f : -4f, 24f);
-                        if (!hit && InFront(0.6f, 5.4f, 1.9f))
-                            hit = HitPlayer(lungeDamage, ImpactWeight.Heavy, transform.forward + transform.right * Mathf.Sign(Rel.x + 0.01f) * 0.5f, 75f);
+                        if (HitEach(hit, () => InFront(0.6f, 5.4f, 1.9f) &&
+                                               HitPlayer(lungeDamage, ImpactWeight.Heavy, transform.forward + transform.right * Mathf.Sign(Rel.x + 0.01f) * 0.5f, 75f))) hit = true;
                     });
                     AudioManager.Play(Sfx.JawSnap, transform.position + transform.forward * 3.5f, 1f, 0.85f);
                     CameraDirector.Instance?.Shake(0.3f, transform.forward);
@@ -617,8 +618,8 @@ namespace ElderTree.Enemies
                 {
                     SlideBy(transform.forward * dt * reach / 0.15f);
                     Pose(11f, 0f, -0.08f, k < 0.55f ? 66f : -3f, 26f);
-                    if (!hit && k > 0.3f && InFront(0.8f, 5.2f, 1.8f))
-                        hit = HitPlayer(biteDamage * (i == bites - 1 ? 1.15f : 1f), ImpactWeight.Heavy, transform.forward, 60f);
+                    if (k > 0.3f && HitEach(hit, () => InFront(0.8f, 5.2f, 1.8f) &&
+                                                       HitPlayer(biteDamage * (i == bites - 1 ? 1.15f : 1f), ImpactWeight.Heavy, transform.forward, 60f))) hit = true;
                 });
                 AudioManager.Play(Sfx.JawSnap, transform.position + transform.forward * 3.5f, 1f);
                 CameraDirector.Instance?.Shake(0.22f, transform.forward);
@@ -655,8 +656,8 @@ namespace ElderTree.Enemies
                 SetYaw(from - side * 215f * Ease.InOutCubic(k), dt);
                 Pose(0f, side * 12f, 0f, 16f, 16f);
                 tTailYaw = Mathf.Lerp(side * 52f, -side * 30f, Ease.InOutCubic(k));
-                if (!hit && TailTouches(1.35f))
-                    hit = HitPlayer(tailDamage, ImpactWeight.Heavy, Flat(PlayerPos - transform.position) + transform.forward * -0.3f, 70f);
+                if (HitEach(hit, () => TailTouches(1.35f) &&
+                                       HitPlayer(tailDamage, ImpactWeight.Heavy, Flat(PlayerPos - transform.position) + transform.forward * -0.3f, 70f))) hit = true;
             });
             CameraDirector.Instance?.Shake(0.25f, transform.right * side);
             FXManager.Spawn(FXType.Dust, Blast.Ground(TailTip), Quaternion.identity, 1.4f);
@@ -683,12 +684,12 @@ namespace ElderTree.Enemies
             {
                 Pose(-7f, 0f, -0.12f, 0f, 28f);
                 tTailPitch = Mathf.Lerp(58f, -16f, k);
-                if (!hit && k > 0.5f)
+                if (k > 0.5f && HitEach(hit, () =>
                 {
                     Vector3 r = Rel;
-                    if (r.z < -1.6f && r.z > -7.6f && Mathf.Abs(r.x) < 2.3f && r.y < 2.6f)
-                        hit = HitPlayer(tailSlamDamage, ImpactWeight.Slam, -transform.forward, 90f);
-                }
+                    return r.z < -1.6f && r.z > -7.6f && Mathf.Abs(r.x) < 2.3f && r.y < 2.6f &&
+                           HitPlayer(tailSlamDamage, ImpactWeight.Slam, -transform.forward, 90f);
+                })) hit = true;
             });
             Vector3 tip = Blast.Ground(transform.position - transform.forward * 5.2f);
             FXManager.Spawn(FXType.SlamRing, tip + Vector3.up * 0.05f, Quaternion.identity, 2.2f);
@@ -740,10 +741,9 @@ namespace ElderTree.Enemies
                 Pose(0f, dir * 9f, 0f, 30f, 12f);
                 tTailYaw = dir * 14f;
                 if (Random.value < dt * 18f) FXManager.Spawn(FXType.DustSmall, TailTip.WithY(transform.position.y), Quaternion.identity, 1.2f);
-                if (Time.time > nextHit && PlayerAlive && (TailTouches(1.4f) || FlatDist < 2.3f))
-                {
-                    if (HitPlayer(spinDamage, ImpactWeight.Heavy, Flat(PlayerPos - transform.position), 45f)) nextHit = Time.time + 0.55f;
-                }
+                if (HitEach(Time.time <= nextHit, () => PlayerAlive && (TailTouches(1.4f) || FlatDist < 2.3f) &&
+                                                       HitPlayer(spinDamage, ImpactWeight.Heavy, Flat(PlayerPos - transform.position), 45f)))
+                    nextHit = Time.time + 0.55f;
             });
             CameraDirector.Instance?.Shake(0.3f, Vector3.down);
             vel = Vector3.zero;
@@ -786,8 +786,8 @@ namespace ElderTree.Enemies
             Place(land);
             Thud(1.2f);
             FXManager.Spawn(FXType.SlamRing, transform.position + Vector3.up * 0.05f, Quaternion.identity, 3.2f);
-            if (PlayerAlive && FlatDist < 4.4f && Rel.y < 2.5f)
-                HitPlayer(leapDamage, ImpactWeight.Slam, Flat(PlayerPos - transform.position), 90f);
+            HitEach(false, () => PlayerAlive && FlatDist < 4.4f && Rel.y < 2.5f &&
+                                 HitPlayer(leapDamage, ImpactWeight.Slam, Flat(PlayerPos - transform.position), 90f));
             yield return Recover(0.85f, "Landed", false, true);
         }
 
@@ -972,12 +972,12 @@ namespace ElderTree.Enemies
                 airY = Ease.OutCubic(k) * 1.3f;
                 Pose(-80f, 0f, 0f, k < 0.7f ? 75f : -3f, 30f);
                 pitch = -80f;
-                if (damage && !hit && PlayerAlive)
+                if (damage && HitEach(hit, () =>
                 {
+                    if (!PlayerAlive) return false;
                     Vector3 d = PlayerPos - spot;
-                    if (Flat(d).magnitude < eruptRadius && d.y < 4f)
-                        hit = HitPlayer(eruptDamage, ImpactWeight.Slam, Flat(d), 100f);
-                }
+                    return Flat(d).magnitude < eruptRadius && d.y < 4f && HitPlayer(eruptDamage, ImpactWeight.Slam, Flat(d), 100f);
+                })) hit = true;
             });
             AudioManager.Play(Sfx.JawSnap, transform.position + Vector3.up * 4f, 1f, 0.8f);
             yield return Hold(0.18f, (k, dt) => { airY = 1.3f + k * 0.15f; Pose(-80f, 0f, 0f, -3f, 30f); });
@@ -1004,8 +1004,7 @@ namespace ElderTree.Enemies
             keepOffGround = true;
             Thud(1.1f);
             FXManager.Spawn(FXType.SlamRing, transform.position + transform.forward * 1.2f + Vector3.up * 0.05f, Quaternion.identity, 2.4f);
-            if (damage && PlayerAlive && InFront(-2.5f, 4.6f, 2f, 2.5f))
-                HitPlayer(85f, ImpactWeight.Heavy, transform.forward, 50f);
+            if (damage) HitEach(false, () => PlayerAlive && InFront(-2.5f, 4.6f, 2f, 2.5f) && HitPlayer(85f, ImpactWeight.Heavy, transform.forward, 50f));
             Pose(4f, 0f, -0.2f, 20f, 6f);
             swim = 1f;
         }
@@ -1106,7 +1105,7 @@ namespace ElderTree.Enemies
         }
 
         // ================================================================== damage
-        public override bool ReceiveHit(in DamageInfo info)
+        protected override bool LocalReceiveHit(in DamageInfo info)
         {
             if (!IsAlive || State == Mode.Burrowed || State == Mode.Cinematic) return false;
             lastHitTime = Time.time;

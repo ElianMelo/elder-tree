@@ -30,7 +30,8 @@ namespace ElderTree.Masks
         public Material vortexGlowMaterial;
         public float skipAfter = 2.5f;
 
-        public bool Playing { get; private set; }
+        public bool Playing { get => playing; private set { playing = value; Coop.CinematicPlaying = value; } }
+        bool playing;
         /// <summary>The new body's voice (alligator roar, shark tra-la-la...).</summary>
         Sfx Roar => mask != null && mask.form != null ? mask.form.roar : Sfx.CrocRoar;
 
