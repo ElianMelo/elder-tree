@@ -468,6 +468,7 @@ MonoBehaviour:
   - {fileID: -6288072647309666549}
   - {fileID: 7518938298396184218}
   - {fileID: -1410297666881709256}
+  - {fileID: 2366172982290459639}
 --- !u!114 &853819529557874667
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -778,6 +779,64 @@ MonoBehaviour:
   contribution:
     m_OverrideState: 1
     m_Value: 0
+--- !u!114 &2366172982290459639
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b05004dc60d80c543ad3aa8e9e14db3b, type: 3}
+  m_Name: VolumetricFog
+  m_EditorClassIdentifier: ElderTree.Runtime::ElderTree.FX.VolumetricFog
+  active: 1
+  enabled:
+    m_OverrideState: 1
+    m_Value: 0
+  density:
+    m_OverrideState: 1
+    m_Value: 0.06
+  baseHeight:
+    m_OverrideState: 1
+    m_Value: 0.4
+  heightFalloff:
+    m_OverrideState: 1
+    m_Value: 3.5
+  maxDistance:
+    m_OverrideState: 1
+    m_Value: 70
+  steps:
+    m_OverrideState: 1
+    m_Value: 28
+  anisotropy:
+    m_OverrideState: 1
+    m_Value: 0.55
+  noiseScale:
+    m_OverrideState: 1
+    m_Value: 0.09
+  noiseStrength:
+    m_OverrideState: 1
+    m_Value: 0.7
+  wind:
+    m_OverrideState: 1
+    m_Value: {x: 0.35, y: 0.04, z: 0.15}
+  albedo:
+    m_OverrideState: 1
+    m_Value: {r: 0.75, g: 0.9, b: 0.75, a: 1}
+  ambient:
+    m_OverrideState: 1
+    m_Value: {r: 0.05, g: 0.09, b: 0.06, a: 1}
+  mainLightScatter:
+    m_OverrideState: 1
+    m_Value: 0.9
+  localLightScatter:
+    m_OverrideState: 1
+    m_Value: 0.6
+  groundClear:
+    m_OverrideState: 1
+    m_Value: 0.6
 --- !u!114 &3959858460715838825
 MonoBehaviour:
   m_ObjectHideFlags: 3
