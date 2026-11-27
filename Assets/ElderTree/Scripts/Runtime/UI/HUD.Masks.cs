@@ -20,7 +20,7 @@ namespace ElderTree.UI
         readonly float[] maskShake = new float[4];
         VisualElement letterTop, letterBottom, flashRoot, cardRoot;
         Label cardTitle, cardLine, cardHint;
-        float letterbox, letterTarget, flash, cardT = -1f, manaDeny;
+        float letterbox, letterTarget, flash, cardT = -1f, manaDeny, staminaDeny;
         bool cinematicHud, maskAny;
 
         void BuildMasks()
@@ -49,6 +49,7 @@ namespace ElderTree.UI
             cardRoot.style.opacity = 0f;
 
             if (stats != null) stats.ManaDenied += () => manaDeny = 1f;
+            if (stats != null) stats.StaminaDenied += () => staminaDeny = 1f;
             if (player != null) player.FormChanged += _ => RefreshEquipment();
             var ms = MaskSystem.Instance;
             if (ms != null)
@@ -183,6 +184,15 @@ namespace ElderTree.UI
             manaDeny = Mathf.MoveTowards(manaDeny, 0f, dt * 2.5f);
             if (fp != null) fp.frame.style.borderTopColor = fp.frame.style.borderBottomColor = fp.frame.style.borderLeftColor =
                 fp.frame.style.borderRightColor = Color.Lerp(new Color(0.85f, 0.7f, 0.42f, 0.55f), new Color(0.55f, 0.75f, 1f, 1f), manaDeny * (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 30f)));
+
+            // exhausted: the stamina bar goes a dull ochre until it recovers, and blinks when an attack is refused
+            staminaDeny = Mathf.MoveTowards(staminaDeny, 0f, dt * 2.5f);
+            if (st != null && stats != null)
+            {
+                st.frame.EnableInClassList("bar--exhausted", stats.Exhausted);
+                st.frame.style.borderTopColor = st.frame.style.borderBottomColor = st.frame.style.borderLeftColor =
+                    st.frame.style.borderRightColor = Color.Lerp(new Color(0.85f, 0.7f, 0.42f, 0.55f), new Color(0.9f, 0.35f, 0.2f, 1f), staminaDeny * (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 30f)));
+            }
         }
     }
 }

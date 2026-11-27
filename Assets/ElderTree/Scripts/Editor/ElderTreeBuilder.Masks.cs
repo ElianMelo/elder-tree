@@ -328,7 +328,7 @@ namespace ElderTree.EditorTools
                 d.displayName = "Crocodile Hammer";
                 d.explodeOnHit = true; d.explosionRadius = 2.4f; d.explosionDamage = 45f; d.explosionPoise = 20f;
                 d.heavyExplosionScale = 1.4f; d.explodeOnGround = true; d.explosionFxScale = 0.75f; d.breakPower = 1;
-                d.hitStopMultiplier = 1.15f; d.shakeMultiplier = 1.2f;
+                d.hitStopMultiplier = 1.15f; d.shakeMultiplier = 1.2f; d.attackSpeedMultiplier = 0.7f;
             });
             var bow = DataAsset<BowData>(BowDataPath, d => { d.displayName = "Elder Bow"; });
             var cannon = DataAsset<CannonData>(DataDir + "/Equipment/Cannon_Crocodile.asset", d => { d.displayName = "Crocodile Cannon"; });
@@ -338,6 +338,7 @@ namespace ElderTree.EditorTools
             {
                 d.displayName = "Crocodile"; d.rigId = "Croc"; d.rangedKind = RangedKind.Cannon;
                 d.moveSpeedMultiplier = 0.94f; d.rollDistanceMultiplier = 0.92f; d.damageTakenMultiplier = 0.85f; d.ignoreLightFlinch = true;
+                d.exhaustion = true; d.exhaustedRegenDelay = 1f; d.exhaustedRecoverTo = 30f;
             });
             var mask = DataAsset<MaskData>(MaskAlligatorPath, d =>
             {

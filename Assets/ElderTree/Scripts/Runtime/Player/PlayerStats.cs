@@ -4,7 +4,8 @@ using UnityEngine.Serialization;
 namespace ElderTree.Player
 {
     /// <summary>HP / Mana / Stamina with Elden Ring style stamina rules: any positive stamina lets an
-    /// action start (it may go negative), regeneration waits for a short delay after spending.
+    /// action start (it may go negative). Nothing regenerates while an action is under way (<see cref="RegenHeld"/>),
+    /// and regeneration waits <see cref="staminaRegenDelay"/> after the action ends.
     /// Mana pays for the ranged weapons and spells: it refills on its own over time, but
     /// every spend stops the clock for <see cref="manaRegenDelay"/> seconds first.
     /// Special attacks are paid with charges instead: light and heavy hits on an enemy fill them, each
@@ -18,8 +19,16 @@ namespace ElderTree.Player
         public float staminaRegen = 45f;
         public float staminaRegenGuarding = 18f;
         public float staminaRegenDelay = 0.55f;
+
+        [Header("Exhaustion (set per form, see FormData)")]
+        [Tooltip("Running the bar dry exhausts the body: a long pause before regeneration, and no attacks until it recovers.")]
+        public bool exhaustionEnabled;
+        [Tooltip("Seconds after the bar runs dry before regeneration starts.")]
+        public float exhaustedRegenDelay = 1f;
+        [Tooltip("Attacks stay locked until stamina is back up to this much.")]
+        public float exhaustedRecoverTo = 30f;
         [Tooltip("Passive mana regeneration per second.")]
-        [FormerlySerializedAs("focusRegen")] public float manaRegen = 11f;
+        [FormerlySerializedAs("focusRegen")] public float manaRegen = 5.5f;
         [Tooltip("After mana is spent, regeneration stops for this long before it resumes.")]
         public float manaRegenDelay = 2f;
 
@@ -58,12 +67,21 @@ namespace ElderTree.Player
             ? Mathf.Clamp(specialsPerBoss - SpecialsUsedThisFight, 0, maxSpecialCharges)
             : maxSpecialCharges;
         public bool Guarding { get; set; }
+        /// <summary>Set by the controller every frame while the body is busy (attacking, rolling, grabbed, knocked
+        /// down): stamina doesn't regenerate, and the regen delay restarts when the action ends.</summary>
+        public bool RegenHeld { get; set; }
         /// <summary>True while the post-spend pause holds mana regeneration.</summary>
         public bool ManaRegenPaused => Time.time - lastManaSpend < manaRegenDelay;
 
-        float lastSpend = -99, lastManaSpend = -99;
+        /// <summary>The bar ran dry (exhaustion forms only): attacks are refused until it recovers.</summary>
+        public bool Exhausted { get; private set; }
+        public bool CanAttack => !Exhausted;
+
+        float lastSpend = -99, lastManaSpend = -99, exhaustedAt = -99;
 
         public event System.Action Changed;
+        /// <summary>An attack was refused because the body is exhausted (HUD blinks the stamina bar).</summary>
+        public event System.Action StaminaDenied;
         /// <summary>A spend failed for lack of mana (HUD flashes the bar).</summary>
         public event System.Action ManaDenied;
         /// <summary>A special was refused for lack of a charge (HUD shakes the charge slots).</summary>
@@ -91,14 +109,44 @@ namespace ElderTree.Player
             Stamina -= amount;
             if (Stamina < -15f) Stamina = -15f;
             lastSpend = Time.time;
+            CheckExhaustion();
             Changed?.Invoke();
             return true;
+        }
+
+        /// <summary>Pay an attack's stamina: refused outright while exhausted (the punishment for running dry).</summary>
+        public bool TrySpendAttackStamina(float amount)
+        {
+            if (Exhausted)
+            {
+                StaminaDenied?.Invoke();
+                return false;
+            }
+            return TrySpendStamina(amount);
         }
 
         public void DrainStamina(float amountPerSecond, float dt)
         {
             Stamina = Mathf.Max(-5f, Stamina - amountPerSecond * dt);
             lastSpend = Time.time;
+            CheckExhaustion();
+        }
+
+        /// <summary>Hitting zero (again) starts / restarts the exhaustion pause.</summary>
+        void CheckExhaustion()
+        {
+            if (!exhaustionEnabled || Stamina > 0f) return;
+            exhaustedAt = Time.time;
+            Exhausted = true;
+        }
+
+        /// <summary>The form changed: take its exhaustion rules (turning them off clears any exhaustion).</summary>
+        public void SetExhaustion(bool enabled, float regenDelay, float recoverTo)
+        {
+            exhaustionEnabled = enabled;
+            exhaustedRegenDelay = regenDelay;
+            exhaustedRecoverTo = recoverTo;
+            if (!enabled && Exhausted) { Exhausted = false; Changed?.Invoke(); }
         }
 
         public bool HasMana(float amount) => Mana >= amount - 0.001f;
@@ -206,13 +254,27 @@ namespace ElderTree.Player
         {
             Health = maxHealth; Mana = maxMana; Stamina = maxStamina; SpecialCharge = 0f;
             Potions = maxPotions;
+            Exhausted = false;
             Changed?.Invoke();
         }
 
         void Update()
         {
-            if (Time.time - lastSpend > staminaRegenDelay && Stamina < maxStamina)
+            // mid-action (swinging, rolling, grabbed, knocked down): no regeneration, and both the regen
+            // delay and the exhaustion pause only start counting once the action is over
+            if (RegenHeld)
+            {
+                lastSpend = Mathf.Max(lastSpend, Time.time);
+                if (Exhausted) exhaustedAt = Time.time;
+            }
+            bool exhaustPause = Exhausted && Time.time - exhaustedAt < exhaustedRegenDelay;
+            if (!exhaustPause && Time.time - lastSpend > staminaRegenDelay && Stamina < maxStamina)
                 Stamina = Mathf.Min(maxStamina, Stamina + (Guarding ? staminaRegenGuarding : staminaRegen) * Time.deltaTime);
+            if (Exhausted && !exhaustPause && Stamina >= Mathf.Min(exhaustedRecoverTo, maxStamina) - 0.01f)
+            {
+                Exhausted = false;
+                Changed?.Invoke();
+            }
             if (Mana < maxMana && !ManaRegenPaused)
                 Mana = Mathf.Min(maxMana, Mana + manaRegen * Time.deltaTime);
         }

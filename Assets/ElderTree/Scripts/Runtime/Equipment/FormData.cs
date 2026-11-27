@@ -41,6 +41,13 @@ namespace ElderTree.Equipment
         [Tooltip("Light blows don't make this body flinch (it still takes the damage).")]
         public bool ignoreLightFlinch;
 
+        [Header("Stamina exhaustion")]
+        [Tooltip("Running stamina dry exhausts this body: regeneration waits exhaustedRegenDelay, and no attacks " +
+                 "(melee, specials) until stamina is back to exhaustedRecoverTo. Dodges and jumps still work once it refills.")]
+        public bool exhaustion;
+        public float exhaustedRegenDelay = 1f;
+        public float exhaustedRecoverTo = 30f;
+
         [Header("Voice")]
         [Tooltip("Roar when this body appears (transformations, the end of the mask cinematic).")]
         public Sfx roar = Sfx.CrocRoar;

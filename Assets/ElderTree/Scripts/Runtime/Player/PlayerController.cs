@@ -115,6 +115,14 @@ namespace ElderTree.Player
 
         void Start() => cam = Camera.main;
 
+        /// <summary>Busy bodies don't catch their breath: swinging, casting, specials, rolling, grabbed or knocked down.</summary>
+        bool StaminaRegenHeld => State switch
+        {
+            PlayerState.Attack or PlayerState.Special or PlayerState.Cast or PlayerState.Dodge or PlayerState.Held => true,
+            PlayerState.Hit => knockedDown,
+            _ => false
+        };
+
         // ------------------------------------------------------------------ main loop
         void Update()
         {
@@ -174,6 +182,7 @@ namespace ElderTree.Player
             UpdateBowAnimator(dt);
             UpdateLean(dt);
             stats.Guarding = IsGuarding;
+            stats.RegenHeld = StaminaRegenHeld;
             CameraDirector cd = CameraDirector.Instance;
             if (cd != null)
             {

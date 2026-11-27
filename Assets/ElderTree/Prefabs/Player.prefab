@@ -5205,7 +5205,7 @@ MonoBehaviour:
   staminaRegen: 45
   staminaRegenGuarding: 18
   staminaRegenDelay: 0.55
-  manaRegen: 11
+  manaRegen: 5.5
   manaRegenDelay: 2
   maxSpecialCharges: 2
   specialsPerBoss: 2

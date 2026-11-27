@@ -28,5 +28,8 @@ MonoBehaviour:
   rollDistanceMultiplier: 0.92
   damageTakenMultiplier: 0.85
   ignoreLightFlinch: 1
+  exhaustion: 1
+  exhaustedRegenDelay: 1
+  exhaustedRecoverTo: 30
   roar: 29
   roarPitch: 1.35

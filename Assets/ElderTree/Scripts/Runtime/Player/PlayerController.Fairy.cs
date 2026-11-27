@@ -263,7 +263,7 @@ namespace ElderTree.Player
                 AudioManager.Play2D(Sfx.ManaEmpty, 0.8f);
                 return false;
             }
-            if (!stats.TrySpendStamina(m.staminaCost)) return false;
+            if (!stats.TrySpendAttackStamina(m.staminaCost)) return false;
             stats.TrySpendSpecialCharge();
             EndSwing();
             if (State == PlayerState.Aim) ExitAim();

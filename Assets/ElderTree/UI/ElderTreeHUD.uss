@@ -48,6 +48,7 @@
 .bar--st .bar__fill { background-color: rgb(62, 158, 90); }
 .bar--st .bar__chip { background-color: rgb(150, 200, 140); }
 .bar--fp .bar__chip { background-color: rgb(150, 180, 240); }
+.bar--st.bar--exhausted .bar__fill { background-color: rgb(128, 104, 52); }
 
 /* ---------------------------------------------------------------- equipment cross */
 .equip {

@@ -18,6 +18,7 @@ MonoBehaviour:
   poiseMultiplier: 1
   hitStopMultiplier: 1.15
   shakeMultiplier: 1.2
+  attackSpeedMultiplier: 0.7
   explodeOnHit: 1
   explosionRadius: 2.4
   explosionDamage: 45

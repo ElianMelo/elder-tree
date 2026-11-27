@@ -16,6 +16,11 @@ namespace ElderTree.Equipment
         public float hitStopMultiplier = 1f;
         public float shakeMultiplier = 1f;
 
+        [Header("Speed")]
+        [Tooltip("Scales every swing's playback (wind-up, active, recovery) for this weapon: 0.7 = 30% slower. " +
+                 "Hit / combo / cancel windows are normalized, so they stretch with it.")]
+        [Range(0.3f, 2f)] public float attackSpeedMultiplier = 1f;
+
         [Header("Explosion on hit")]
         [Tooltip("Every swing that connects (enemy, obstacle or the ground under a slam) detonates once.")]
         public bool explodeOnHit;

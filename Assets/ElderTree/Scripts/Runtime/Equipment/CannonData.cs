@@ -11,7 +11,7 @@ namespace ElderTree.Equipment
         public Texture2D icon;
 
         [Header("Cost / rate")]
-        public float manaPerShot = 22f;
+        public float manaPerShot = 28.6f;
         [Tooltip("Seconds between shots (the bow can loose about every 0.6 s).")]
         public float fireInterval = 1.5f;
         public float raiseTime = 0.35f;

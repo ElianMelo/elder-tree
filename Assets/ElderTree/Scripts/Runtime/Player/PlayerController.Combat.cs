@@ -31,6 +31,8 @@ namespace ElderTree.Player
 
         bool IsLight(AttackData a) => System.Array.IndexOf(moveset.lightCombo, a) >= 0;
         bool IsHeavy(AttackData a) => System.Array.IndexOf(moveset.heavyCombo, a) >= 0;
+        /// <summary>The weapon's playback scale for every swing phase (the bomb hammer swings slower than the club).</summary>
+        float SwingSpeedScale => Melee != null ? Mathf.Max(0.05f, Melee.attackSpeedMultiplier) : 1f;
 
         public bool StartAttack(AttackData a)
         {
@@ -43,7 +45,7 @@ namespace ElderTree.Player
                 AudioManager.Play2D(Sfx.ManaEmpty, 0.8f);
                 return false;
             }
-            if (!stats.TrySpendStamina(a.staminaCost)) return false;
+            if (!stats.TrySpendAttackStamina(a.staminaCost)) return false;
             if (special) stats.TrySpendSpecialCharge();
 
             EndSwing();
@@ -91,7 +93,7 @@ namespace ElderTree.Player
             {
                 float fade = a.startOffset > 0f ? 0.12f : 0.07f;
                 animator.CrossFadeInFixedTime(a.state, fade, 0, a.startOffset * a.clipLength);
-                animator.SetFloat(HActionSpeed, a.windupSpeed);
+                animator.SetFloat(HActionSpeed, a.windupSpeed * SwingSpeedScale);
             }
             AttackStarted?.Invoke(a);
             return true;
@@ -163,7 +165,7 @@ namespace ElderTree.Player
                 input.Rumble(0.4f * ChargeNormalized, 0.6f, 0.1f);
             }
             animator.CrossFadeInFixedTime(a.state, a.drawFade, 0, a.startOffset * a.clipLength);
-            animator.SetFloat(HActionSpeed, a.windupSpeed);
+            animator.SetFloat(HActionSpeed, a.windupSpeed * SwingSpeedScale);
             AudioManager.Play(Sfx.BladeWhoosh, clubTip.position, 0.7f, 1.3f);
             stateTime = 0f;
         }
@@ -172,7 +174,7 @@ namespace ElderTree.Player
         {
             var a = attack;
             if (inStance) { UpdateStance(a, dt); return; }
-            float speed = attackT < a.hitStart ? a.windupSpeed : attackT < a.hitEnd ? a.activeSpeed : a.recoverySpeed;
+            float speed = (attackT < a.hitStart ? a.windupSpeed : attackT < a.hitEnd ? a.activeSpeed : a.recoverySpeed) * SwingSpeedScale;
 
             // ---- charge: hold the heavy button at the top of the swing
             if (!chargeLocked)

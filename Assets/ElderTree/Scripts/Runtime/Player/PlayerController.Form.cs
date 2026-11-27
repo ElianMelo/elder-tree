@@ -113,6 +113,7 @@ namespace ElderTree.Player
             sprintSpeed = baseSprint * form.moveSpeedMultiplier;
             rollDistance = baseRoll * form.rollDistanceMultiplier;
             backstepDistance = baseBackstep * form.rollDistanceMultiplier;
+            if (stats) stats.SetExhaustion(form.exhaustion, form.exhaustedRegenDelay, form.exhaustedRecoverTo);
             if (footsteps) footsteps.SetAnimator(animator);
 
             animator.Rebind();
@@ -326,7 +327,7 @@ namespace ElderTree.Player
                 AudioManager.Play2D(Sfx.ManaEmpty, 0.8f);
                 return false;
             }
-            if (!stats.TrySpendStamina(s.staminaCost)) return false;
+            if (!stats.TrySpendAttackStamina(s.staminaCost)) return false;
             stats.TrySpendSpecialCharge();
             EndSwing();
             if (State == PlayerState.Aim) ExitAim();

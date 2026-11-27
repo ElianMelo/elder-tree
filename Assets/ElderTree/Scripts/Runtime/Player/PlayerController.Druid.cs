@@ -57,7 +57,7 @@ namespace ElderTree.Player
                 input.Rumble(0.02f, 0.1f, 0.05f);
                 return false;
             }
-            if (!stats.TrySpendStamina(s.staminaCost)) return false;
+            if (!stats.TrySpendAttackStamina(s.staminaCost)) return false;
             EndSwing();
             if (State == PlayerState.Aim) ExitAim();
             SetState(PlayerState.Cast);
@@ -376,7 +376,7 @@ namespace ElderTree.Player
                 AudioManager.Play2D(Sfx.ManaEmpty, 0.8f);
                 return false;
             }
-            if (!stats.TrySpendStamina(s.staminaCost)) return false;
+            if (!stats.TrySpendAttackStamina(s.staminaCost)) return false;
             stats.TrySpendSpecialCharge();
             EndSwing();
             if (State == PlayerState.Aim) ExitAim();
