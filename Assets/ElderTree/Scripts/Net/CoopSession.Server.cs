@@ -37,7 +37,8 @@ namespace ElderTree.Net
                     if (from == HostConnId && svPhase == Phase.Lobby) ServerSetPhase(Phase.Vote);
                     return;
                 case Msg.BackToVote:
-                    if (from == HostConnId && svPhase == Phase.Stage) ServerSetPhase(Phase.Vote);
+                    // not while the party is claiming the spoils: some are done, others still have a mask to pick up
+                    if (from == HostConnId && svPhase == Phase.Stage && (done.Count == 0 || ServerAllDone)) ServerSetPhase(Phase.Vote);
                     return;
                 case Msg.Vote: ServerVote(from, r.Byte()); return;
                 case Msg.Loaded: loaded.Add(from); return;
@@ -182,10 +183,18 @@ namespace ElderTree.Net
             nm.ServerManager.Broadcast(Packet(Msg.VoteState, w.ToArray()), false, Channel.Reliable);
         }
 
+        bool ServerAllDone
+        {
+            get
+            {
+                foreach (var e in roster) if (!done.Contains(e.id)) return false;
+                return true;
+            }
+        }
+
         void ServerCheckDone()
         {
-            if (svPhase != Phase.Stage) return;
-            foreach (var e in roster) if (!done.Contains(e.id)) return;
+            if (svPhase != Phase.Stage || !ServerAllDone) return;
             if (roster.Count > 0) ServerSetPhase(Phase.Vote);
         }
 

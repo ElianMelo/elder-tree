@@ -49,6 +49,8 @@ namespace ElderTree.UI
             var kb = Keyboard.current;
             if (kb != null && kb.f2Key.wasPressedThisFrame && !levelSelect.Travelling)
             {
+                // nobody leaves a won stage before every mask is claimed
+                if (!LevelSelectOpen && Enemies.BossArena.ReturnHeld is string held) { ShowBanner(held); return; }
                 // co-op: the host takes the party back to the stage vote; nobody travels alone
                 if (Coop.InStage) { if (Coop.IsHost) Coop.ReturnToVote(); return; }
                 SetLevelSelect(!LevelSelectOpen);

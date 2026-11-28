@@ -30,6 +30,27 @@ namespace ElderTree.Enemies
 
         BossBase target;
         bool won;
+        static BossArena current;
+
+        /// <summary>Why nobody may head back to the level select / stage vote yet (null = free to go). Every player claims
+        /// their mask first: an unclaimed mask is still out here (it flies to its player after 15 s), its cinematic is
+        /// playing, or (co-op) the boss has fallen: the party then only goes back together, once every player's
+        /// AfterVictory has sent StageDone.</summary>
+        public static string ReturnHeld
+        {
+            get
+            {
+                if (MaskPickup.Active.Count > 0) return "CLAIM THE MASK";
+                var cine = MaskSystem.Instance != null ? MaskSystem.Instance.cinematic : null;
+                if (cine != null && cine.Playing) return "CLAIM THE MASK";
+                // co-op: once the boss falls the party goes back together, when everyone has sent StageDone
+                if (Coop.InStage && current != null && current.won) return "THE PARTY IS STILL CLAIMING THEIR MASKS";
+                return null;
+            }
+        }
+
+        void Awake() => current = this;
+        void OnDestroy() { if (current == this) current = null; }
 
         IEnumerator Start()
         {
@@ -81,16 +102,28 @@ namespace ElderTree.Enemies
             if (!won && player != null && !player.IsDead) encounter.Spawn(target);
         }
 
+        static bool Waiting(Equipment.MaskData m)
+        {
+            foreach (var p in MaskPickup.Active) if (p != null && p.mask == m) return true;
+            return false;
+        }
+
         IEnumerator AfterVictory()
         {
             if (!returnToSelectAfterVictory) yield break;
             var reward = encounter.RewardOf(target);
             var ms = MaskSystem.Instance;
-            // a fresh mask has to be collected first (its cinematic plays); then a short breath and home
+            // a fresh mask has to be collected first (its cinematic plays); then a short breath and home. There is no
+            // time limit: left alone, the mask flies to its player by itself (MaskPickup.autoCollectAfter)
             if (reward != null && ms != null)
             {
                 float wait = 0f;
-                while (!ms.Owns(reward) && wait < 90f) { wait += Time.deltaTime; yield return null; }
+                while (!ms.Owns(reward))
+                {
+                    wait += Time.deltaTime;
+                    if (wait > 8f && !Waiting(reward)) break;   // none dropped for this player (already owned, or it failed to spawn)
+                    yield return null;
+                }
             }
             var cine = FindAnyObjectByType<MaskCinematic>();
             yield return null;

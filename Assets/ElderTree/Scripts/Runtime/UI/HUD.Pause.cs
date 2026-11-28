@@ -243,6 +243,7 @@ namespace ElderTree.UI
         {
             AudioManager.Play2D(Sfx.UISelect, 0.7f);
             if (!ItemVisible(menuIndex)) return;
+            if (menuIndex == 6 && Enemies.BossArena.ReturnHeld is string held) { SetPause(false); ShowBanner(held); return; }
             if (Coop.InStage && menuIndex == 6) { SetPause(false); Coop.ReturnToVote(); return; }
             if (Coop.InStage && menuIndex == 7) { SetPause(false); Coop.Leave(); return; }
             switch (menuIndex)
