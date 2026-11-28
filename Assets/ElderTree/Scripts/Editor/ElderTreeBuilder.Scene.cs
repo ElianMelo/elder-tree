@@ -36,6 +36,7 @@ namespace ElderTree.EditorTools
             log.AppendLine(BuildSharkSet());        // the Shark's reward: shark body, long sword, crossbow, vines
             log.AppendLine(BuildDruidMaskSet());    // the Druid's reward: druid body, staff, Vine Seeker, Verdant Orb
             log.AppendLine(BuildFairyMaskSet());    // the Fairy's reward: fae body, twin daggers, Moon Chakram, Moonfall
+            log.AppendLine(BuildMaskModels());      // what the four masks share: carved wood inside, icons, the pickup
             log.AppendLine(BuildPrefabs());
             log.AppendLine(BuildAudio());
             log.AppendLine(RenderClubIcon());

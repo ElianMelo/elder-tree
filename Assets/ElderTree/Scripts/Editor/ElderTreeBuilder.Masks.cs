@@ -444,33 +444,8 @@ namespace ElderTree.EditorTools
                 Object.DestroyImmediate(root);
             }
 
-            // ---- mask pickup: hovering mask, toxic glow, rising motes
-            {
-                var root = new GameObject("MaskPickup");
-                var modelRoot = Child("Model", root.transform, Vector3.up);
-                var model = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(MaskModelPath));
-                model.transform.SetParent(modelRoot.transform, false);
-                model.transform.localScale = Vector3.one * 1.8f;
-                foreach (var r in model.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = ShadowCastingMode.On;
-                var lg = Child("Glow", modelRoot.transform, Vector3.zero).AddComponent<Light>();
-                lg.type = LightType.Point; lg.color = TextureForge.Hex("#B8C03A"); lg.range = 6f; lg.intensity = 4f; lg.shadows = LightShadows.None;
-                var ps = NewPS("Motes", M("M_FX_Firefly"), out _);
-                ps.transform.SetParent(root.transform, false);
-                ps.transform.localPosition = Vector3.up * 0.2f;
-                var m = ps.main; m.loop = true; m.playOnAwake = true; m.duration = 2f;
-                m.startLifetime = new ParticleSystem.MinMaxCurve(1.2f, 2.2f); m.startSpeed = new ParticleSystem.MinMaxCurve(0.3f, 0.9f);
-                m.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.09f); m.gravityModifier = -0.15f; m.maxParticles = 60;
-                m.startColor = new ParticleSystem.MinMaxGradient(TextureForge.Hex("#C8D040"), TextureForge.Hex("#8A2A18"));
-                var em = ps.emission; em.rateOverTime = 14f;
-                var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Circle; sh.radius = 0.6f; sh.rotation = new Vector3(-90, 0, 0);
-                var col = ps.colorOverLifetime; col.enabled = true; col.color = Grad(Color.white, Color.white, 1f, 0f);
-                var pick = root.AddComponent<MaskPickup>();
-                pick.model = modelRoot.transform;
-                pick.glow = lg;
-                pick.motes = ps;
-                PrefabUtility.SaveAsPrefabAsset(root, PickupPrefabPath);
-                Object.DestroyImmediate(root);
-            }
+            // ---- mask pickup: holds whichever mask dropped (ElderTreeBuilder.MaskModels.cs)
+            BuildMaskPickupPrefab();
 
             // ---- rock chunks (debris of a shattered obstacle)
             var chunkSrc = AssetDatabase.LoadAllAssetsAtPath(ChunksPath).OfType<Mesh>().OrderBy(x => x.name).ToArray();
