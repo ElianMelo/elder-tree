@@ -156,6 +156,9 @@ namespace ElderTree.Enemies
         float flash, eyeGlow = 1f, sway;
         bool keepOffGround;
         int holdHand = -1;
+        /// <summary>The tree in the fist. Kept apart from Aggro: in co-op the hunt may switch mid-hold, and the squeezes,
+        /// the throw and the drop must still reach the one actually held (or it would be left pinned for good).</summary>
+        PlayerController heldTree;
 
         // rig rest data (root-relative)
         bool rigReady;
@@ -843,7 +846,7 @@ namespace ElderTree.Enemies
                 float d = Mathf.Min(Vector3.Distance(p, palm[i].position), SegDist(p, palm[i].position, tip));
                 if (d < bestD) { bestD = d; best = i; }
             }
-            if (best >= 0 && Player.TryGrab()) return best;
+            if (best >= 0 && Player.TryGrab()) { heldTree = Player; return best; }
             return -1;
         }
 
@@ -918,7 +921,7 @@ namespace ElderTree.Enemies
                 tHand[other] = handRest[other]; tCurl[other] = 0f;
             });
             int squeezes = phaseTwo ? 3 : 2;
-            for (int s = 0; s < squeezes && Player != null && Player.IsHeld; s++)
+            for (int s = 0; s < squeezes && heldTree != null && heldTree.IsHeld; s++)
             {
                 currentMove = "Squeeze";
                 Groan(1.4f, 0.45f);
@@ -928,11 +931,11 @@ namespace ElderTree.Enemies
                     tHand[i] = Arm(i, -0.9f, 3.4f + Mathf.Sin(k * 40f) * 0.05f, 2.6f);
                     agitation = Mathf.Max(agitation, 0.5f);
                 });
-                Player.HeldSqueeze(squeezeDamage, palm[i].position);
+                heldTree.HeldSqueeze(squeezeDamage, palm[i].position);
                 AudioManager.Play(Sfx.RootSnap, palm[i].position, 0.8f, 0.9f);
                 yield return Hold(0.3f, (k, dt) => tCurl[i] = Mathf.Lerp(88f, 66f, k));
             }
-            if (Player == null || !Player.IsHeld) { holdHand = -1; yield return Recover(0.6f, "Recover"); yield break; }
+            if (heldTree == null || !heldTree.IsHeld) { holdHand = -1; heldTree = null; yield return Recover(0.6f, "Recover"); yield break; }
             // the throw: winds up high, then hurls you down into the dirt in front of it
             currentMove = "Throw";
             Groan(1f, 0.9f);
@@ -941,6 +944,7 @@ namespace ElderTree.Enemies
                 tHand[i] = Arm(i, 0.3f, 3.6f, -0.2f);
                 tTorsoPitch = -10f; tCrouch = 0.05f;
             });
+            if (heldTree == null || !heldTree.IsHeld) { holdHand = -1; heldTree = null; yield return Recover(0.6f, "Recover"); yield break; }
             Vector3 slamAt = Ground(transform.position + Heading * 4.6f);
             handSharp = 22f;
             sharp = 12f;
@@ -951,9 +955,11 @@ namespace ElderTree.Enemies
                 tTorsoPitch = 28f; tCrouch = 0.35f;
             });
             holdHand = -1;
-            Player.ReleaseHeld(new DamageInfo
+            var thrown = heldTree;
+            heldTree = null;
+            if (thrown != null) thrown.ReleaseHeld(new DamageInfo
             {
-                damage = throwDamage, poiseDamage = 100f, point = PlayerPos + Vector3.up,
+                damage = throwDamage, poiseDamage = 100f, point = thrown.transform.position + Vector3.up,
                 direction = Heading, weight = ImpactWeight.Slam, source = gameObject
             }, Heading * 5f + Vector3.down * 6f);
             Thud(slamAt, 1.2f);
@@ -966,7 +972,9 @@ namespace ElderTree.Enemies
         void ReleaseHeld(bool _)
         {
             holdHand = -1;
-            if (Player != null && Player.IsHeld) Player.DropHeld();
+            var h = heldTree;
+            heldTree = null;
+            if (h != null && h.IsHeld) h.DropHeld();
         }
 
         // ================================================================== recover (punish windows)
@@ -1383,11 +1391,11 @@ namespace ElderTree.Enemies
             }
 
             // ---- the grabbed player rides in the fist, facing the face
-            if (holdHand >= 0 && Player != null && Player.IsHeld && palm[holdHand])
+            if (holdHand >= 0 && heldTree != null && heldTree.IsHeld && palm[holdHand])
             {
                 Vector3 p = palm[holdHand].position - Vector3.up * 1f;
                 Vector3 toFace = Flat(head.position - p);
-                Player.SetHeldPose(p, Quaternion.LookRotation(toFace.sqrMagnitude > 0.01f ? toFace : -Heading));
+                heldTree.SetHeldPose(p, Quaternion.LookRotation(toFace.sqrMagnitude > 0.01f ? toFace : -Heading));
             }
 
             UpdateLeaves(dt, speed, t);

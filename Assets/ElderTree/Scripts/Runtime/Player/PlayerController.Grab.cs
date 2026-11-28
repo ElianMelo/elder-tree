@@ -15,7 +15,9 @@ namespace ElderTree.Player
     public partial class PlayerController
     {
         public bool IsHeld => State == PlayerState.Held;
-        float heldAnimT;
+        float heldAnimT, heldPosedAt;
+        /// <summary>A hold the grabber stops posing for this long is over: the body drops (no hand may keep it forever).</summary>
+        const float HeldOrphanTime = 1f;
 
         /// <summary>A hand closes on us. False when dodged (i-frames), dead, or busy with something that owns the body.</summary>
         public bool TryGrab()
@@ -40,6 +42,7 @@ namespace ElderTree.Player
             motor.SetVerticalVelocity(0f);
             motor.Controller.enabled = false;
             heldAnimT = 0f;
+            heldPosedAt = Time.time;
             animator.CrossFadeInFixedTime("HitHeavy", 0.06f);
             animator.SetFloat(HActionSpeed, 1f);
             AudioManager.Play(Sfx.PlayerHurt, transform.position + Vector3.up, 0.8f, 0.85f);
@@ -51,7 +54,9 @@ namespace ElderTree.Player
         /// <summary>The grabber places the body each frame (after it has posed its hand).</summary>
         public void SetHeldPose(Vector3 position, Quaternion rotation)
         {
-            if (IsHeld) transform.SetPositionAndRotation(position, rotation);
+            if (!IsHeld) return;
+            transform.SetPositionAndRotation(position, rotation);
+            heldPosedAt = Time.time;
         }
 
         /// <summary>The hand crushes: HP only, no flinch (we're already pinned). Can kill.</summary>
@@ -109,6 +114,8 @@ namespace ElderTree.Player
 
         void UpdateHeld(float dt)
         {
+            // the hand let go some way that never told us (disabled, swapped targets): fall instead of hanging there
+            if (Time.time - heldPosedAt > HeldOrphanTime) { DropHeld(); return; }
             // struggle: replay the heavy flinch now and then so the body keeps writhing in the fist
             heldAnimT += dt;
             if (heldAnimT > 0.9f)

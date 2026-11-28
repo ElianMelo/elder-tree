@@ -137,6 +137,14 @@ namespace ElderTree.Player
                 animator.SetFloat(HActionSpeed, standUpSpeed);
                 hitDuration = stateTime + standUpTime;
             }
+            // knocked onto something that never counts as ground (a ledge lip, a boss's body): don't hang in the
+            // flinch, fall like any other airborne body (the Air state lands and takes input)
+            if (!motor.Grounded && stateTime > hitDuration + 1.5f && (!knockedDown || stateTime > knockdownTime + 1.5f))
+            {
+                knockedDown = standingUp = false;
+                EnterAir(false);
+                return;
+            }
             if (stateTime > hitDuration && motor.Grounded && (!knockedDown || standingUp))
             {
                 if (!knockedDown && (motor.LandedThisFrame || stateTime < hitDuration + 0.02f)) FXManager.Spawn(FXType.LandDust, transform.position, Quaternion.identity, 0.6f);
