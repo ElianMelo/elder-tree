@@ -173,7 +173,8 @@ namespace ElderTree.Masks
                     {
                         maskObj.transform.position = hand.position + F * 0.1f + Vector3.up * 0.04f;
                         maskObj.transform.rotation = Quaternion.LookRotation(F) * Quaternion.Euler(-10f, 0, 0);
-                        maskObj.transform.localScale = Vector3.one * Mathf.Lerp(0.6f, 1f, Mathf.Clamp01(t / 0.4f));
+                        float fit = fromRig.faceSocket != null ? fromRig.faceSocket.lossyScale.x : 1f;
+                        maskObj.transform.localScale = Vector3.one * (fit * Mathf.Lerp(0.6f, 1f, Mathf.Clamp01(t / 0.4f)));
                     }
                     else FaceMask(1f + 0.25f * Mathf.Exp(-(t - 1.25f) * 10f));
                 }
@@ -380,8 +381,9 @@ namespace ElderTree.Masks
         {
             var socket = fromRig.faceSocket != null ? fromRig.faceSocket : head;
             if (socket == null || maskObj == null) return;
+            // the socket carries each body's fit: pushed out past a snout or brow, and sized to the head
             maskObj.transform.SetPositionAndRotation(socket.position, socket.rotation);
-            maskObj.transform.localScale = Vector3.one * scale;
+            maskObj.transform.localScale = socket.lossyScale * scale;
         }
 
         void TintVortex(float t, float k)

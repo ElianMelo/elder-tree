@@ -64,6 +64,11 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: M_Leather
     second: {fileID: 2100000, guid: b578e1ae40847d747b02dcbc23e84e5a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_MaskWood
+    second: {fileID: 2100000, guid: bd7cabb5f420c4543ba35921856762a0, type: 2}
   materials:
     materialImportMode: 1
     materialName: 0

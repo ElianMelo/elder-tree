@@ -1,4 +1,5 @@
 using System.IO;
+using ElderTree.Equipment;
 using ElderTree.Masks;
 using UnityEditor;
 using UnityEngine;
@@ -7,17 +8,68 @@ using UnityEngine.Rendering;
 namespace ElderTree.EditorTools
 {
     /// <summary>
-    /// The pickup a felled boss leaves behind: it shows the mask it holds, strikes down in a column of light in the
-    /// mask's colour, and flies to its player if left alone too long.
+    /// What the four reward masks share: the carved wood inside every mask (M_MaskWood, see Tools/Blender/mask_shell.py
+    /// for the plate itself), their HUD icons, and the pickup a felled boss leaves behind (it shows the mask it holds,
+    /// strikes down in a column of light in the mask's colour, and flies to its player if left alone too long).
+    /// Run after the four mask sets have imported their models (BuildAll does).
     /// </summary>
     public static partial class ElderTreeBuilder
     {
-        [MenuItem("Elder Tree/8e. Mask Pickup (pickup prefab)")]
+        static string[] AllMaskModelPaths => new[] { MaskModelPath, SharkMaskModelPath, DruidMaskModelPath, FairyMaskModelPath };
+
+        [MenuItem("Elder Tree/8e. Mask Models + Pickup (wood, icons, pickup prefab)")]
         public static string BuildMaskModels()
         {
+            var wood = BuildMaskWood();
+            int remapped = 0;
+            foreach (var path in AllMaskModelPaths)
+            {
+                var imp = AssetImporter.GetAtPath(path) as ModelImporter;
+                if (imp == null) { Debug.LogError($"[ElderTree] Missing {path}"); continue; }
+                imp.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), "M_MaskWood"), wood);
+                imp.SaveAndReimport();
+                remapped++;
+            }
+            // icons follow the new faces
+            int icons = 0;
+            foreach (var guid in AssetDatabase.FindAssets("t:MaskData"))
+            {
+                var m = AssetDatabase.LoadAssetAtPath<MaskData>(AssetDatabase.GUIDToAssetPath(guid));
+                if (m == null || m.maskModel == null) continue;
+                string name = m.icon != null ? m.icon.name : "Icon_" + m.name.Replace("Mask_", "") + "Mask";
+                var tex = RenderIcon(AssetDatabase.GetAssetPath(m.maskModel), name, Quaternion.Euler(-10, 200, 0));
+                if (tex != null) { m.icon = tex; EditorUtility.SetDirty(m); icons++; }
+            }
             BuildMaskPickupPrefab();
             AssetDatabase.SaveAssets();
-            return "Mask pickup prefab rebuilt";
+            return $"Mask models: wood on {remapped} masks, {icons} icons, pickup prefab rebuilt";
+        }
+
+        /// <summary>Bare carved wood: warm honey-brown grain running up the mask, gouge marks from the carving knife, and
+        /// the darker patina where it has been worn against a face.</summary>
+        static Material BuildMaskWood()
+        {
+            var Hex = (System.Func<string, Color>)TextureForge.Hex;
+            var tex = TextureForge.SavePsx("T_MaskWood", 128, (u, v, x, y) =>
+            {
+                float warp = TextureForge.Fbm(u, v, 3, 2, 3, 901) - 0.5f;
+                float rings = Mathf.Sin((u * 7f + warp * 2.6f) * Mathf.PI * 2f) * 0.5f + 0.5f;
+                float fib = TextureForge.Fbm(u, v, 40, 3, 3, 902);
+                var c = Color.Lerp(Hex("#3E2716"), Hex("#8C5F37"), 0.25f + 0.4f * rings + 0.35f * fib);
+                // knife gouges: shallow horizontal scoops, each darker along its lower lip
+                float row = v * 9f + (TextureForge.Fbm(u, v, 5, 3, 2, 903) - 0.5f) * 0.9f;
+                float fr = row - Mathf.Floor(row);
+                c *= 0.82f + 0.24f * Mathf.Sin(fr * Mathf.PI) - 0.2f * Mathf.Clamp01((0.12f - fr) / 0.12f);
+                // worn patina and a few knots
+                float wear = TextureForge.Fbm(u, v, 4, 4, 3, 904);
+                c = Color.Lerp(c, Hex("#24160D"), Mathf.Clamp01((wear - 0.58f) * 3f) * 0.6f);
+                TextureForge.Worley(u, v, 3, 905, out float f1, out _, out int id);
+                if (id % 3 == 0 && f1 < 0.06f) c = Color.Lerp(c, Hex("#1E120A"), 0.7f * (1f - f1 / 0.06f));
+                return c;
+            }, mips: false);
+            var mat = Lit("M_MaskWood", Color.white, tex, null, 0f, 1f, null, false);
+            Matte(mat);
+            return mat;
         }
 
         /// <summary>A soft vertical column: bright core fading to the edges, fading in at its foot and out as it rises (additive).</summary>

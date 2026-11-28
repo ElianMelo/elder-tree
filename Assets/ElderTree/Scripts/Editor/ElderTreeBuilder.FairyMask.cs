@@ -35,7 +35,8 @@ namespace ElderTree.EditorTools
         public const string FormFairyPath = DataDir + "/Forms/Form_Fairy.asset";
         public const string MaskFairyPath = DataDir + "/Masks/Mask_Fairy.asset";
         public const string FairyControllerPath = AnimDir + "/ElderTree_Fairy.overrideController";
-        public static Vector3 FairyFacePos = new Vector3(0f, 1.67f, 0.17f);
+        public static Vector3 FairyFacePos = new Vector3(0f, 1.67f, 0.185f);
+        public static float FairyMaskScale = 0.95f;
 
         static readonly string[] FairyFormMats =
         {
@@ -622,6 +623,7 @@ namespace ElderTree.EditorTools
             fr.mainWeaponHandSocket = right.socket;
             fr.wings = wings;
             fr.faceSocket = Socket("FaceSocket", anim.GetBoneTransform(HumanBodyBones.Head), FairyFacePos, Quaternion.identity);
+            fr.faceSocket.localScale = Vector3.one * FairyMaskScale;
             model.SetActive(false);
 
             pc.chakramPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ChakramPrefabPath)?.GetComponent<Chakram>();

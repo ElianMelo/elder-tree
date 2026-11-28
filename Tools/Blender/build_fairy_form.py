@@ -30,6 +30,14 @@ import random
 import sys
 from mathutils import Vector, noise
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(globals().get("__file__", os.path.join("Tools", "Blender", "x.py")))))
+sys.dont_write_bytecode = True
+import importlib  # noqa: E402
+import mask_shell  # noqa: E402  (shared Majora-style face plate for the reward mask)
+importlib.reload(mask_shell)
+# TS_ONLY=CrocMask.fbx,... exports just those files (the rest of the set is still built, not written)
+ONLY = {n.strip() for n in os.environ.get("TS_ONLY", "").split(",") if n.strip()}
+
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 EXPORT = globals().get("TS_EXPORT", True)
 OUT = os.path.abspath(argv[0] if argv else os.path.join(os.path.dirname(os.path.abspath(globals().get("__file__", "."))), "export"))
@@ -53,6 +61,7 @@ MAT_RGB = {
 }
 TILE = {"M_FairySkin": 0.35, "M_FairyDress": 0.45, "M_FairyHair": 0.35, "M_FairyTrim": 0.2, "M_FairyHollow": 0.5,
         "M_FairyBlade": 0.25, "M_FairyGrip": 0.12}
+mask_shell.register(MAT_RGB, TILE)
 FLAT = ("M_FairyEye", "M_FairyGem")
 rng = random.Random(5151)
 
@@ -295,7 +304,7 @@ def select_only(objs):
 
 
 def export(path, objs, types=frozenset({'MESH', 'EMPTY'})):
-    if not EXPORT:
+    if not EXPORT or (ONLY and path not in ONLY):
         return
     os.makedirs(OUT, exist_ok=True)
     select_only(objs)
@@ -587,25 +596,25 @@ place([ch_ob], 1.5)
 # MASK (reward item): a porcelain fae face, pointed ears, glowing eyes, a white fringe, little temple wings
 # =================================================================================================
 mask = Part("FairyMask")
-MF = [(-0.12, 0.04, 0.06, 0.02), (-0.06, 0.085, 0.1, 0.0), (0.02, 0.1, 0.11, -0.005), (0.09, 0.09, 0.1, 0.0), (0.14, 0.06, 0.07, 0.02)]
-rings = []
-for (z, rx, ry, y) in MF:      # a shallow shell: only the front half, curved
-    rings.append([V((math.cos(a) * rx, y - math.sin(a) * ry * 0.45, z)) for a in (math.radians(d) for d in range(-10, 191, 25))])
-mask.loft(rings, "M_FairySkin", closed=False)
-mask.loft([list(reversed(r)) for r in rings], "M_FairySkin", closed=False)
+sh = mask_shell.Shell(profile=[(0.0, 0.04), (0.1, 0.09), (0.25, 0.138), (0.45, 0.166), (0.65, 0.176), (0.82, 0.17),
+                               (0.93, 0.146), (1.0, 0.096)], z0=-0.24, z1=0.2, y0=-0.06, crown=0.75)
+sh.build(mask, "M_FairySkin", strap="M_FairyTrim")
 for s in (-1, 1):
-    mask.disc(V((s * 0.04, -0.047, 0.035)), V((s * 0.3, -1, 0)), 0.026, "M_FairyHollow", sides=6, depth=0.004, squash=0.55)
-    mask.disc(V((s * 0.04, -0.05, 0.035)), V((s * 0.3, -1, 0)), 0.016, "M_FairyEye", sides=5, depth=0.003, squash=0.6)
-    mask.spike(V((s * 0.085, -0.01, 0.03)), V((s * 0.18, 0.02, 0.12)), V((0, 1, 0)), 0.02, "M_FairySkin", sides=3)
-mask.spike(V((0, -0.052, 0.02)), V((0, -0.07, -0.015)), V((1, 0, 0)), 0.01, "M_FairySkin", sides=3)
-tube(mask, [V((-0.09, -0.03, 0.1)), V((-0.045, -0.06, 0.125)), V((0, -0.065, 0.13)), V((0.045, -0.06, 0.125)), V((0.09, -0.03, 0.1))],
-     [0.018, 0.022, 0.024, 0.022, 0.018], 4, "M_FairyHair", jag=0.12, seed=301)
-mask.octa(V((0, -0.064, 0.085)), 0.012, "M_FairyGem", stretch=1.3, axis=2)
+    mask_shell.socket(mask, sh, s * 0.068, 0.035, 0.044, "M_FairyHollow", "M_FairyEye", eye_r=0.024, squash=0.55,
+                      tilt=s * 0.22)
+    mask_shell.band(mask, sh, [(s * 0.072, 0.0), (s * 0.075, -0.035), (s * 0.08, -0.07)], [0.008, 0.006, 0.002], "M_FairyHollow")
+    e = sh.rim(0.56, s)                                   # long pointed ears
+    mask.spike(e + V((-s * 0.01, 0.01, 0)), e + V((s * 0.13, 0.05, 0.11)), V((0, 1, 0)), 0.03, "M_FairySkin", sides=3)
+mask.spike(sh.at(0, 0.0, 0.002), sh.at(0, -0.04, 0.018), V((1, 0, 0)), 0.012, "M_FairySkin", sides=3)
+mask_shell.band(mask, sh, [(-0.03, -0.135), (0.0, -0.128), (0.03, -0.135)], [0.008, 0.014, 0.008], "M_FairyChakram")
+tube(mask, [sh.at(x, 0.155 - 1.4 * x * x, 0.012) for x in (-0.14, -0.1, -0.05, 0.0, 0.05, 0.1, 0.14)],
+     [0.02, 0.026, 0.03, 0.032, 0.03, 0.026, 0.02], 4, "M_FairyHair", jag=0.14, seed=301)
+mask.octa(sh.at(0, 0.098, 0.014), 0.016, "M_FairyGem", stretch=1.4, axis=2)
 mask_ob = mask.finish(weld=False)
 mwings = []
 for s in (1, -1):
     L = "L" if s > 0 else "R"
-    mwings.append(wing(f"MaskWing_{L}", V((s * 0.1, 0.0, 0.08)), s, 0, 80, 0.12, 0.6, 0.3, 30, cup=0.01, cols=6))
+    mwings.append(wing(f"MaskWing_{L}", sh.rim(0.78, s) + V((0, 0.02, 0)), s, 0, 80, 0.17, 0.6, 0.3, 30, cup=0.01, cols=6))
 select_only([mask_ob] + mwings)
 bpy.context.view_layer.objects.active = mask_ob
 bpy.ops.object.join()

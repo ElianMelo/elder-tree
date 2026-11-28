@@ -53,7 +53,8 @@ namespace ElderTree.EditorTools
         public static Vector3 SwordHipDir = new Vector3(0.12f, -0.45f, -1f);
         public static Vector3 CrossbowHipPos = new Vector3(-0.27f, 1.0f, -0.08f);
         public static Vector3 CrossbowHipFwd = new Vector3(0.08f, -1f, -0.45f);
-        public static Vector3 SharkFacePos = new Vector3(0f, 1.72f, 0.24f);
+        public static Vector3 SharkFacePos = new Vector3(0f, 1.72f, 0.37f);   // past the snout
+        public static float SharkMaskScale = 1.05f;
 
         [MenuItem("Elder Tree/8b. Build Shark Mask set")]
         public static string BuildSharkSet()
@@ -594,6 +595,7 @@ namespace ElderTree.EditorTools
             fr.cannonRig = rig;
             fr.twoHandGrip = grip;
             fr.faceSocket = Socket("FaceSocket", anim.GetBoneTransform(HumanBodyBones.Head), SharkFacePos, Quaternion.identity);
+            fr.faceSocket.localScale = Vector3.one * SharkMaskScale;
             model.SetActive(false);
 
             pc.boltPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BoltPrefabPath)?.GetComponent<ArrowProjectile>();

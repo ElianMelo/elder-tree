@@ -30,6 +30,14 @@ import os
 import sys
 from mathutils import Vector, noise
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(globals().get("__file__", os.path.join("Tools", "Blender", "x.py")))))
+sys.dont_write_bytecode = True
+import importlib  # noqa: E402
+import mask_shell  # noqa: E402  (shared Majora-style face plate for the reward mask)
+importlib.reload(mask_shell)
+# TS_ONLY=CrocMask.fbx,... exports just those files (the rest of the set is still built, not written)
+ONLY = {n.strip() for n in os.environ.get("TS_ONLY", "").split(",") if n.strip()}
+
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 EXPORT = globals().get("TS_EXPORT", True)
 OUT = os.path.abspath(argv[0] if argv else os.path.join(os.path.dirname(os.path.abspath(globals().get("__file__", "."))), "export"))
@@ -54,6 +62,7 @@ MAT_RGB = {
 # metres per texture tile (box projection)
 TILE = {"M_CrocHide": 0.9, "M_CrocBelly": 0.7, "M_CrocMouth": 0.6, "M_CrocTeeth": 0.4, "M_BomberMetal": 1.6,
         "M_Iron": 1.0, "M_BombIron": 0.6, "M_BombBand": 0.6, "M_Leather": 0.8, "M_CrackedStone": 2.4}
+mask_shell.register(MAT_RGB, TILE)
 FLAT = ("M_CrocEye", "M_BomberGlass")
 
 # ----------------------------------------------------------------------------------------------- skeleton
@@ -274,7 +283,7 @@ def select_only(objs):
 
 
 def export(path, objs, types=frozenset({'MESH', 'EMPTY'})):
-    if not EXPORT:
+    if not EXPORT or (ONLY and path not in ONLY):
         return
     os.makedirs(OUT, exist_ok=True)
     select_only(objs)
@@ -661,27 +670,43 @@ export("CrocCannon.fbx", [cannon, muzzle])
 # MASK: the reward item. Front along -Y, origin at the face centre.
 # =================================================================================================
 mk = Part("CrocMask")
-# curved face plate (half lathe, open behind)
-face_rings = []
-for z, r, y in ((-0.13, 0.11, 0.0), (-0.06, 0.15, -0.02), (0.03, 0.16, -0.03), (0.11, 0.14, -0.02), (0.17, 0.09, 0.01)):
-    face_rings.append([V((math.cos(a) * r, y + math.sin(a) * r * 0.7, z)) for a in (math.radians(d) for d in range(185, 356, 17))])
-mk.loft(face_rings, "M_CrocHide", closed=False)
-# snout
-MS = [(-0.08, 0.0, 0.07, 0.09), (-0.2, -0.02, 0.055, 0.075), (-0.3, -0.03, 0.045, 0.065), (-0.34, -0.03, 0.03, 0.045)]
-tube(mk, [(0, y, z) for y, z, _, _ in MS], [(v, h) for _, _, v, h in MS], 6, "M_CrocHide", ref=V((0, 0, 1)),
-     phase=math.pi / 6, cap0=False)
+sh = mask_shell.Shell(profile=[(0.0, 0.065), (0.1, 0.125), (0.25, 0.162), (0.45, 0.186), (0.65, 0.196), (0.82, 0.188),
+                               (0.93, 0.162), (1.0, 0.11)], y0=-0.06)
+sh.build(mk, lambda x, z: "M_CrocBelly" if z < -0.16 else "M_CrocHide", strap="M_Leather")
+# the snout juts out of the middle of the plate; the jaw line under it is an open mouth with a row of teeth
+yS = sh.y(0.0, -0.03)
+SN = [((0, yS + 0.02, -0.03), (0.072, 0.10)), ((0, yS - 0.08, -0.055), (0.06, 0.084)),
+      ((0, yS - 0.16, -0.068), (0.047, 0.067)), ((0, yS - 0.215, -0.07), (0.03, 0.046))]
+tube(mk, [p for p, _ in SN], [r for _, r in SN], 6, "M_CrocHide", ref=V((0, 0, 1)), phase=math.pi / 6, cap0=False)
+
+
+def snout_at(f):
+    k = min(int(f * (len(SN) - 1)), len(SN) - 2)
+    t = f * (len(SN) - 1) - k
+    (a, ra), (b, rb) = SN[k], SN[k + 1]
+    return V(a).lerp(V(b), t), (ra[0] + (rb[0] - ra[0]) * t, ra[1] + (rb[1] - ra[1]) * t)
+
+
 for s in (-1, 1):
-    for k in range(4):
-        y = -0.12 - k * 0.06
-        mk.spike((s * (0.07 - k * 0.007), y, -0.04), (s * (0.072 - k * 0.007), y, -0.085), V((0, 1, 0)), 0.01, "M_CrocTeeth")
-    # eye holes: glowing slits under heavy brows
-    tube(mk, [(s * 0.065, -0.115, 0.07), (s * 0.065, -0.125, 0.07)], [(0.02, 0.034), (0.016, 0.028)], 6, "M_CrocEye",
-         ref=V((0, 0, 1)))
-    mk.spike((s * 0.04, -0.11, 0.11), (s * 0.11, -0.06, 0.15), V((0, 1, 0)), 0.03, "M_CrocHide", sides=4)
-    # leather strap stubs
-    mk.loft([[V((s * 0.155, 0.0, 0.0)), V((s * 0.155, 0.0, 0.05))], [V((s * 0.16, 0.08, 0.0)), V((s * 0.16, 0.08, 0.05))]],
-            "M_Leather", closed=False)
-scute_row(mk, [(0, -0.05, 0.17), (0, 0.0, 0.18), (0, 0.04, 0.17)], 0.05, 0.022, V((0, 0.4, 1)))
+    for k, f in enumerate((0.3, 0.48, 0.66, 0.84)):
+        c, (rv, rh) = snout_at(f)
+        base = c + V((s * rh * 0.82, 0, -rv * 0.5))
+        mk.spike(base, base + V((s * 0.004, 0, -0.03 - 0.004 * (k % 2))), V((0, 1, 0)), 0.009, "M_CrocTeeth")
+    c, (rv, rh) = snout_at(0.95)
+    mk.spike(c + V((s * 0.018, 0, rv * 0.7)), c + V((s * 0.022, -0.004, rv * 0.7 + 0.022)), V((0, 1, 0)), 0.01, "M_CrocHide")
+    # slit eyes high on the brow, under heavy ridges
+    mask_shell.socket(mk, sh, s * 0.088, 0.078, 0.036, "M_CrocMouth", "M_CrocEye", eye_r=0.02, squash=0.55, tilt=s * 0.2)
+    b0 = sh.at(s * 0.045, 0.118, 0.004)
+    mk.spike(b0, b0 + V((s * 0.085, 0.03, 0.045)), V((0, 1, 0)), 0.026, "M_CrocHide", sides=4)
+mouth = [(x, -0.138 - 0.06 * x * x / 0.017) for x in (-0.13, -0.09, -0.045, 0.0, 0.045, 0.09, 0.13)]
+mask_shell.band(mk, sh, mouth, [0.016, 0.026, 0.032, 0.034, 0.032, 0.026, 0.016], "M_CrocMouth")
+for k, x in enumerate((-0.11, -0.075, -0.04, 0.04, 0.075, 0.11)):
+    z = -0.138 - 0.06 * x * x / 0.017 - 0.012
+    p = sh.at(x, z, 0.004)
+    mk.spike(p, p + V((0, -0.004, 0.026 + 0.006 * (k % 2))), V((0, 1, 0)), 0.008, "M_CrocTeeth")
+# osteoderm spikes round the crown and down the cheeks (Majora's spikes, in croc armour)
+mask_shell.rim_spikes(mk, sh, (0.5, 0.64, 0.77, 0.88, 0.96), 0.055, 0.017, "M_CrocHide", lean=0.25)
+scute_row(mk, [sh.at(0, z, 0.002) for z in (0.13, 0.168)], 0.04, 0.018, V((0, 0.1, 1)))
 mask = mk.finish(smooth_angle=35)
 place([mask], 3.4)
 export("CrocMask.fbx", [mask], {'MESH'})

@@ -42,6 +42,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: M_MaskWood
+    second: {fileID: 2100000, guid: bd7cabb5f420c4543ba35921856762a0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: M_Rope
     second: {fileID: 2100000, guid: ea4c3bfb31244dd4da6ea3b74c3c6e91, type: 2}
   - first:

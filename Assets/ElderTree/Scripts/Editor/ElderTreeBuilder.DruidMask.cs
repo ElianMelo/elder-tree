@@ -45,7 +45,7 @@ namespace ElderTree.EditorTools
         static readonly string[] DruidFormMats = { "M_DruidBark", "M_DruidRoot", "M_DruidLeaf", "M_DruidEye", "M_DruidHollow", "M_DruidGlow" };
 
         /// <summary>Where the mask sits on the druid's face (bind space: feet at the origin, facing +Z).</summary>
-        public static Vector3 DruidFacePos = new Vector3(0f, 1.70f, 0.2f);
+        public static Vector3 DruidFacePos = new Vector3(0f, 1.70f, 0.29f);   // past the drooping nose
         static readonly Color DruidGreen = new Color(0.5f, 1f, 0.32f, 1f);
 
         [MenuItem("Elder Tree/8c. Build Druid Mask set")]

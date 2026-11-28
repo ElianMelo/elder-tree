@@ -29,6 +29,14 @@ import random
 import sys
 from mathutils import Vector, noise
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(globals().get("__file__", os.path.join("Tools", "Blender", "x.py")))))
+sys.dont_write_bytecode = True
+import importlib  # noqa: E402
+import mask_shell  # noqa: E402  (shared Majora-style face plate for the reward mask)
+importlib.reload(mask_shell)
+# TS_ONLY=CrocMask.fbx,... exports just those files (the rest of the set is still built, not written)
+ONLY = {n.strip() for n in os.environ.get("TS_ONLY", "").split(",") if n.strip()}
+
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 EXPORT = globals().get("TS_EXPORT", True)
 OUT = os.path.abspath(argv[0] if argv else os.path.join(os.path.dirname(os.path.abspath(globals().get("__file__", "."))), "export"))
@@ -50,6 +58,7 @@ MAT_RGB = {
 }
 # metres per texture tile (box projection): finer than the giant's 2.2 m so the grain reads at human scale
 TILE = {"M_DruidBark": 0.75, "M_DruidRoot": 0.55, "M_DruidHollow": 0.5, "M_DruidGlow": 0.3}
+mask_shell.register(MAT_RGB, TILE)
 FLAT = ("M_DruidEye",)
 rng = random.Random(4242)
 
@@ -296,7 +305,7 @@ def select_only(objs):
 
 
 def export(path, objs, types=frozenset({'MESH', 'EMPTY'})):
-    if not EXPORT:
+    if not EXPORT or (ONLY and path not in ONLY):
         return
     os.makedirs(OUT, exist_ok=True)
     select_only(objs)
@@ -709,27 +718,29 @@ place(orb_objs, 1.6)
 # MASK (reward item): a bark face with the drooping nose, green eyes and a rim of leaves
 # =================================================================================================
 mask = Part("DruidMask")
-MF = [(-0.13, 0.05, 0.075, 0.02), (-0.06, 0.1, 0.11, 0.0), (0.02, 0.115, 0.12, -0.005), (0.09, 0.1, 0.11, 0.0),
-      (0.15, 0.06, 0.07, 0.02)]
-rings = []
-for (z, rx, ry, y) in MF:      # a shallow shell: only the front half, curved
-    rings.append([V((math.cos(a) * rx, y - math.sin(a) * ry * 0.45, z)) for a in (math.radians(d) for d in range(-10, 191, 25))])
-mask.loft(rings, "M_DruidBark", closed=False)
-mask.loft([list(reversed(r)) for r in rings], "M_DruidBark", closed=False)
+sh = mask_shell.Shell(profile=[(0.0, 0.05), (0.1, 0.1), (0.25, 0.145), (0.45, 0.172), (0.65, 0.182), (0.82, 0.176),
+                               (0.93, 0.15), (1.0, 0.1)], z0=-0.25, z1=0.22, y0=-0.06)
+sh.build(mask, "M_DruidBark", strap="M_DruidRoot")
 for s in (-1, 1):
-    mask.disc(V((s * 0.045, -0.05, 0.035)), V((s * 0.3, -1, 0)), 0.026, "M_DruidHollow", sides=6, depth=0.006)
-    mask.disc(V((s * 0.045, -0.052, 0.035)), V((s * 0.3, -1, 0)), 0.011, "M_DruidEye", sides=5, depth=0.003)
-tube(mask, [V((-0.1, -0.05, 0.065)), V((0, -0.065, 0.055)), V((0.1, -0.05, 0.065))], [0.015, 0.02, 0.015], 4, "M_DruidBark")
-tube(mask, [V((0, -0.055, 0.04)), V((0, -0.1, 0.02)), V((0, -0.125, -0.03)), V((0, -0.118, -0.08)), V((0, -0.1, -0.1))],
-     [0.02, 0.024, 0.03, 0.032, 0.016], 5, "M_DruidBark", ref=V((1, 0, 0)), jag=0.08, seed=301)
-for k in range(9):                                       # rim of leaves around the top and sides
-    a = math.radians(-20 + k * 25)
-    p = V((math.cos(a) * 0.1, 0.0, 0.03 + math.sin(a) * 0.12))
-    n = V((math.cos(a), 0.3, math.sin(a))).normalized()
-    clump_cards(mask, p, n, 0.1, 1.0, shade=(k % 3 == 1))
-for k, lat in enumerate((-0.05, 0.05)):                  # antler stubs
-    b = V((lat, 0.0, 0.14))
-    tube(mask, [b, b + V((lat * 0.8, 0.0, 0.06)), b + V((lat * 1.6, 0.01, 0.1))], [0.01, 0.006, 0.002], 4, "M_DruidBark", seed=310 + k)
+    mask_shell.socket(mask, sh, s * 0.072, 0.05, 0.042, "M_DruidHollow", "M_DruidEye", eye_r=0.017, squash=0.8)
+tube(mask, [sh.at(-0.14, 0.1, 0.008), sh.at(-0.07, 0.098, 0.016), sh.at(0, 0.088, 0.02), sh.at(0.07, 0.098, 0.016),
+            sh.at(0.14, 0.1, 0.008)], [0.014, 0.02, 0.024, 0.02, 0.014], 4, "M_DruidBark", jag=0.1, seed=297)
+# Patapim's nose: a long knotted droop from the brow past the chin
+n0 = sh.at(0, 0.06, -0.006)
+tube(mask, [n0, n0 + V((0, -0.06, -0.03)), n0 + V((0, -0.1, -0.1)), n0 + V((0, -0.11, -0.19)), n0 + V((0, -0.095, -0.26))],
+     [0.026, 0.031, 0.037, 0.04, 0.02], 5, "M_DruidBark", ref=V((1, 0, 0)), jag=0.08, seed=301)
+mask_shell.band(mask, sh, [(-0.075, -0.15), (-0.035, -0.17), (0.035, -0.17), (0.075, -0.15)], 0.016, "M_DruidHollow")
+cz = (sh.z0 + sh.z1) * 0.5
+for k, v in enumerate((0.38, 0.52, 0.66, 0.79, 0.9, 0.98)):   # rim of leaves around the crown and down the cheeks
+    for s in (-1, 1):
+        p = sh.rim(v, s)
+        n = V((p.x, 0.25, p.z - cz)).normalized()
+        clump_cards(mask, p + V((0, 0.006, 0)), n, 0.13, 1.0, shade=((k + (s > 0)) % 3 == 1))
+clump_cards(mask, sh.at(0, sh.z1 - 0.01) + V((0, 0.006, 0)), V((0, 0.25, 1)).normalized(), 0.13, 1.0, shade=False)
+for k, lat in enumerate((-0.06, 0.06)):                  # antler twigs
+    b = sh.at(lat, sh.z1 - 0.02, -0.004)
+    tube(mask, [b, b + V((lat * 0.9, 0.01, 0.07)), b + V((lat * 1.9, 0.02, 0.12))], [0.012, 0.007, 0.002], 4, "M_DruidBark",
+         seed=310 + k)
 mask_ob = mask.finish(weld=False)
 export("DruidMask.fbx", [mask_ob])
 place([mask_ob], 2.4)

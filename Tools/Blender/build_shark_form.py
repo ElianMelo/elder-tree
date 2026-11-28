@@ -29,6 +29,14 @@ import os
 import sys
 from mathutils import Vector, noise
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(globals().get("__file__", os.path.join("Tools", "Blender", "x.py")))))
+sys.dont_write_bytecode = True
+import importlib  # noqa: E402
+import mask_shell  # noqa: E402  (shared Majora-style face plate for the reward mask)
+importlib.reload(mask_shell)
+# TS_ONLY=CrocMask.fbx,... exports just those files (the rest of the set is still built, not written)
+ONLY = {n.strip() for n in os.environ.get("TS_ONLY", "").split(",") if n.strip()}
+
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 EXPORT = globals().get("TS_EXPORT", True)
 OUT = os.path.abspath(argv[0] if argv else os.path.join(os.path.dirname(os.path.abspath(globals().get("__file__", "."))), "export"))
@@ -56,6 +64,7 @@ MAT_RGB = {
 TILE = {"M_SharkSkin": 0.9, "M_SharkBelly": 0.7, "M_CrocMouth": 0.6, "M_CrocTeeth": 0.4, "M_SneakerCloth": 0.4,
         "M_SneakerSole": 0.4, "M_Leather": 0.8, "M_Iron": 1.0, "M_Rope": 0.5, "M_DarkWood": 1.0, "M_BowString": 0.5,
         "M_SharkSteel": 0.8, "M_SharkEdge": 0.8, "M_Vine": 0.5, "M_VineLeaf": 0.4, "M_Bark": 1.5}
+mask_shell.register(MAT_RGB, TILE)
 FLAT = ("M_SharkEye",)
 
 # ----------------------------------------------------------------------------------------------- skeleton
@@ -276,7 +285,7 @@ def select_only(objs):
 
 
 def export(path, objs, types=frozenset({'MESH', 'EMPTY'})):
-    if not EXPORT:
+    if not EXPORT or (ONLY and path not in ONLY):
         return
     os.makedirs(OUT, exist_ok=True)
     select_only(objs)
@@ -772,27 +781,33 @@ export("SharkBolt.fbx", [bolt], {'MESH'})
 # dead eyes, gill slits on the cheeks and a dorsal fin crest on top.
 # =================================================================================================
 mk = Part("SharkMask")
-face_rings = []
-for z, r, y in ((-0.13, 0.11, 0.0), (-0.06, 0.15, -0.02), (0.03, 0.16, -0.035), (0.11, 0.14, -0.025), (0.17, 0.09, 0.0)):
-    face_rings.append([V((math.cos(a) * r, y + math.sin(a) * r * 0.75, z)) for a in (math.radians(d) for d in range(185, 356, 17))])
-mk.loft(face_rings, "M_SharkSkin", closed=False)
-MS = [(-0.1, 0.03, 0.08, 0.1), (-0.19, 0.03, 0.06, 0.075), (-0.25, 0.025, 0.035, 0.045), (-0.28, 0.02, 0.012, 0.015)]
-tube(mk, [(0, y, z) for y, z, _, _ in MS], [(v, h) for _, _, v, h in MS], 6, "M_SharkSkin", ref=V((0, 0, 1)),
+sh = mask_shell.Shell(profile=[(0.0, 0.075), (0.1, 0.13), (0.25, 0.166), (0.45, 0.186), (0.65, 0.19), (0.82, 0.176),
+                               (0.93, 0.146), (1.0, 0.095)], y0=-0.06)
+sh.build(mk, lambda x, z: "M_SharkBelly" if z < -0.075 else "M_SharkSkin", strap="M_Leather")
+# blunt snout overhanging a wide crescent grin
+yS = sh.y(0.0, 0.0)
+tube(mk, [(0, yS + 0.02, 0.005), (0, yS - 0.06, -0.005), (0, yS - 0.11, -0.015), (0, yS - 0.13, -0.02)],
+     [(0.075, 0.11), (0.065, 0.09), (0.04, 0.055), (0.012, 0.016)], 6, "M_SharkSkin", ref=V((0, 0, 1)),
      phase=math.pi / 6, cap0=False)
-# mouth: a dark crescent under the snout with the lower teeth standing in it
-mk.loft([[V((-0.1, -0.13, -0.05)), V((0.1, -0.13, -0.05))], [V((-0.07, -0.18, -0.03)), V((0.07, -0.18, -0.03))]],
-        "M_CrocMouth", closed=False)
+grin = [(x, -0.1 - 0.05 * x * x / 0.017) for x in (-0.14, -0.1, -0.05, 0.0, 0.05, 0.1, 0.14)]
+mask_shell.band(mk, sh, grin, [0.018, 0.034, 0.044, 0.048, 0.044, 0.034, 0.018], "M_CrocMouth")
+for x in (-0.115, -0.08, -0.045, -0.012, 0.022, 0.056, 0.09, 0.122):
+    zc = -0.1 - 0.05 * x * x / 0.017
+    w = 0.048 * (1 - (x / 0.15) ** 2) * 0.5 + 0.006
+    up, dn = sh.at(x, zc + w, 0.004), sh.at(x + 0.016, zc - w, 0.004)
+    mk.spike(up, up + V((0, -0.006, -0.026)), V((0, 1, 0)), 0.009, "M_CrocTeeth", sides=3)
+    mk.spike(dn, dn + V((0, -0.006, 0.022)), V((0, 1, 0)), 0.008, "M_CrocTeeth", sides=3)
 for s in (-1, 1):
-    tooth_row(mk, [(s * (0.085 - k * 0.022), -0.14 - k * 0.012, -0.06) for k in range(4)], V((0, -0.2, 1)), 0.035)
-    tube(mk, [(s * 0.09, -0.14, 0.05), (s * 0.095, -0.15, 0.05)], [(0.018, 0.024), (0.014, 0.02)], 6, "M_SharkEye",
-         ref=V((0, 0, 1)))
+    # little dead eyes set wide, gill slits down the cheeks
+    mask_shell.socket(mk, sh, s * 0.118, 0.04, 0.024, "M_CrocMouth", "M_SharkEye", eye_r=0.016)
     for k in range(3):
-        x = s * (0.135 - k * 0.006)
-        mk.loft([[V((x, -0.08 + k * 0.03, 0.03)), V((x, -0.08 + k * 0.03, -0.06))],
-                 [V((x + s * 0.004, -0.085 + k * 0.03, 0.03)), V((x + s * 0.004, -0.085 + k * 0.03, -0.06))]], "M_CrocMouth", closed=False)
-    mk.loft([[V((s * 0.155, 0.0, 0.0)), V((s * 0.155, 0.0, 0.05))], [V((s * 0.16, 0.08, 0.0)), V((s * 0.16, 0.08, 0.05))]],
-            "M_Leather", closed=False)
-fin(mk, V((0, -0.06, 0.16)), V((0, 0.06, 0.15)), V((0, 0.13, 0.32)), 0.01, "M_SharkSkin", back_curve=-0.03)
+        x = s * (0.128 + 0.016 * k)
+        mask_shell.band(mk, sh, [(x, -0.075), (x + s * 0.004, -0.04), (x + s * 0.006, -0.005)], 0.0075, "M_CrocMouth")
+    # pectoral fins sweep back off the cheeks
+    a, b = sh.rim(0.3, s), sh.rim(0.44, s)
+    fin(mk, a, b, a + V((s * 0.1, 0.06, -0.07)), 0.006, "M_SharkSkin", back_curve=-0.02)
+fin(mk, sh.at(0, 0.11, -0.004), sh.at(0, sh.z1 - 0.01, -0.004) + V((0, 0.04, 0)), V((0, 0.1, 0.38)), 0.012, "M_SharkSkin",
+    back_curve=-0.04)
 mask = mk.finish(smooth_angle=35)
 place([mask], 3.8)
 export("SharkMask.fbx", [mask], {'MESH'})

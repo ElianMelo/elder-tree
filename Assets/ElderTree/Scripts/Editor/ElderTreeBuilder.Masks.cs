@@ -507,7 +507,10 @@ namespace ElderTree.EditorTools
         public static Vector3 CannonBackUp = new Vector3(-0.35f, 1f, 0f);
         public static Vector3 HammerBackPos = new Vector3(0.12f, 0.78f, -0.42f);
         public static Vector3 HammerBackDir = new Vector3(-0.45f, 1f, 0f);
-        public static Vector3 ElderFacePos = new Vector3(0f, 1.73f, 0.33f);
+        // face sockets sit in front of each body's brow / snout so the big masks don't clip (mask cinematic)
+        public static Vector3 ElderFacePos = new Vector3(0f, 1.76f, 0.44f);
+        public static Vector3 CrocFacePos = new Vector3(0f, 1.72f, 0.64f);
+        public static float CrocMaskScale = 1.1f;
         public static float ElderMaskScale = 1.3f;
 
         /// <summary>Called by BuildPlayerPrefab: the Elder Tree rig description, the alligator body, the mask system.</summary>
@@ -594,7 +597,8 @@ namespace ElderTree.EditorTools
             croc.weapon = hb; croc.weaponTip = hTip; croc.weaponRenderer = hRenderer; croc.trail = ht;
             croc.cannonRig = rig;
             croc.twoHandGrip = grip;
-            croc.faceSocket = Socket("FaceSocket", anim.GetBoneTransform(HumanBodyBones.Head), new Vector3(0, 1.68f, 0.3f), Quaternion.identity);
+            croc.faceSocket = Socket("FaceSocket", anim.GetBoneTransform(HumanBodyBones.Head), CrocFacePos, Quaternion.identity);
+            croc.faceSocket.localScale = Vector3.one * CrocMaskScale;
             model.SetActive(false);
 
             // ---- controller + mask system
