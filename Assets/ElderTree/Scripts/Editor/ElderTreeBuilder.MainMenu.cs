@@ -23,26 +23,27 @@ namespace ElderTree.EditorTools
     {
         public const string MainMenuScenePath = Root + "/Scenes/MainMenu.unity";
         public const string VistaDir = Root + "/UI/Vistas";
-        const int VistaW = 768, VistaH = 432;  // 1920 x 1080 at the game's 0.4 render scale
+        // full HD and clean (user's call, 2026-11-27): no PSX low-res / dither / vertex snap, no grain or vignette, antialiased.
+        // The stage's own lighting, fog, bloom and colour grade stay: that is the place, not a filter.
+        const int VistaW = 1920, VistaH = 1080;
 
         struct Vista
         {
             public string id, scene;
             public Vector3 pos, look;
             public float fov;
-            public float playerX, playerDist;  // the Elder Tree: across the frame (0..1) and metres out, facing into the shot
         }
 
-        // each looks across its arena toward the stage's landmark. The Elder Tree stands small, left of centre, clear of the
-        // title and the menu column, looking into the shot.
+        // each looks across its arena toward the stage's landmark: just the place, nobody in it
         static readonly Vista[] Vistas =
         {
-            new Vista { id = "training", scene = ScenePath, pos = new Vector3(-3.5f, 2.4f, -16f), look = new Vector3(-7f, 2.6f, 6f), fov = 50f, playerX = 0.3f, playerDist = 8f },
-            new Vista { id = "crocodile", scene = SwampScenePath, pos = new Vector3(-4f, 2.6f, -20f), look = new Vector3(3f, 5f, 8f), fov = 52f, playerX = 0.72f, playerDist = 7f },
+            new Vista { id = "training", scene = ScenePath, pos = new Vector3(-3.5f, 2.4f, -16f), look = new Vector3(-7f, 2.6f, 6f), fov = 50f },
+            // in under the garrison: the watch tower framed by the white moon, lit tents and sandbags below
+            new Vista { id = "crocodile", scene = SwampScenePath, pos = new Vector3(-6f, 2.6f, 4f), look = new Vector3(0f, 8.5f, 30f), fov = 58f },
             // from the dock's south-east corner over the lagoon to the wreck on the reef
-            new Vista { id = "shark", scene = BeachScenePath, pos = new Vector3(2f, 2.2f, -10f), look = new Vector3(40f, 1.5f, -60f), fov = 50f, playerX = 0.3f, playerDist = 8f },
-            new Vista { id = "druid", scene = ForestScenePath, pos = new Vector3(-4f, 2.2f, -19f), look = new Vector3(1f, 9f, 10f), fov = 55f, playerX = 0.3f, playerDist = 8f },
-            new Vista { id = "fairy", scene = CaveScenePath, pos = new Vector3(-4f, 2.2f, -20f), look = new Vector3(1f, 4f, 6f), fov = 55f, playerX = 0.3f, playerDist = 8f },
+            new Vista { id = "shark", scene = BeachScenePath, pos = new Vector3(2f, 2.2f, -10f), look = new Vector3(40f, 1.5f, -60f), fov = 50f },
+            new Vista { id = "druid", scene = ForestScenePath, pos = new Vector3(-4f, 2.2f, -19f), look = new Vector3(1f, 9f, 10f), fov = 55f },
+            new Vista { id = "fairy", scene = CaveScenePath, pos = new Vector3(-4f, 2.2f, -20f), look = new Vector3(1f, 4f, 6f), fov = 55f },
         };
 
         [MenuItem("Elder Tree/9k. Capture Stage Vistas (in-game render)")]
@@ -66,10 +67,30 @@ namespace ElderTree.EditorTools
 
         static string CaptureVista(Vista v)
         {
-            // bosses stay a surprise: none of them in the shot
+            // bosses stay a surprise and the Elder Tree stays out of it: the stage alone
             foreach (var b in Object.FindObjectsByType<Enemies.BossBase>(FindObjectsInactive.Include, FindObjectsSortMode.None)) b.gameObject.SetActive(false);
-            var player = Object.FindAnyObjectByType<Player.PlayerController>(FindObjectsInactive.Include);
-            if (player != null) player.gameObject.SetActive(false);
+            foreach (var pc in Object.FindObjectsByType<Player.PlayerController>(FindObjectsInactive.Include, FindObjectsSortMode.None)) pc.gameObject.SetActive(false);
+
+            // no PSX look for the shot: full render scale, no vertex snap or 15-bit dither
+            var rp = GraphicsSettings.defaultRenderPipeline as UniversalRenderPipelineAsset;
+            float scale = rp != null ? rp.renderScale : 1f;
+            if (rp != null) rp.renderScale = 1f;
+            var psx = Object.FindObjectsByType<FX.PSXGlobals>(FindObjectsSortMode.None);
+            foreach (var g in psx) g.enabled = false;
+            Shader.SetGlobalVector("_PSXSnap", Vector4.zero);
+            Shader.SetGlobalFloat("_PSXDither", 0f);
+
+            // nor the camera filters: grain and vignette off on top of the stage's own volume
+            var clean = new GameObject("VistaClean") { hideFlags = HideFlags.DontSave };
+            var vol = clean.AddComponent<Volume>();
+            vol.isGlobal = true;
+            vol.priority = 1000f;
+            var prof = ScriptableObject.CreateInstance<VolumeProfile>();
+            prof.Add<FilmGrain>(true).intensity.Override(0f);
+            prof.Add<Vignette>(true).intensity.Override(0f);
+            prof.Add<ChromaticAberration>(true).intensity.Override(0f);
+            prof.Add<LensDistortion>(true).intensity.Override(0f);
+            vol.sharedProfile = prof;
 
             var main = Camera.main;
             var camGo = new GameObject("VistaCam") { hideFlags = HideFlags.DontSave };
@@ -78,52 +99,38 @@ namespace ElderTree.EditorTools
             cam.fieldOfView = v.fov;
             cam.nearClipPlane = 0.1f;
             cam.farClipPlane = 600f;
+            cam.allowMSAA = true;
+            cam.aspect = (float)VistaW / VistaH;
             var data = camGo.AddComponent<UniversalAdditionalCameraData>();
             data.renderPostProcessing = true;
-            data.antialiasing = AntialiasingMode.None;
+            data.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+            data.antialiasingQuality = AntialiasingQuality.High;
             data.volumeLayerMask = ~0;
             camGo.transform.position = v.pos;
             camGo.transform.LookAt(v.look);
 
-            // stand the Elder Tree on whatever ground is under its spot in the frame, facing where the camera looks
-            if (player != null && v.playerDist > 0f)
-            {
-                cam.aspect = (float)VistaW / VistaH;
-                var dir = Vector3.ProjectOnPlane(cam.ViewportPointToRay(new Vector3(v.playerX, 0.5f, 0f)).direction, Vector3.up).normalized;
-                var spot = camGo.transform.position + dir * v.playerDist;
-                Physics.SyncTransforms();
-                if (Physics.Raycast(spot + Vector3.up * 30f, Vector3.down, out var hit, 80f, ~0, QueryTriggerInteraction.Ignore))
-                {
-                    var fwd = Vector3.ProjectOnPlane(camGo.transform.forward, Vector3.up).normalized;
-                    player.transform.SetPositionAndRotation(hit.point, Quaternion.LookRotation(fwd));
-                    player.gameObject.SetActive(true);
-                    // edit mode leaves the rig in its bind pose: stand it in the combat idle
-                    var pc = player.GetComponent<Player.PlayerController>();
-                    var anim = pc != null && pc.animator != null ? pc.animator : player.GetComponentInChildren<Animator>();
-                    var idle = anim != null && anim.runtimeAnimatorController != null
-                        ? anim.runtimeAnimatorController.animationClips.FirstOrDefault(c => c.name.Contains("CombatIdle1H")) : null;
-                    if (idle != null) idle.SampleAnimation(anim.gameObject, idle.length * 0.3f);
-                }
-            }
-
             foreach (var pr in Object.FindObjectsByType<FX.PlanarReflection>(FindObjectsSortMode.None)) pr.RenderFor(cam);
 
-            var rt = new RenderTexture(VistaW, VistaH, 24, RenderTextureFormat.ARGB32) { filterMode = FilterMode.Point };
+            var rt = new RenderTexture(VistaW, VistaH, 24, RenderTextureFormat.ARGB32) { antiAliasing = 8, filterMode = FilterMode.Bilinear };
             cam.targetTexture = rt;
             cam.Render();
             var prev = RenderTexture.active;
             RenderTexture.active = rt;
             var tex = new Texture2D(VistaW, VistaH, TextureFormat.RGBA32, false);
             tex.ReadPixels(new Rect(0, 0, VistaW, VistaH), 0, 0);
-            var px = tex.GetPixels();
-            for (int i = 0; i < px.Length; i++) px[i].a = 1f;
-            tex.SetPixels(px);
+            var px = tex.GetPixels32();
+            for (int i = 0; i < px.Length; i++) px[i].a = 255;
+            tex.SetPixels32(px);
             tex.Apply();
             RenderTexture.active = prev;
             cam.targetTexture = null;
             rt.Release();
             Object.DestroyImmediate(rt);
             Object.DestroyImmediate(camGo);
+            Object.DestroyImmediate(clean);
+            Object.DestroyImmediate(prof);
+            if (rp != null) rp.renderScale = scale;
+            foreach (var g in psx) if (g != null) g.enabled = true;
 
             string path = $"{VistaDir}/Vista_{v.id}.png";
             File.WriteAllBytes(path, tex.EncodeToPNG());
@@ -131,9 +138,10 @@ namespace ElderTree.EditorTools
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
             var imp = (TextureImporter)AssetImporter.GetAtPath(path);
             imp.textureType = TextureImporterType.Default;
-            imp.filterMode = FilterMode.Point;
+            imp.filterMode = FilterMode.Bilinear;
             imp.mipmapEnabled = false;
             imp.wrapMode = TextureWrapMode.Clamp;
+            imp.maxTextureSize = 2048;
             imp.textureCompression = TextureImporterCompression.Uncompressed;
             imp.npotScale = TextureImporterNPOTScale.None;
             imp.SaveAndReimport();
