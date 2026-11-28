@@ -1,5 +1,39 @@
 # Handoff — Elder Tree soulslike slice
 
+## 0000000000000000000000000000000000. Mask pickups: the right mask, a bigger drop, and nobody leaves without it
+
+**The bug.** Every boss dropped a pickup showing the **Crocodile** mask: `MaskPickup.prefab` had `CrocMask.fbx` baked in. The prefab now has an empty `Model/Mesh` slot and `MaskPickup.Setup` puts the dropped mask's own `MaskData.maskModel` there.
+
+**New masks (Majora's Mask as the reference).** All four are rebuilt on one shared plate, `Tools/Blender/mask_shell.py`: a thick heart/shield-shaped face plate (~0.38 x 0.44 m, was 0.2-0.32 m) that covers the whole face and wraps past the cheeks, painted outside, **bare carved wood inside and around the rim** (`M_MaskWood`: honey-brown grain running up the mask, knife gouges, worn patina), with two side straps. Each keeps its identity on top: croc snout + teeth + osteoderm spikes round the rim; shark snout + toothy grin + gills + dorsal and cheek fins; druid bark with the drooping nose, leaf rim and antler twigs; fairy porcelain with almond eyes, tear marks, ears, fringe, gem and temple wings. ~850-900 tris each. The form scripts (`build_*_form.py`) import the shell; set `TS_ONLY=CrocMask.fbx` (etc.) to export only the mask without rewriting the rest of the set.
+
+**Fit on each body.** The face sockets moved in front of each body's brow / snout so the bigger masks don't clip in the first-pickup cinematic, and the cinematic now honours the socket's scale (it ignored it before): Elder +0.11 m forward / +0.03 up x1.3, Croc +0.34 / +0.04 x1.1 (past the long snout), Shark +0.13 x1.05, Druid +0.09, Fairy +0.015 x0.95. Constants in the builders (`ElderFacePos`, `CrocFacePos`, `SharkFacePos`, `DruidFacePos`, `FairyFacePos` + scales); `Player.prefab` was patched to match.
+
+**The drop** (`MaskPickup`): a column of light in the mask's colour (`MaskData.vortexA`, brightened) strikes down wide and white-hot, the mask drifts down the beam spinning (1.4 s from 7.5 m) and lands in a flash, dust, a camera nudge and the received chime. Then it hovers over a glowing ground ring that sends out a pulse ring every 1.8 s, with the slim beam rising from just above it (it fades in ~0.45 m over the mask's centre and never crosses the mask, `beamGap`; 14 m, visible across the arena) and motes in its colour. Its point light sits 0.8 m above the mask: inside the bigger plate it burned the mask white. Materials `M_FX_MaskBeam` / `M_FX_MaskRing`, tinted per mask by property block.
+
+**HUD marker** (`HUD.MaskMarks.cs`, styles `.maskmark*`): over each waiting mask, its name, the distance and an arrowhead in its colour bobbing down at it. Off screen or behind you it clings to the screen edge (just the distance and the arrow, turned toward it). The last 5 s it counts down ("COMES TO YOU IN 3"), then "COMING TO YOU".
+
+**Nobody leaves without their mask.** 15 s after it lands (`MaskPickup.autoCollectAfter`) the mask flies to its player: a climb, then an accelerating curve into the chest; if the player is mid-swing or rolling it circles their head until they're free, then the normal pickup / cinematic runs. Until then:
+- Solo and co-op: F2 and the pause menu's Level Select / Return to Vote are refused with "CLAIM THE MASK" while a mask is waiting or its cinematic plays (`BossArena.ReturnHeld`). `BossArena.AfterVictory` no longer gives up after 90 s (the mask always comes).
+- Co-op: after the win no one can send the party back by hand ("THE PARTY IS STILL CLAIMING THEIR MASKS"); the party returns to the vote only when every player's `StageDone` is in. The host's server also refuses `BackToVote` while some players are done and others aren't. The server's existing 120 s fallback (from the first `StageDone`) is kept as a safety net for a hung client; with the 15 s auto-collect it should never be reached.
+
+**Menu vistas** (main menu and level select backgrounds, `Elder Tree/9k`): re-shot at the same angles at **1920x1080**, with no player in them and no filters (no PSX low-res, dither or vertex snap, no film grain / vignette), antialiased and bilinear. Each stage's own lighting, fog, bloom and colour grade stay. The menus still lay their dark UI grade over them for legibility (`.mm-vista` / `.ls-vista` tint in the USS).
+
+**Drowned Garrison vista** re-shot from inside the garrison: the watch tower framed by the white moon, lit tents and sandbags below (`Vista` "crocodile": pos (-6, 2.6, 4) looking at (0, 8.5, 30), fov 58).
+
+**Player freeze fix (2026-11-28).** Report: the tree stopped responding after a hit, with stamina drained. Two states take the body away *and* pause stamina regeneration, which matches the report: being **held** (Druid grab) and a **knockdown**. Neither had an exit of its own:
+- The Druid reached the tree in its fist through its current aggro target. In co-op the hunt may switch once it is 8 s overdue, even mid-move, and then the squeezes, the throw and the drop went to the other player while yours stayed held for good. It now keeps the tree it caught (`DruidBoss.heldTree`) for the whole hold.
+- Safety nets on the player: a hold that no hand has posed for 1 s drops the tree (`PlayerController.Grab`, `HeldOrphanTime`). A flinch or knockdown still airborne 1.5 s past its time hands over to the normal Air state, which lands and takes input again (`UpdateHitReaction`).
+- Checked: 90 hits (light / heavy / slam at drained stamina) across the swamp arena; a 2.5-min automated Alligator-vs-Crocodile fight with 24 hits taken, several while exhausted; a real Druid grab-squeeze-throw; an orphaned hold (drops after 1 s); an airborne flinch. No freeze reproduced *before* the fix in solo, so if it happens again, note the boss, the form and what the tree was doing.
+
+**Rebuild:** `Elder Tree/8e. Mask Models + Pickup` (also in BuildAll after the four mask sets) builds the wood, remaps it onto the four mask FBXs, re-renders the four mask icons and rebuilds the pickup prefab.
+
+**Tested** in the training yard in Play mode: Fairy Mask drop (beam, fall, landing, ring, marker, countdown), left alone it flew to the Elder Tree at 15 s and the cinematic played with the new mask; Druid Mask walked into normally (cinematic on the Fairy body); off-screen marker at the edge; F2 refused while unclaimed. **Not re-run:** the two-build co-op test (`CoopAutoTest`) with the new hold.
+
+**Open questions**
+- 15 s before the mask flies to you: right? (`autoCollectAfter` on the prefab.)
+- The croc body's mask now floats ~0.34 m in front of its eyes to clear the snout; the alternative is a mask pushed up onto the brow.
+- Should the beam stay this tall, or shorten once you're close?
+
 ## 000000000000000000000000000000000. Online co-op (up to 4 players): FishNet over Unity Relay
 
 **What you get.** Main menu → **CO-OP**: host a party, join by code, or pick an open party from the list. In the party room the host presses **Begin the Vote**; everyone lands on the vote screen (every stage + Random + Leave). The first vote starts a **15 s** countdown; everyone voting the same thing goes at once (all Random → a random boss stage); at zero the most-voted option wins, ties and Random are drawn. A travel card plays and everyone loads in together. After a victory each player collects their own mask; once everyone is done the party returns to the vote.
