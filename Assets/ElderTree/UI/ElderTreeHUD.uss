@@ -996,6 +996,33 @@
     text-shadow: 0 0 6px rgba(0, 0, 0, 1);
 }
 
+/* masks waiting to be claimed (HUD.MaskMarks.cs) */
+.maskmarks { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.maskmark {
+    position: absolute;
+    align-items: center;
+    translate: -50% -100%;
+}
+.maskmark__name {
+    font-size: 17px;
+    letter-spacing: 3px;
+    -unity-text-align: lower-center;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 1);
+}
+.maskmark__info {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: rgba(226, 216, 196, 0.85);
+    -unity-text-align: lower-center;
+    text-shadow: 0 0 5px rgba(0, 0, 0, 1);
+}
+.maskmark__arrow {
+    width: 26px;
+    height: 20px;
+    margin-top: 3px;
+    transform-origin: center;
+}
+
 .bossbar__hunt {
     position: absolute;
     left: 0;
